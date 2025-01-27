@@ -12,7 +12,8 @@ created_at datetime NOT NULL )
 
 CREATE TABLE requirements (
 student_id varchar(50) NOT NULL PRIMARY KEY,
-event_name varchar(50) NOT NULL, due_date date NOT NULL,
+event_name varchar(50) NOT NULL,
+due_date date NOT NULL,
 shared int(1) NOT NULL )
 
 CREATE TABLE student (
