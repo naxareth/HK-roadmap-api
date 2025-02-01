@@ -7,37 +7,58 @@ class Admin {
     }
 
     public function register($name, $email, $password) {
-        $sql = "INSERT INTO admin (name, email, password) VALUES (:name, :email, :password)";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bindParam(':name', $name);
-        $stmt->bindParam(':email', $email);
-        $stmt->bindParam(':password', password_hash($password, PASSWORD_DEFAULT));
-        return $stmt->execute();
+        try {
+            $sql = "INSERT INTO admin (name, email, password) VALUES (:name, :email, :password)";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(':name', $name);
+            $stmt->bindParam(':email', $email);
+            $stmt->bindParam(':password', $password); // Password is already hashed in the controller
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            error_log("Database error: " . $e->getMessage());
+            return false;
+        }
     }
 
     public function login($name, $password) {
-        $sql = "SELECT * FROM admin WHERE name = :name";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bindParam(':name', $name);
-        $stmt->execute();
-        $admin = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $admin && password_verify($password, $admin['password']) ? $admin : false;
+        try {
+            $sql = "SELECT * FROM admin WHERE name = :name";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(':name', $name);
+            $stmt->execute();
+            $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $admin && password_verify($password, $admin['password']) ? $admin : false;
+        } catch (PDOException $e) {
+            error_log("Database error: " . $e->getMessage());
+            return false;
+        }
     }
 
     public function updateToken($name, $token) {
-        $sql = "UPDATE admin SET token = :token WHERE name = :name";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bindParam(':token', $token);
-        $stmt->bindParam(':name', $name);
-        return $stmt->execute();
+        try {
+            $sql = "UPDATE admin SET token = :token WHERE name = :name";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(':token', $token);
+            $stmt->bindParam(':name', $name);
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            error_log("Database error: " . $e->getMessage());
+            return false;
+        }
     }
 
     public function validateToken($token) {
-        $sql = "SELECT * FROM admin WHERE token = :token";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bindParam(':token', $token);
-        $stmt->execute();
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        try {
+            $sql = "SELECT * FROM admin WHERE token = :token";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(':token', $token);
+            $stmt->execute();
+            $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $admin ? $admin : false;
+        } catch (PDOException $e) {
+            error_log("Database error: " . $e->getMessage());
+            return false;
+        }
     }
 }
 ?>

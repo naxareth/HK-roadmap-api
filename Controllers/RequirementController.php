@@ -12,7 +12,17 @@ class RequirementController {
     }
 
     public function add() {
+        if (!isset($_POST['token']) || !isset($_POST['student_id']) || !isset($_POST['event_name']) || !isset($_POST['due_date'])) {
+            echo json_encode(["message" => "Missing required fields."]);
+            return;
+        }
+
         $token = $_POST['token'];
+        $student_id = $_POST['student_id'];
+        $event_name = $_POST['event_name'];
+        $due_date = $_POST['due_date'];
+        $shared = isset($_POST['shared']) ? (int)$_POST['shared'] : 0;
+
         $adminModel = new Admin($this->db);
         $admin = $adminModel->validateToken($token);
 
@@ -20,11 +30,6 @@ class RequirementController {
             echo json_encode(["message" => "Unauthorized access. Invalid token."]);
             return;
         }
-
-        $student_id = $_POST['student_id'];
-        $event_name = $_POST['event_name'];
-        $due_date = $_POST['due_date'];
-        $shared = isset($_POST['shared']) ? (int)$_POST['shared'] : 0;
 
         if ($this->requirementModel->add($student_id, $event_name, $due_date, $shared)) {
             echo json_encode(["message" => "Requirement added successfully."]);
@@ -34,7 +39,14 @@ class RequirementController {
     }
 
     public function getRequirements() {
+        if (!isset($_GET['token']) || !isset($_GET['student_id'])) {
+            echo json_encode(["message" => "Missing required fields."]);
+            return;
+        }
+
         $token = $_GET['token'];
+        $student_id = $_GET['student_id'];
+
         $adminModel = new Admin($this->db);
         $admin = $adminModel->validateToken($token);
 
@@ -43,9 +55,12 @@ class RequirementController {
             return;
         }
 
-        $student_id = $_GET['student_id'];
         $requirements = $this->requirementModel->getRequirements($student_id);
-        echo json_encode($requirements);
+        if ($requirements) {
+            echo json_encode($requirements);
+        } else {
+            echo json_encode(["message" => "No requirements found."]);
+        }
     }
 }
 ?>

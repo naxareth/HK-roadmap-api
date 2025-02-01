@@ -11,9 +11,10 @@ class Student {
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':student_id', $student_id);
         $stmt->bindParam(':email', $email);
-        $stmt->bindParam(':password', password_hash($password, PASSWORD_DEFAULT));
+        $stmt->bindParam(':password', $password);
         return $stmt->execute();
     }
+
 
     public function login($student_id, $password) {
         $sql = "SELECT * FROM student WHERE student_id = :student_id";
