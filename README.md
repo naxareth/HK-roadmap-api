@@ -1,3 +1,7 @@
+run the ff. in the terminal:
+php -S localhost:8000
+
+
 ```
 CREATE TABLE admin(
 name varchar(50) NOT NULL PRIMARY KEY,
