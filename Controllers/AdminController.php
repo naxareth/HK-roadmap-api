@@ -9,37 +9,60 @@ class AdminController {
     }
 
     public function register() {
-        $name = $_POST['name'];
+        $admin_id = $_POST['admin_id'];
         $email = $_POST['email'];
         $password = $_POST['password'];
 
-        if ($this->adminModel->register($name, $email, $password)) {
-            $token = bin2hex(random_bytes(32));
-            $this->adminModel->updateToken($name, $token);
-            echo json_encode(["message" => "Admin registered successfully.", "token" => $token]);
+        if ($this->adminModel->register($admin_id, $email, $password)) {
+            echo json_encode(["message" => "Admin registered successfully."]);
         } else {
             echo json_encode(["message" => "Admin registration failed."]);
         }
     }
 
     public function login() {
-        $name = $_POST['name'];
+        $admin_id = $_POST['admin_id'];
         $password = $_POST['password'];
 
-        $admin = $this->adminModel->login($name, $password);
-        if ($admin) {
-            $token = bin2hex(random_bytes(32));
-            $this->adminModel->updateToken($name, $token);
-            echo json_encode(["message" => "Login successful.", "token" => $token]);
+        $result = $this->adminModel->login($admin_id, $password);
+        if ($result) {
+            echo json_encode(["message" => "Login successful.", "token" => $result['token']]);
         } else {
-            echo json_encode(["message" => "Invalid name or password."]);
+            echo json_encode(["message" => "Invalid admin_id or password."]);
         }
     }
 
-    public function validateToken() {
+    public function logout(){
         $token = $_POST['token'];
-        $admin = $this->adminModel->validateToken($token);
-        return $admin ? $admin : false;
+        $result = $this->adminModel->logout($token);
+
+        if ($result) {
+            echo json_encode(["message" => "Admin logged out successfully."]);
+        } else {
+            echo json_encode(["message" => "Failed to log out admin."]);
+        }
+    }
+
+    public function emailAddress(){
+        $email = $_POST['email'];
+        $result = $this->adminModel->emailAddress($email);
+
+        if ($result) {
+            echo json_encode(["message" => "Admin email entered successfully."]);
+        } else {
+            echo json_encode(["message" => "Failed to enter admin email."]);
+        }
+    }
+
+    public function passwordChange(){
+        $token = $_POST['token'];
+        $result = $this->adminModel->logout($token);
+
+        if ($result) {
+            echo json_encode(["message" => "Admin logged out successfully."]);
+        } else {
+            echo json_encode(["message" => "Failed to log out admin."]);
+        }
     }
 }
 ?>

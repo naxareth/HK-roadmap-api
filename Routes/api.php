@@ -31,6 +31,16 @@ switch ($requestMethod) {
             $studentController->register();
         } elseif ($action === 'student_login') {
             $studentController->login();
+        } elseif ($action === 'admin_logout') {
+            $adminController->logout();
+        } elseif ($action === 'student_logout') {
+            $studentController->logout();
+        } elseif($action === 'admin_email') {
+            $adminController->emailAddress();
+        } elseif($action === 'admin_password_change') {
+            $adminController->passwordChange();
+        } else {
+            echo json_encode(["message" => "Invalid action for POST request."]);
         }
         break;
 
@@ -39,6 +49,8 @@ switch ($requestMethod) {
             $documentController->getDocuments();
         } elseif ($action === 'get_requirements') {
             $requirementController->getRequirements();
+        } else {
+            echo json_encode(["message" => "Invalid action for GET request."]);
         }
         break;
 
