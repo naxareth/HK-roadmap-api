@@ -16,13 +16,18 @@ class Requirement {
             $stmt->bindParam(':due_date', $due_date);
             $stmt->bindParam(':shared', $shared, PDO::PARAM_INT);
             $stmt->bindParam(':submission', $submission);
-            return $stmt->execute();
+    
+            if ($stmt->execute()) {
+                return true;
+            } else {
+                error_log("SQL Error: " . implode(", ", $stmt->errorInfo())); // Log SQL errors
+                return false;
+            }
         } catch (PDOException $e) {
-            error_log("Database error: " . $e->getMessage());
+            error_log("Database error: " . $e->getMessage()); // Log PDO exceptions
             return false;
         }
     }
-
     public function getRequirements($student_id) {
         try {
             $sql = "SELECT * FROM requirements WHERE student_id = :student_id OR shared = 1";

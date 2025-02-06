@@ -6,6 +6,15 @@ class Student {
         $this->conn = $db;
     }
 
+    // Method to check if a student ID exists
+    public function studentExists($student_id) {
+        $sql = "SELECT COUNT(*) FROM student WHERE student_id = :student_id";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':student_id', $student_id);
+        $stmt->execute();
+        return $stmt->fetchColumn() > 0; // Returns true if student exists
+    }
+
     public function register($student_id, $email, $password) {
         $sql = "INSERT INTO student (student_id, email, password) VALUES (:student_id, :email, :password)";
         $stmt = $this->conn->prepare($sql);
