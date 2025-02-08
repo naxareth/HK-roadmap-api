@@ -47,28 +47,47 @@ class RequirementController {
             echo json_encode(["message" => "Failed to add requirement."]);
         }
     }
+
     public function getRequirements() {
-        if (!isset($_GET['token']) || !isset($_GET['student_id'])) {
+        if (!isset($_GET['token'])) {
             echo json_encode(["message" => "Missing required fields."]);
             return;
         }
 
         $token = $_GET['token'];
-        $student_id = $_GET['student_id'];
-
         $adminModel = new Admin($this->db);
         $admin = $adminModel->validateToken($token);
 
-        if (!$admin) {
-            echo json_encode(["message" => "Unauthorized access. Invalid token."]);
-            return;
-        }
-
-        $requirements = $this->requirementModel->getRequirements($student_id);
-        if ($requirements) {
-            echo json_encode($requirements);
+        if ($admin) {
+            // Admin is authenticated, return all requirements
+            $requirements = $this->requirementModel->getAllRequirements();
+            if ($requirements) {
+                echo json_encode($requirements);
+            } else {
+                echo json_encode(["message" => "No requirements found."]);
+            }
         } else {
-            echo json_encode(["message" => "No requirements found."]);
+            // Not an admin, check for student ID
+            if (!isset($_GET['student_id'])) {
+                echo json_encode(["message" => "Missing student ID."]);
+                return;
+            }
+
+            $student_id = $_GET['student_id'];
+
+            // Validate student token
+            if (!$this->studentModel->studentExists($student_id)) {
+                echo json_encode(["message" => "Student ID does not exist."]);
+                return;
+            }
+
+            // Return requirements for the specific student
+            $requirements = $this->requirementModel->getRequirements($student_id);
+            if ($requirements) {
+                echo json_encode($requirements);
+            } else {
+                echo json_encode(["message" => "No requirements found for this student."]);
+            }
         }
     }
 }

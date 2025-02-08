@@ -28,11 +28,24 @@ class Requirement {
             return false;
         }
     }
+
     public function getRequirements($student_id) {
         try {
             $sql = "SELECT * FROM requirements WHERE student_id = :student_id OR shared = 1";
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':student_id', $student_id);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Database error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getAllRequirements() {
+        try {
+            $sql = "SELECT * FROM requirements";
+            $stmt = $this->conn->prepare($sql);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
