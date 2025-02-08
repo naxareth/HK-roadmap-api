@@ -34,8 +34,8 @@ class RequirementController {
             return;
         }
     
-        // Check if the student ID exists only if the requirement is not shared
-        if ($shared === 0 && !$this->studentModel->studentExists($student_id)) {
+        // Check if the student ID exists regardless of whether the requirement is shared or not
+        if (!$this->studentModel->studentExists($student_id)) {
             echo json_encode(["message" => "Student ID does not exist."]);
             return;
         }
@@ -47,7 +47,6 @@ class RequirementController {
             echo json_encode(["message" => "Failed to add requirement."]);
         }
     }
-
     public function getRequirements() {
         if (!isset($_GET['token']) || !isset($_GET['student_id'])) {
             echo json_encode(["message" => "Missing required fields."]);
