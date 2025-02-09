@@ -1,4 +1,6 @@
 <?php
+session_start();
+
 require_once '../models/Admin.php';
 
 class AdminController {
@@ -43,25 +45,33 @@ class AdminController {
         }
     }
 
-    public function emailAddress(){
+    public function requestOtp() {
         $email = $_POST['email'];
-        $result = $this->adminModel->emailAddress($email);
-
-        if ($result) {
-            echo json_encode(["message" => "Admin email entered successfully."]);
+        if ($this->adminModel->requestOtp($email)) {
+            echo "OTP sent to your email.";
         } else {
-            echo json_encode(["message" => "Failed to enter admin email."]);
+            echo "Email does not exist.";
         }
     }
 
-    public function passwordChange(){
-        $token = $_POST['token'];
-        $result = $this->adminModel->logout($token);
+    public function verifyOtpAndUpdatePassword() {
+        $inputOtp = $_POST['otp'];
+        $newPassword = $_POST['new_password'];
+        $confirmPassword = $_POST['confirm_password']; 
 
-        if ($result) {
-            echo json_encode(["message" => "Admin logged out successfully."]);
+        if ($newPassword !== $confirmPassword) {
+                echo "Passwords do not match.";
+                return;
+        }
+
+        if ($this->adminModel->verifyOtp($inputOtp)) {
+            if ($this->adminModel->updatePassword($_SESSION['email'], $newPassword)) {
+                echo "Password updated successfully.";
+            } else {
+                echo "Failed to update password.";
+            }
         } else {
-            echo json_encode(["message" => "Failed to log out admin."]);
+            echo "Invalid or expired OTP.";
         }
     }
 }

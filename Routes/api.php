@@ -4,6 +4,7 @@ require_once '../controllers/AdminController.php';
 require_once '../controllers/DocumentController.php';
 require_once '../controllers/RequirementController.php';
 require_once '../controllers/StudentController.php';
+require_once __DIR__ . '/../vendor/autoload.php';
 
 // Get database connection
 $db = getDatabaseConnection();
@@ -35,10 +36,10 @@ switch ($requestMethod) {
             $adminController->logout();
         } elseif ($action === 'student_logout') {
             $studentController->logout();
-        } elseif($action === 'admin_email') {
-            $adminController->emailAddress();
+        } elseif($action === 'request_otp') {
+            $adminController->requestOtp();
         } elseif($action === 'admin_password_change') {
-            $adminController->passwordChange();
+            $adminController->verifyOtpAndUpdatePassword();
         } else {
             echo json_encode(["message" => "Invalid action for POST request."]);
         }
