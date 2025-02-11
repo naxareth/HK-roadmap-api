@@ -22,7 +22,6 @@ class Admin {
             $stmt->bindParam(':password', password_hash($password, PASSWORD_DEFAULT));
             return $stmt->execute();
         } catch (PDOException $e) {
-            // Log the error message
             error_log("Admin registration error: " . $e->getMessage());
             return false;
         }
@@ -30,12 +29,11 @@ class Admin {
 
     public function login($admin_id, $password) {
         try {
-            $sql = "SELECT * FROM admin WHERE admin_id = :admin_id"; // Only fetch by admin_id
+            $sql = "SELECT * FROM admin WHERE admin_id = :admin_id";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute(['admin_id' => $admin_id]);
             $admin = $stmt->fetch(PDO::FETCH_ASSOC);
         
-            // Check if the admin exists and verify the password
             if ($admin && password_verify($password, $admin['password'])) {
                 $token = bin2hex(random_bytes(32));
                 $query = "INSERT INTO admin_tokens (token, admin_id) VALUES (:token, :admin_id)";
@@ -47,17 +45,36 @@ class Admin {
 
             return false;
         } catch (PDOException $e) {
-            // Log the error message
             error_log("Admin login error: " . $e->getMessage());
             return false;
         }
     }
 
+    public function updateToken($admin_id, $token) {
+        try {
+            $sql = "UPDATE admin SET token = :token WHERE admin_id = :admin_id";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(':token', $token);
+            $stmt->bindParam(':admin_id', $admin_id);
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            error_log("Database error: " . $e->getMessage());
+            return false;
+        }
+    }
+
     public function validateToken($token) {
-        $query = "SELECT admin_id FROM admin_tokens WHERE token = :token";
-        $stmt = $this->conn->prepare($query); // Use $this->conn here
-        $stmt->execute(['token' => $token]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        try {
+            $sql = "SELECT * FROM admin WHERE token = :token";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(':token', $token);
+            $stmt->execute();
+            $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $admin ? $admin : false;
+        } catch (PDOException $e) {
+            error_log("Database error: " . $e->getMessage());
+            return false;
+        }
     }
 
     public function logout($token) {
@@ -68,12 +85,9 @@ class Admin {
     }
 
     public function verifyOtp($inputOtp) {
-        // Check if the OTP is set in the session and if it matches
         if (isset($_SESSION['otp']) && $_SESSION['otp'] == $inputOtp && time() < $_SESSION['otp_expiry']) {
-            // OTP is valid
             return true;
         }
-        // OTP is invalid or expired
         return false;
     }
 
@@ -85,26 +99,23 @@ class Admin {
                 $_SESSION['otp_expiry'] = time() + 300; 
 
                 $this->sendEmail($email, $otp);
-                return true; // Indicate that the OTP was sent
+                return true;
             } else {
-                return false; // Email does not exist
+                return false;
             }
         } catch (Exception $e) {
-            // Log the error message
             error_log("OTP request error: " . $e->getMessage());
             return false;
         }
     }
 
-    // Check if the email exists in the database
     private function emailExists($email) {
         $query = "SELECT * FROM admin WHERE email = :email";
         $stmt = $this->conn->prepare($query);
         $stmt->execute(['email' => $email]);
-        return $stmt->fetch(PDO::FETCH_ASSOC) !== false; // Return true if email exists
+        return $stmt->fetch(PDO::FETCH_ASSOC) !== false;
     }
 
-    // Send OTP via email
     private function sendEmail($email, $otp) {
         $mail = new PHPMailer(true);
         $mail->SMTPDebug = 2;
@@ -115,16 +126,16 @@ class Admin {
             $mail->SMTPAuth = true;
             $mail->Username = 'blueblade906@gmail.com';
             $mail->Password = 'anpq ggby ysjj mbfw';
-            $mail->SMTPSecure = 'tls'; // Enable TLS encryption, `ssl` also accepted
-            $mail->Port = 587; // TCP port to connect to
+            $mail->SMTPSecure = 'tls';
+            $mail->Port = 587;
 
             $mail->setFrom('blueblade906@gmail.com', 'Scholastech');
             $mail->addAddress($email);
 
-            $mail->isHTML(true); // Set email format to HTML
+            $mail->isHTML(true);
             $mail->Subject = 'Your OTP Code';
-            $mail->Body    = "Your OTP code is: <strong>$otp</strong>"; // Replace with your OTP code
-            $mail->AltBody = "Your OTP code is: $otp"; // Plain text for non-HTML mail clients
+            $mail->Body    = "Your OTP code is: <strong>$otp</strong>";
+            $mail->AltBody = "Your OTP code is: $otp";
 
             $mail->send();
             echo 'Message has been sent';
@@ -133,7 +144,6 @@ class Admin {
         }
     }
 
-    // Update the password in the database
     public function updatePassword($email, $newPassword) {
         try {
             $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
@@ -141,7 +151,6 @@ class Admin {
             $stmt = $this->conn->prepare($query);
             return $stmt->execute(['password' => $hashedPassword, 'email' => $email]);
         } catch (PDOException $e) {
-            // Log the error message
             error_log("Password update error: " . $e->getMessage());
             return false;
         }

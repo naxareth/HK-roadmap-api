@@ -2,10 +2,18 @@
 
 class Student {
     private $conn;
-    private $tokenModel;
 
     public function __construct($db) {
         $this->conn = $db;
+    }
+
+    // Method to check if a student ID exists
+    public function studentExists($student_id) {
+        $sql = "SELECT COUNT(*) FROM student WHERE student_id = :student_id";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':student_id', $student_id);
+        $stmt->execute();
+        return $stmt->fetchColumn() > 0; // Returns true if student exists
     }
 
     public function register($student_id, $email, $password) {
@@ -17,7 +25,6 @@ class Student {
             $stmt->bindParam(':password', password_hash($password, PASSWORD_DEFAULT));
             return $stmt->execute();
         } catch (PDOException $e) {
-            // Log the error message
             error_log("Registration error: " . $e->getMessage());
             return false;
         }
@@ -26,7 +33,7 @@ class Student {
     public function login($student_id, $password) {
         try {
             // Query to check student credentials
-            $query = "SELECT * FROM students WHERE student_id = :student_id AND password = :password";
+            $query = "SELECT * FROM student WHERE student_id = :student_id AND password = :password";
             $stmt = $this->conn->prepare($query);
             $stmt->execute(['student_id' => $student_id, 'password' => $password]);
             $student = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -43,7 +50,6 @@ class Student {
 
             return false;
         } catch (PDOException $e) {
-            // Log the error message
             error_log("Login error: " . $e->getMessage());
             return false;
         }
@@ -52,7 +58,7 @@ class Student {
     public function validateToken($token) {
         // Query to validate token and get student info
         $query = "SELECT student_id FROM student_tokens WHERE token = :token";
-        $stmt = $this->conn->prepare($query); // Use $this->conn here
+        $stmt = $this->conn->prepare($query);
         $stmt->execute(['token' => $token]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
@@ -64,11 +70,9 @@ class Student {
             $stmt->bindParam(':token', $token);
             return $stmt->execute(['token' => $token]);
         } catch (PDOException $e) {
-            // Log the error message
             error_log("Logout error: " . $e->getMessage());
             return false;
         }
     }
-
 }
 ?>

@@ -15,9 +15,19 @@ $documentController = new DocumentController($db);
 $requirementController = new RequirementController($db);
 $studentController = new StudentController($db);
 
+// Get the request method and action
 $requestMethod = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? null;
 
+// Parse JSON input for POST requests
+if ($requestMethod === 'POST') {
+    $input = json_decode(file_get_contents('php://input'), true);
+    if ($input) {
+        $_POST = $input; // Override $_POST with the parsed JSON data
+    }
+}
+
+// Handle the request
 switch ($requestMethod) {
     case 'POST':
         if ($action === 'admin_register') {
