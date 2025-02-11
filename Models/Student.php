@@ -63,6 +63,19 @@ class Student {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    public function updateToken($student_id, $token) {
+        $query = "UPDATE student SET token = :token WHERE student_id = :student_id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':token', $token);
+        $stmt->bindParam(':student_id', $student_id);
+        
+        if ($stmt->execute()) {
+            return true;
+        }
+        return false;
+    }
+
+
     public function logout($token) {
         try {
             $query = "DELETE FROM student_tokens WHERE token = :token";
