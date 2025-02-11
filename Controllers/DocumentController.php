@@ -1,8 +1,10 @@
 <?php
 require_once '../models/Admin.php';
+require_once '../models/Student.php';
 require_once '../models/Document.php';
 
 class DocumentController {
+    private $db;
     private $documentModel;
 
     public function __construct($db) {
