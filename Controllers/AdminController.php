@@ -1,4 +1,6 @@
 <?php
+session_start();
+
 require_once '../models/Admin.php';
 
 class AdminController {
@@ -14,7 +16,7 @@ class AdminController {
             return;
         }
 
-        $name = $_POST['name'];
+        $admin_id = $_POST['admin_id'];
         $email = $_POST['email'];
         $password = $_POST['password'];
 
@@ -25,10 +27,8 @@ class AdminController {
 
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-        if ($this->adminModel->register($name, $email, $hashedPassword)) {
-            $token = bin2hex(random_bytes(32));
-            $this->adminModel->updateToken($name, $token);
-            echo json_encode(["message" => "Admin registered successfully.", "token" => $token]);
+        if ($this->adminModel->register($admin_id, $email, $hashedPassword)) {
+            echo json_encode(["message" => "Admin registered successfully."]);
         } else {
             echo json_encode(["message" => "Admin registration failed."]);
         }
@@ -40,7 +40,7 @@ class AdminController {
             return;
         }
 
-        $name = $_POST['name'];
+        $admin_id = $_POST['admin_id'];
         $password = $_POST['password'];
 
         if (empty($name) || empty($password)) {
@@ -48,23 +48,63 @@ class AdminController {
             return;
         }
 
-        $admin = $this->adminModel->login($name, $password);
-        if ($admin) {
-            $token = bin2hex(random_bytes(32));
-            $this->adminModel->updateToken($name, $token);
-            echo json_encode(["message" => "Login successful.", "token" => $token]);
+        if (empty($name) || empty($password)) {
+            echo json_encode(["message" => "All fields are required."]);
+            return;
+        }
+
+        $result = $this->adminModel->login($admin_id, $password);
+        if ($result) {
+            echo json_encode(["message" => "Login successful.", "token" => $result['token']]);
         } else {
-            echo json_encode(["message" => "Invalid name or password."]);
+            echo json_encode(["message" => "Invalid admin_id or password."]);
         }
     }
 
-    public function validateToken() {
+    public function logout(){
         if (!isset($_POST['token'])) {
             echo json_encode(["message" => "Token is required."]);
             return false;
         }
 
         $token = $_POST['token'];
+        $result = $this->adminModel->logout($token);
+
+        if ($result) {
+            echo json_encode(["message" => "Admin logged out successfully."]);
+        } else {
+            echo json_encode(["message" => "Failed to log out admin."]);
+        }
+    }
+
+    public function requestOtp() {
+        $email = $_POST['email'];
+        if ($this->adminModel->requestOtp($email)) {
+            echo "OTP sent to your email.";
+        } else {
+            echo "Email does not exist.";
+        }
+    }
+
+    public function verifyOtpAndUpdatePassword() {
+        $inputOtp = $_POST['otp'];
+        $newPassword = $_POST['new_password'];
+        $confirmPassword = $_POST['confirm_password']; 
+
+        if ($newPassword !== $confirmPassword) {
+                echo "Passwords do not match.";
+                return;
+        }
+
+        if ($this->adminModel->verifyOtp($inputOtp)) {
+            if ($this->adminModel->updatePassword($_SESSION['email'], $newPassword)) {
+                echo "Password updated successfully.";
+            } else {
+                echo "Failed to update password.";
+            }
+        } else {
+            echo "Invalid or expired OTP.";
+        }
         $admin = $this->adminModel->validateToken($token);
         if ($admin) {
             echo json_encode(["message" => "Token is valid.", "admin" => $admin]);
