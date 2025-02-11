@@ -1,7 +1,8 @@
 <?php
 require_once '../models/Student.php';
+require_once 'BaseController.php';
 
-class StudentController {
+class StudentController extends BaseController {
     private $studentModel;
 
     public function __construct($db) {
@@ -10,7 +11,7 @@ class StudentController {
 
     public function register() {
         if (!isset($_POST['student_id']) || !isset($_POST['email']) || !isset($_POST['password'])) {
-            echo json_encode(["message" => "Missing required fields."]);
+            $this->handleError("Missing required fields.");
             return;
         }
 
@@ -19,22 +20,22 @@ class StudentController {
         $password = $_POST['password'];
 
         if (empty($student_id) || empty($email) || empty($password)) {
-            echo json_encode(["message" => "All fields are required."]);
+            $this->handleError("All fields are required.");
             return;
         }
 
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
         if ($this->studentModel->register($student_id, $email, $hashedPassword)) {
-            echo json_encode(["message" => "Student registered successfully."]);
+            $this->jsonResponse(["message" => "Student registered successfully."]);
         } else {
-            echo json_encode(["message" => "Student registration failed."]);
+            $this->handleError("Student registration failed.");
         }
     }
 
     public function login() {
         if (!isset($_POST['student_id']) || !isset($_POST['password'])) {
-            echo json_encode(["message" => "Missing required fields."]);
+            $this->handleError("Missing required fields.");
             return;
         }
 
@@ -42,15 +43,15 @@ class StudentController {
         $password = $_POST['password'];
 
         if (empty($student_id) || empty($password)) {
-            echo json_encode(["message" => "All fields are required."]);
+            $this->handleError("All fields are required.");
             return;
         }
 
         $result = $this->studentModel->login($student_id, $password);
         if ($result) {
-            echo json_encode(["message" => "Login successful.", "token" => $result['token']]);
+            $this->jsonResponse(["message" => "Login successful.", "token" => $result['token']]);
         } else {
-            echo json_encode(["message" => "Invalid student ID or password."]);
+            $this->handleError("Invalid student ID or password.");
         }
     }
 
@@ -59,9 +60,10 @@ class StudentController {
         $result = $this->studentModel->logout($token);
 
         if ($result) {
-            echo json_encode(["message" => "Student logged out successfully."]);
+            $this->jsonResponse(["message" => "Student logged out successfully."]);
         } else {
-            echo json_encode(["message" => "Failed to log out admin."]);
+            $this->handleError("Failed to log out student.");
         }
     }
 }
+?>

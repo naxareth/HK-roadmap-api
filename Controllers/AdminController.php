@@ -3,7 +3,8 @@ session_start();
 
 require_once '../models/Admin.php';
 
-class AdminController {
+class AdminController extends BaseController {
+
     private $adminModel;
 
     public function __construct($db) {
@@ -16,9 +17,11 @@ class AdminController {
         $password = $_POST['password'];
 
         if ($this->adminModel->register($admin_id, $email, $password)) {
-            echo json_encode(["message" => "Admin registered successfully."]);
+            $this->jsonResponse(["message" => "Admin registered successfully."]);
+
         } else {
-            echo json_encode(["message" => "Admin registration failed."]);
+            $this->jsonResponse(["message" => "Admin registration failed."], 400);
+
         }
     }
 
@@ -28,9 +31,11 @@ class AdminController {
 
         $result = $this->adminModel->login($admin_id, $password);
         if ($result) {
-            echo json_encode(["message" => "Login successful.", "token" => $result['token']]);
+            $this->jsonResponse(["message" => "Login successful.", "token" => $result['token']]);
+
         } else {
-            echo json_encode(["message" => "Invalid admin_id or password."]);
+            $this->jsonResponse(["message" => "Invalid admin_id or password."], 401);
+
         }
     }
 
@@ -39,18 +44,22 @@ class AdminController {
         $result = $this->adminModel->logout($token);
 
         if ($result) {
-            echo json_encode(["message" => "Admin logged out successfully."]);
+            $this->jsonResponse(["message" => "Admin logged out successfully."]);
+
         } else {
-            echo json_encode(["message" => "Failed to log out admin."]);
+            $this->jsonResponse(["message" => "Failed to log out admin."], 400);
+
         }
     }
 
     public function requestOtp() {
         $email = $_POST['email'];
         if ($this->adminModel->requestOtp($email)) {
-            echo "OTP sent to your email.";
+            $this->jsonResponse(["message" => "OTP sent to your email."]);
+
         } else {
-            echo "Email does not exist.";
+            $this->jsonResponse(["message" => "Email does not exist."], 404);
+
         }
     }
 
@@ -60,18 +69,22 @@ class AdminController {
         $confirmPassword = $_POST['confirm_password']; 
 
         if ($newPassword !== $confirmPassword) {
-                echo "Passwords do not match.";
+            $this->handleError("Passwords do not match.");
+
                 return;
         }
 
         if ($this->adminModel->verifyOtp($inputOtp)) {
             if ($this->adminModel->updatePassword($_SESSION['email'], $newPassword)) {
-                echo "Password updated successfully.";
+            $this->jsonResponse(["message" => "Password updated successfully."]);
+
             } else {
-                echo "Failed to update password.";
+            $this->jsonResponse(["message" => "Failed to update password."], 400);
+
             }
         } else {
-            echo "Invalid or expired OTP.";
+            $this->handleError("Invalid or expired OTP.");
+
         }
     }
 }
