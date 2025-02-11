@@ -1,9 +1,25 @@
+run the ff. in the terminal:
+php -S localhost:8000
+
+
 ```
-CREATE TABLE admin(
-name varchar(50) NOT NULL PRIMARY KEY,
+CREATE TABLE admin (
+admin_id varchar(50) NOT NULL PRIMARY KEY,
 email varchar(50) NOT NULL,
-password varchar(50) NOT NULL,
-token varchar(255) DEFAULT NULL )
+password varchar(255) DEFAULT NULL
+)
+
+CREATE TABLE student_tokens (
+student_id varchar(255) NOT NULL,
+token varchar(255) NOT NULL,
+created_at timestamp NOT NULL DEFAULT current_timestamp()
+)
+
+CREATE TABLE admin_tokens (
+admin_id varchar(255) NOT NULL,
+token varchar(255) DEFAULT NULL,
+created_at timestamp NOT NULL DEFAULT current_timestamp()
+)
 
 CREATE TABLE document (
 student_id varchar(50) NOT NULL PRIMARY KEY,
@@ -18,6 +34,6 @@ shared int(1) NOT NULL )
 
 CREATE TABLE student (
 student_id varchar(50) NOT NULL PRIMARY KEY,
-email varchar(50) NOT NULL, password varchar(50) NOT NULL,
-token varchar(255) DEFAULT NULL )
+email varchar(50) NOT NULL,
+password varchar(50) NOT NULL, )
 ```

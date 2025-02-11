@@ -26,9 +26,7 @@ class StudentController {
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
         if ($this->studentModel->register($student_id, $email, $hashedPassword)) {
-            $token = bin2hex(random_bytes(32));
-            $this->studentModel->updateToken($student_id, $token);
-            echo json_encode(["message" => "Student registered successfully.", "token" => $token]);
+            echo json_encode(["message" => "Student registered successfully."]);
         } else {
             echo json_encode(["message" => "Student registration failed."]);
         }
@@ -48,13 +46,22 @@ class StudentController {
             return;
         }
 
-        $student = $this->studentModel->login($student_id, $password);
-        if ($student) {
-            $token = bin2hex(random_bytes(32));
-            $this->studentModel->updateToken($student_id, $token);
-            echo json_encode(["message" => "Login successful.", "token" => $token]);
+        $result = $this->studentModel->login($student_id, $password);
+        if ($result) {
+            echo json_encode(["message" => "Login successful.", "token" => $result['token']]);
         } else {
             echo json_encode(["message" => "Invalid student ID or password."]);
+        }
+    }
+
+    public function logout(){
+        $token = $_POST['token'];
+        $result = $this->studentModel->logout($token);
+
+        if ($result) {
+            echo json_encode(["message" => "Student logged out successfully."]);
+        } else {
+            echo json_encode(["message" => "Failed to log out admin."]);
         }
     }
 }
