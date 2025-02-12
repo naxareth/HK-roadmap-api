@@ -13,6 +13,14 @@ class Admin {
         $this->conn = $db;
     }
 
+    public function updateToken($admin_id, $token) {
+        $query = "INSERT INTO admin_tokens (admin_id, token) VALUES (:admin_id, :token)";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':admin_id', $admin_id);
+        $stmt->bindParam(':token', $token);
+        return $stmt->execute();
+    }
+
     public function register($name, $email, $password, $token) {
         try {
             $sql = "INSERT INTO admin (name, email, password, token) VALUES (:name, :email, :password, :token)";
@@ -38,7 +46,13 @@ class Admin {
         
             if ($admin && password_verify($password, $admin['password'])) {
                 $token = bin2hex(random_bytes(32));
+                $query = "DELETE FROM admin_tokens WHERE admin_id = :admin_id";
+                $stmt = $this->conn->prepare($query);
+                $stmt->execute(['admin_id' => $admin['admin_id']]);
+                
                 $query = "INSERT INTO admin_tokens (token, admin_id) VALUES (:token, :admin_id)";
+
+
                 $stmt = $this->conn->prepare($query);
                 $stmt->execute(['token' => $token, 'admin_id' => $admin['admin_id']]);
         
@@ -48,19 +62,6 @@ class Admin {
             return false;
         } catch (PDOException $e) {
             error_log("Admin login error: " . $e->getMessage());
-            return false;
-        }
-    }
-
-    public function updateToken($admin_id, $token) {
-        try {
-            $sql = "UPDATE admin SET token = :token WHERE admin_id = :admin_id";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bindParam(':token', $token);
-            $stmt->bindParam(':admin_id', $admin_id);
-            return $stmt->execute();
-        } catch (PDOException $e) {
-            error_log("Database error: " . $e->getMessage());
             return false;
         }
     }
@@ -126,12 +127,12 @@ class Admin {
             $mail->isSMTP(); 
             $mail->Host = 'smtp.gmail.com';
             $mail->SMTPAuth = true;
-            $mail->Username = 'blueblade906@gmail.com';
-            $mail->Password = 'anpq ggby ysjj mbfw';
+            $mail->Username = 'acephilipdenulan12@gmail.com';
+            $mail->Password = 'jshj xqip psiv njlc';
             $mail->SMTPSecure = 'tls';
             $mail->Port = 587;
 
-            $mail->setFrom('blueblade906@gmail.com', 'Scholaristech');
+            $mail->setFrom('acephilipdenulan12@gmail.com', 'Scholaristech');
             $mail->addAddress($email);
 
             $mail->isHTML(true);

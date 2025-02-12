@@ -39,6 +39,7 @@ class AdminController {
 
         $token = bin2hex(random_bytes(32)); // Generate a token
         if ($this->adminModel->register($name, $email, $password, $token)) { // Pass the token
+
             echo json_encode(["message" => "Admin registered successfully.", "token" => $token]);
         } else {
             echo json_encode(["message" => "Admin registration failed."]);
@@ -64,7 +65,8 @@ class AdminController {
 
         if ($admin) {
             $token = bin2hex(random_bytes(32));
-            $this->adminModel->updateToken($admin['email'], $token); // Use email
+            $this->adminModel->updateToken($admin['admin_id'], $token); // Store token in the database
+
             echo json_encode(["message" => "Login successful.", "token" => $token]);
         } else {
             echo json_encode(["message" => "Invalid email or password."]);
