@@ -11,25 +11,34 @@ class AdminController {
     }
 
     public function register() {
-        if (!isset($_POST['admin_id']) || !isset($_POST['email']) || !isset($_POST['password'])) {
+        if (!isset($_POST['name'], $_POST['email'], $_POST['password'], $_POST['confirm_password'])) {
             echo json_encode(["message" => "Missing required fields."]);
             return;
         }
 
-        $admin_id = $_POST['admin_id'];
+        $name = $_POST['name'];
         $email = $_POST['email'];
         $password = $_POST['password'];
+        $confirm_password = $_POST['confirm_password'];
 
-        if (empty($admin_id) || empty($email) || empty($password)) {
+        if (empty($name) || empty($email) || empty($password) || empty($confirm_password)) {
             echo json_encode(["message" => "All fields are required."]);
             return;
         }
 
-        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+        if ($password !== $confirm_password) {
+            echo json_encode(["message" => "Passwords do not match."]);
+            return;
+        }
 
-        if ($this->adminModel->register($admin_id, $email, $hashedPassword)) {
-            $token = bin2hex(random_bytes(32));
-            $this->adminModel->updateToken($admin_id, $token);
+        // Check if the email already exists
+        if ($this->adminModel->emailExists($email)) {
+            echo json_encode(["message" => "An account with this email already exists."]);
+            return;
+        }
+
+        $token = bin2hex(random_bytes(32)); // Generate a token
+        if ($this->adminModel->register($name, $email, $password, $token)) { // Pass the token
             echo json_encode(["message" => "Admin registered successfully.", "token" => $token]);
         } else {
             echo json_encode(["message" => "Admin registration failed."]);
@@ -37,26 +46,28 @@ class AdminController {
     }
 
     public function login() {
-        if (!isset($_POST['admin_id']) || !isset($_POST['password'])) {
+        error_log(print_r($_POST, true)); // Log the POST data for debugging
+        if (!isset($_POST['email']) || !isset($_POST['password'])) {
             echo json_encode(["message" => "Missing required fields."]);
             return;
         }
 
-        $admin_id = $_POST['admin_id'];
+        $email = $_POST['email'];
         $password = $_POST['password'];
 
-        if (empty($admin_id) || empty($password)) {
+        if (empty($email) || empty($password)) {
             echo json_encode(["message" => "All fields are required."]);
             return;
         }
 
-        $admin = $this->adminModel->login($admin_id, $password);
+        $admin = $this->adminModel->login($email, $password);
+
         if ($admin) {
             $token = bin2hex(random_bytes(32));
-            $this->adminModel->updateToken($admin_id, $token);
+            $this->adminModel->updateToken($admin['email'], $token); // Use email
             echo json_encode(["message" => "Login successful.", "token" => $token]);
         } else {
-            echo json_encode(["message" => "Invalid admin_id or password."]);
+            echo json_encode(["message" => "Invalid email or password."]);
         }
     }
 

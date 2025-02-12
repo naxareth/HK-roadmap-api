@@ -13,13 +13,15 @@ class Admin {
         $this->conn = $db;
     }
 
-    public function register($admin_id, $email, $password) {
+    public function register($name, $email, $password, $token) {
         try {
-            $sql = "INSERT INTO admin (admin_id, email, password) VALUES (:admin_id, :email, :password)";
+            $sql = "INSERT INTO admin (name, email, password, token) VALUES (:name, :email, :password, :token)";
             $stmt = $this->conn->prepare($sql);
-            $stmt->bindParam(':admin_id', $admin_id);
+            $stmt->bindParam(':name', $name);
             $stmt->bindParam(':email', $email);
             $stmt->bindParam(':password', password_hash($password, PASSWORD_DEFAULT));
+            $stmt->bindParam(':token', $token); // Bind the token
+
             return $stmt->execute();
         } catch (PDOException $e) {
             error_log("Admin registration error: " . $e->getMessage());
@@ -27,11 +29,11 @@ class Admin {
         }
     }
 
-    public function login($admin_id, $password) {
+    public function login($email, $password) {
         try {
-            $sql = "SELECT * FROM admin WHERE admin_id = :admin_id";
+            $sql = "SELECT * FROM admin WHERE email = :email";
             $stmt = $this->conn->prepare($sql);
-            $stmt->execute(['admin_id' => $admin_id]);
+            $stmt->execute(['email' => $email]);
             $admin = $stmt->fetch(PDO::FETCH_ASSOC);
         
             if ($admin && password_verify($password, $admin['password'])) {
@@ -109,7 +111,7 @@ class Admin {
         }
     }
 
-    private function emailExists($email) {
+    public function emailExists($email) {
         $query = "SELECT * FROM admin WHERE email = :email";
         $stmt = $this->conn->prepare($query);
         $stmt->execute(['email' => $email]);
