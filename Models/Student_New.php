@@ -8,15 +8,8 @@ class Student {
     }
 
     public function register($name, $email, $password, $token) {
-        if ($this->emailExists($email)) {
-            return false; // Email already exists
-        }
-
-
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
         $sql = "INSERT INTO student (name, email, password, token) VALUES (:name, :email, :password, :token)";
-        $stmt = $this->conn->prepare($sql);
-
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':name', $name);
         $stmt->bindParam(':email', $email);
@@ -25,15 +18,7 @@ class Student {
         return $stmt->execute();
     }
 
-    public function emailExists($email) {
-        $query = "SELECT * FROM student WHERE email = :email";
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute(['email' => $email]);
-        return $stmt->fetch(PDO::FETCH_ASSOC) !== false; // Return true if email exists
-    }
-
     public function login($email, $password) {
-
         $query = "SELECT * FROM student WHERE email = :email";
         $stmt = $this->conn->prepare($query);
         $stmt->execute(['email' => $email]);
@@ -43,12 +28,9 @@ class Student {
             return $student; // Return student data on successful login
         }
         return false; // Invalid credentials
-
-
     }
 
     public function validateToken($token) {
-        // Query to validate token and get student info
         $query = "SELECT student_id FROM student_tokens WHERE token = :token";
         $stmt = $this->conn->prepare($query);
         $stmt->execute(['token' => $token]);
@@ -57,7 +39,6 @@ class Student {
 
     public function updateToken($student_id, $token) {
         $query = "INSERT INTO student_tokens (student_id, token) VALUES (:student_id, :token)";
-
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':token', $token);
         $stmt->bindParam(':student_id', $student_id);
@@ -77,6 +58,13 @@ class Student {
         } catch (PDOException $e) {
             return false;
         }
+    }
+
+    public function emailExists($email) {
+        $query = "SELECT * FROM student WHERE email = :email";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute(['email' => $email]);
+        return $stmt->fetch(PDO::FETCH_ASSOC) !== false; // Return true if email exists
     }
 }
 ?>

@@ -129,7 +129,7 @@ class Admin {
             $mail->SMTPSecure = 'tls';
             $mail->Port = 587;
 
-            $mail->setFrom('blueblade906@gmail.com', 'Scholastech');
+            $mail->setFrom('blueblade906@gmail.com', 'Scholaristech');
             $mail->addAddress($email);
 
             $mail->isHTML(true);
