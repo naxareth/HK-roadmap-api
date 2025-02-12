@@ -1,5 +1,11 @@
 <?php
 
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+require_once __DIR__ . '/../vendor/autoload.php';
+
 class Student {
     private $conn;
 
@@ -67,6 +73,71 @@ class Student {
         }
         return false;
     }
+
+    public function requestOtp($email) {
+        try {
+            if ($this->emailExists($email)) {
+                $otp = rand(100000, 999999); 
+                $_SESSION['otp'] = $otp; 
+                $_SESSION['otp_expiry'] = time() + 300; 
+
+                $this->sendEmail($email, $otp);
+                return true;
+            } else {
+                return false;
+            }
+        } catch (Exception $e) {
+            error_log("OTP request error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function sendEmail($email, $otp) {
+        $mail = new PHPMailer(true);
+        $mail->SMTPDebug = 2;
+
+        try {
+            $mail->isSMTP(); 
+            $mail->Host = 'smtp.gmail.com';
+            $mail->SMTPAuth = true;
+            $mail->Username = 'acephilipdenulan12@gmail.com';
+            $mail->Password = 'jshj xqip psiv njlc';
+            $mail->SMTPSecure = 'tls';
+            $mail->Port = 587;
+
+            $mail->setFrom('acephilipdenulan12@gmail.com', 'Scholaristech');
+            $mail->addAddress($email);
+
+            $mail->isHTML(true);
+            $mail->Subject = 'Your OTP Code';
+            $mail->Body    = "Your OTP code is: <strong>$otp</strong>";
+            $mail->AltBody = "Your OTP code is: $otp";
+
+            $mail->send();
+            echo 'Message has been sent';
+        } catch (Exception $e) {
+            echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
+        }
+    }
+
+
+    public function verifyOTP($email, $otp) {
+        if (isset($_SESSION['otp']) && $_SESSION['otp'] == $otp && time() < $_SESSION['otp_expiry']) {
+            return true;
+        }
+        return false;
+    }
+
+
+    public function changePassword($email, $newPassword) {
+        $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+        $query = "UPDATE student SET password = :password WHERE email = :email";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':password', $hashedPassword);
+        $stmt->bindParam(':email', $email);
+        return $stmt->execute(); // Return true if password changed successfully
+    }
+
 
     public function logout($token) {
         try {

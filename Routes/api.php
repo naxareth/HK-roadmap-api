@@ -45,8 +45,19 @@ switch ($requestMethod) {
         } elseif ($action === 'admin_logout') {
             $adminController->logout();
         } elseif ($action === 'student_logout') {
+        } 
+        //students
+        elseif ($action === 'send_otp') {
+            $studentController->sendOTP();
+        } elseif ($action === 'verify_otp') {
+            $studentController->verifyOTP();
+        } elseif ($action === 'change_password') {
+            $studentController->changePassword();
+
             $studentController->logout();
-        } elseif($action === 'request_otp') {
+        } 
+        //admins
+        elseif($action === 'request_otp') {
             $adminController->requestOtp();
         } elseif($action === 'admin_password_change') {
             $adminController->verifyOtpAndUpdatePassword();

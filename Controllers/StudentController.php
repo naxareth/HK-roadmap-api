@@ -2,6 +2,54 @@
 require_once '../models/Student.php';
 
 class StudentController {
+    public function sendOTP() {
+        if (!isset($_POST['email'])) {
+            echo json_encode(["message" => "Email is required."]);
+            return;
+        }
+
+        $email = $_POST['email'];
+        if ($this->studentModel->requestOtp($email)) {
+            echo json_encode(["message" => "OTP sent to your email."]);
+        } else {
+            echo json_encode(["message" => "Failed to send OTP."]);
+        }
+    }
+
+
+    public function verifyOTP() {
+        if (!isset($_POST['email'], $_POST['otp'])) {
+            echo json_encode(["message" => "Email and OTP are required."]);
+            return;
+        }
+
+        $email = $_POST['email'];
+        $otp = $_POST['otp'];
+
+        if ($this->studentModel->verifyOTP($email, $otp)) {
+            echo json_encode(["message" => "OTP verified successfully."]);
+        } else {
+            echo json_encode(["message" => "Invalid OTP."]);
+        }
+    }
+
+    public function changePassword() {
+        if (!isset($_POST['email'], $_POST['new_password'])) {
+            echo json_encode(["message" => "Email and new password are required."]);
+            return;
+        }
+
+        $email = $_POST['email'];
+        $newPassword = $_POST['new_password'];
+
+        if ($this->studentModel->changePassword($email, $newPassword)) {
+            echo json_encode(["message" => "Password changed successfully."]);
+        } else {
+            echo json_encode(["message" => "Failed to change password."]);
+        }
+    }
+
+
     private $studentModel;
 
     public function __construct($db) {
