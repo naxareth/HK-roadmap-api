@@ -60,7 +60,12 @@ switch ($requestMethod) {
         elseif($action === 'request_otp') {
             $adminController->requestOtp();
         } elseif($action === 'admin_password_change') {
-            $adminController->verifyOtpAndUpdatePassword();
+            $adminController->requestOtp();
+        } elseif($action === 'admin_verify_otp') {
+            $adminController->verifyOTP();
+        } elseif($action === 'admin_change_password') {
+            $adminController->changePassword();
+
         } else {
             echo json_encode(["message" => "Invalid action for POST request."]);
         }

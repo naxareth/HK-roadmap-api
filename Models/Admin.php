@@ -51,8 +51,6 @@ class Admin {
                 $stmt->execute(['admin_id' => $admin['admin_id']]);
                 
                 $query = "INSERT INTO admin_tokens (token, admin_id) VALUES (:token, :admin_id)";
-
-
                 $stmt = $this->conn->prepare($query);
                 $stmt->execute(['token' => $token, 'admin_id' => $admin['admin_id']]);
         
@@ -87,8 +85,9 @@ class Admin {
         return $stmt->execute(['token' => $token]);
     }
 
-    public function verifyOtp($inputOtp) {
-        if (isset($_SESSION['otp']) && $_SESSION['otp'] == $inputOtp && time() < $_SESSION['otp_expiry']) {
+
+    public function verifyOTP($email, $otp) {
+        if (isset($_SESSION['otp']) && $_SESSION['otp'] == $otp && time() < $_SESSION['otp_expiry']) {
             return true;
         }
         return false;
@@ -147,6 +146,24 @@ class Admin {
         }
     }
 
+    public function getEmailById($adminId) {
+        $query = "SELECT email FROM admin WHERE admin_id = :admin_id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':admin_id', $adminId);
+        $stmt->execute();
+        $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $admin ? $admin['email'] : null;
+    }
+
+    public function changePassword($email, $newPassword) {
+        $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+        $query = "UPDATE admin SET password = :password WHERE email = :email";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':password', $hashedPassword);
+        $stmt->bindParam(':email', $email);
+        return $stmt->execute(); // Return true if password changed successfully
+    }
+
     public function updatePassword($email, $newPassword) {
         try {
             $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
@@ -160,3 +177,4 @@ class Admin {
     }
 }
 ?>
+</create_file>

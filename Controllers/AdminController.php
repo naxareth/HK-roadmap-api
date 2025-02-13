@@ -39,7 +39,6 @@ class AdminController {
 
         $token = bin2hex(random_bytes(32)); // Generate a token
         if ($this->adminModel->register($name, $email, $password, $token)) { // Pass the token
-
             echo json_encode(["message" => "Admin registered successfully.", "token" => $token]);
         } else {
             echo json_encode(["message" => "Admin registration failed."]);
@@ -93,24 +92,49 @@ class AdminController {
         }
     }
 
-    public function verifyOtpAndUpdatePassword() {
-        $inputOtp = $_POST['otp'];
-        $newPassword = $_POST['new_password'];
-        $confirmPassword = $_POST['confirm_password']; 
-
-        if ($newPassword !== $confirmPassword) {
-            echo "Passwords do not match.";
+    public function sendOTP() {
+        if (!isset($_POST['email'])) {
+            echo json_encode(["message" => "Email is required."]);
             return;
         }
 
-        if ($this->adminModel->verifyOtp($inputOtp)) {
-            if ($this->adminModel->updatePassword($_SESSION['admin_id'], $newPassword)) {
-                echo "Password updated successfully.";
-            } else {
-                echo "Failed to update password.";
-            }
+        $email = $_POST['email'];
+        if ($this->adminModel->requestOtp($email)) {
+            echo json_encode(["message" => "OTP sent to your email."]);
         } else {
-            echo "Invalid or expired OTP.";
+            echo json_encode(["message" => "Failed to send OTP."]);
+        }
+    }
+
+    public function verifyOTP() {
+        if (!isset($_POST['email'], $_POST['otp'])) {
+            echo json_encode(["message" => "Email and OTP are required."]);
+            return;
+        }
+
+        $email = $_POST['email'];
+        $otp = $_POST['otp'];
+
+        if ($this->adminModel->verifyOTP($email, $otp)) {
+            echo json_encode(["message" => "OTP verified successfully."]);
+        } else {
+            echo json_encode(["message" => "Invalid OTP."]);
+        }
+    }
+
+    public function changePassword() {
+        if (!isset($_POST['email'], $_POST['new_password'])) {
+            echo json_encode(["message" => "Email and new password are required."]);
+            return;
+        }
+
+        $email = $_POST['email'];
+        $newPassword = $_POST['new_password'];
+
+        if ($this->adminModel->changePassword($email, $newPassword)) {
+            echo json_encode(["message" => "Password changed successfully."]);
+        } else {
+            echo json_encode(["message" => "Failed to change password."]);
         }
     }
 
@@ -132,3 +156,4 @@ class AdminController {
     }
 }
 ?>
+</create_file>
