@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 14, 2025 at 07:39 PM
+-- Generation Time: Feb 16, 2025 at 08:49 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -61,13 +61,6 @@ CREATE TABLE `admin_tokens` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `admin_tokens`
---
-
-INSERT INTO `admin_tokens` (`token_id`, `admin_id`, `token`, `created_at`) VALUES
-(37, 11, '64d0ff4fca5350f09a0db7a237d0da17888fe69222daf0fd65e8e218834bfc9d', '2025-02-14 18:34:54');
-
 -- --------------------------------------------------------
 
 --
@@ -86,8 +79,7 @@ CREATE TABLE `document` (
 
 INSERT INTO `document` (`student_id`, `file_path`, `created_at`) VALUES
 ('03-2122-030303', 'uploads/asus.jpg', '2025-01-27 05:49:05'),
-('03-2324-031284', 'uploads/download.png', '2025-02-01 05:30:15'),
-('2', 'uploads/Screenshot 2025-02-12 014412.png', '2025-02-13 07:00:40');
+('03-2324-031284', 'uploads/download.png', '2025-02-01 05:30:15');
 
 -- --------------------------------------------------------
 
@@ -150,14 +142,6 @@ CREATE TABLE `student_tokens` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `student_tokens`
---
-
-INSERT INTO `student_tokens` (`token_id`, `student_id`, `token`, `created_at`) VALUES
-(19, 4, 'c7ad4b9e26e88a41630e51b9c58632f296146c56d232bc445a0c8b36148d6fa4', '2025-02-13 06:35:17'),
-(20, 4, 'd5e3e8428932ef0afe6099580be1332447eeeea13bf1b559e92b01d794b3ac5c', '2025-02-13 06:35:30');
-
---
 -- Indexes for dumped tables
 --
 
@@ -211,7 +195,7 @@ ALTER TABLE `admin`
 -- AUTO_INCREMENT for table `admin_tokens`
 --
 ALTER TABLE `admin_tokens`
-  MODIFY `token_id` int(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
+  MODIFY `token_id` int(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=50;
 
 --
 -- AUTO_INCREMENT for table `requirements`
@@ -229,7 +213,7 @@ ALTER TABLE `student`
 -- AUTO_INCREMENT for table `student_tokens`
 --
 ALTER TABLE `student_tokens`
-  MODIFY `token_id` int(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `token_id` int(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
