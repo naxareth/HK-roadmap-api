@@ -73,7 +73,19 @@ class AdminController {
     }
 
     public function logout() {
-        $token = $_POST['token'];
+        $headers = getallheaders();
+        if (!isset($headers['Authorization'])) {
+            echo json_encode(["message" => "Authorization header missing."]);
+            return;
+        }
+        
+        $authHeader = $headers['Authorization'];
+        if (strpos($authHeader, 'Bearer ') !== 0) {
+            echo json_encode(["message" => "Invalid Authorization header format."]);
+            return;
+        }
+        
+        $token = substr($authHeader, 7);
         $result = $this->adminModel->logout($token);
 
         if ($result) {
@@ -82,6 +94,8 @@ class AdminController {
             echo json_encode(["message" => "Failed to log out admin."]);
         }
     }
+
+
 
     public function requestOtp() {
         $email = $_POST['email'];

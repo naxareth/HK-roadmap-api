@@ -45,6 +45,8 @@ switch ($requestMethod) {
         } elseif ($action === 'admin_logout') {
             $adminController->logout();
         } elseif ($action === 'student_logout') {
+            $studentController->logout();
+
         } 
         //students
         elseif ($action === 'send_otp') {

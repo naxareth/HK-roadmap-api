@@ -141,13 +141,42 @@ class Student {
 
     public function logout($token) {
         try {
+            // First verify token exists
+            $query = "SELECT * FROM student_tokens WHERE token = :token";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':token', $token);
+            $stmt->execute();
+            $tokenData = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$tokenData) {
+                error_log("Token not found: " . $token);
+                return false;
+            }
+
+            // Proceed with deletion
             $query = "DELETE FROM student_tokens WHERE token = :token";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':token', $token);
             return $stmt->execute(['token' => $token]);
         } catch (PDOException $e) {
+            error_log("Logout error: " . $e->getMessage());
             return false;
         }
     }
+
+
+    public function studentExists($student_id) {
+        try {
+            $query = "SELECT student_id FROM student WHERE student_id = :student_id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':student_id', $student_id);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC) !== false;
+        } catch (PDOException $e) {
+            error_log("Student exists check error: " . $e->getMessage());
+            return false;
+        }
+    }
+
 }
 ?>

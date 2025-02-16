@@ -1,7 +1,11 @@
 <?php
-session_start();
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
 
 require_once __DIR__ . '/../vendor/autoload.php';
+
+
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
@@ -15,54 +19,51 @@ class Admin {
 
     public function updateToken($admin_id, $token) {
         $query = "INSERT INTO admin_tokens (admin_id, token) VALUES (:admin_id, :token)";
+
         $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':token', $token);
         $stmt->bindParam(':admin_id', $admin_id);
+        
+        if ($stmt->execute()) {
+            return true;
+        }
+        return false;
+    }
+
+
+
+
+    public function register($name, $email, $password, $token) {
+        if ($this->emailExists($email)) {
+            return false; // Email already exists
+        }
+
+
+        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+        $sql = "INSERT INTO admin (name, email, password, token) VALUES (:name, :email, :password, :token)";
+        $stmt = $this->conn->prepare($sql);
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':name', $name);
+        $stmt->bindParam(':email', $email);
+        $stmt->bindParam(':password', $hashedPassword);
         $stmt->bindParam(':token', $token);
         return $stmt->execute();
     }
 
-    public function register($name, $email, $password, $token) {
-        try {
-            $sql = "INSERT INTO admin (name, email, password, token) VALUES (:name, :email, :password, :token)";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bindParam(':name', $name);
-            $stmt->bindParam(':email', $email);
-            $stmt->bindParam(':password', password_hash($password, PASSWORD_DEFAULT));
-            $stmt->bindParam(':token', $token); // Bind the token
-
-            return $stmt->execute();
-        } catch (PDOException $e) {
-            error_log("Admin registration error: " . $e->getMessage());
-            return false;
-        }
-    }
 
     public function login($email, $password) {
-        try {
-            $sql = "SELECT * FROM admin WHERE email = :email";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute(['email' => $email]);
-            $admin = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-            if ($admin && password_verify($password, $admin['password'])) {
-                $token = bin2hex(random_bytes(32));
-                $query = "DELETE FROM admin_tokens WHERE admin_id = :admin_id";
-                $stmt = $this->conn->prepare($query);
-                $stmt->execute(['admin_id' => $admin['admin_id']]);
-                
-                $query = "INSERT INTO admin_tokens (token, admin_id) VALUES (:token, :admin_id)";
-                $stmt = $this->conn->prepare($query);
-                $stmt->execute(['token' => $token, 'admin_id' => $admin['admin_id']]);
-        
-                return ['token' => $token, 'admin_id' => $admin['admin_id']];
-            }
+        $query = "SELECT * FROM admin WHERE email = :email";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute(['email' => $email]);
+        $admin = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            return false;
-        } catch (PDOException $e) {
-            error_log("Admin login error: " . $e->getMessage());
-            return false;
+        if ($admin && password_verify($password, $admin['password'])) {
+            return $admin; // Return admin data on successful login
         }
+        return false; // Invalid credentials
     }
+
 
     public function validateToken($token) {
         try {
@@ -79,11 +80,49 @@ class Admin {
     }
 
     public function logout($token) {
-        $query = "DELETE FROM admin_tokens WHERE token = :token";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':token', $token);
-        return $stmt->execute(['token' => $token]);
+        try {
+            // First verify token exists
+            $query = "SELECT * FROM admin_tokens WHERE token = :token";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':token', $token);
+            $stmt->execute();
+            $tokenData = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$tokenData) {
+                error_log("Token not found: " . $token);
+                return false;
+            }
+
+            // Debug log the token being deleted
+            error_log("Attempting to delete token: " . $token);
+
+            // Try to delete using token_id
+            if (isset($tokenData['token_id'])) {
+
+                // Delete using token_id if found
+                $query = "DELETE FROM admin_tokens WHERE token_id = :token_id";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindParam(':token_id', $tokenData['token_id']);
+                $deleted = $stmt->execute();
+                error_log("Admin token deleted using token_id: " . ($deleted ? 'true' : 'false'));
+                return $deleted;
+            } else {
+                // Fallback to delete using token if token_id not found
+                $query = "DELETE FROM admin_tokens WHERE token = :token";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindParam(':token', $token);
+                $deleted = $stmt->execute(['token' => $token]);
+                error_log("Admin token deleted using token: " . ($deleted ? 'true' : 'false'));
+                return $deleted;
+            }
+
+        } catch (PDOException $e) {
+            error_log("Logout error: " . $e->getMessage());
+            return false;
+        }
     }
+
+
 
 
     public function verifyOTP($email, $otp) {

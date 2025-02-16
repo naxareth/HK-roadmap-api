@@ -111,7 +111,7 @@ class StudentController {
 
         if ($student) {
             $token = bin2hex(random_bytes(32));
-            $this->studentModel->updateToken($student['id'], $token); // Store the token in the student_tokens table
+            $this->studentModel->updateToken($student['student_id'], $token); // Store the token in the student_tokens table
             echo json_encode(["message" => "Login successful.", "token" => $token]);
         } else {
             echo json_encode(["message" => "Invalid email or password."]);
@@ -119,7 +119,19 @@ class StudentController {
     }
 
     public function logout() {
-        $token = $_POST['token'];
+        $headers = getallheaders();
+        if (!isset($headers['Authorization'])) {
+            echo json_encode(["message" => "Authorization header missing."]);
+            return;
+        }
+        
+        $authHeader = $headers['Authorization'];
+        if (strpos($authHeader, 'Bearer ') !== 0) {
+            echo json_encode(["message" => "Invalid Authorization header format."]);
+            return;
+        }
+        
+        $token = substr($authHeader, 7);
         $result = $this->studentModel->logout($token);
 
         if ($result) {
@@ -128,5 +140,7 @@ class StudentController {
             echo json_encode(["message" => "Failed to log out student."]);
         }
     }
+
+
 }
 ?>
