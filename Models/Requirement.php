@@ -6,16 +6,18 @@ class Requirement {
         $this->conn = $db;
     }
 
-    public function add($student_id, $event_name, $due_date, $shared) {
+    public function add($student_id, $event_name, $event_date, $due_date, $shared, $image = null) {
         try {
-            $submission = date('Y-m-d H:i:s');
-            $sql = "INSERT INTO requirements (student_id, event_name, due_date, shared, submission) VALUES (:student_id, :event_name, :due_date, :shared, :submission)";
+            $sql = "INSERT INTO requirements (student_id, event_name, event_date, due_date, shared, image) VALUES (:student_id, :event_name, :event_date, :due_date, :shared, :image)";
+
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':student_id', $student_id);
             $stmt->bindParam(':event_name', $event_name);
+            $stmt->bindParam(':event_date', $event_date);
             $stmt->bindParam(':due_date', $due_date);
             $stmt->bindParam(':shared', $shared, PDO::PARAM_INT);
-            $stmt->bindParam(':submission', $submission);
+            $stmt->bindParam(':image', $image);
+
     
             if ($stmt->execute()) {
                 return true;
