@@ -1,6 +1,7 @@
 <?php
 require_once '../models/Admin.php';
 require_once '../models/Document.php';
+require_once '../models/Student.php';
 
 class DocumentController {
     private $documentModel;
@@ -12,21 +13,29 @@ class DocumentController {
     }
 
     public function upload() {
-        if (!isset($_POST['token']) || !isset($_POST['student_id']) || !isset($_FILES['document'])) {
+        $headers = getallheaders();
+        if (!isset($headers['Authorization']) || !isset($_FILES['document'])) {
             echo json_encode(["message" => "Missing required fields."]);
             return;
         }
 
-        $token = $_POST['token'];
-        $student_id = $_POST['student_id'];
+        $authHeader = $headers['Authorization'];
+        if (strpos($authHeader, 'Bearer ') !== 0) {
+            echo json_encode(["message" => "Invalid authorization header."]);
+            return;
+        }
 
-        $adminModel = new Admin($this->db);
-        $admin = $adminModel->validateToken($token);
+        $token = substr($authHeader, 7);
 
-        if (!$admin) {
+        $studentModel = new Student($this->db);
+        $student = $studentModel->validateToken($token);
+
+        if (!$student) {
             echo json_encode(["message" => "Unauthorized access. Invalid token."]);
             return;
         }
+
+        $student_id = $student['student_id'];
 
         $file = $_FILES['document'];
         $file_name = basename($file['name']);
@@ -61,27 +70,79 @@ class DocumentController {
     }
 
     public function getDocuments() {
-        if (!isset($_GET['token']) || !isset($_GET['student_id'])) {
-            echo json_encode(["message" => "Missing required fields."]);
+        $headers = getallheaders();
+        if (!isset($headers['Authorization'])) {
+            echo json_encode(["message" => "Missing authorization header."]);
             return;
         }
 
-        $token = $_GET['token'];
-        $student_id = $_GET['student_id'];
+        $authHeader = $headers['Authorization'];
+        if (strpos($authHeader, 'Bearer ') !== 0) {
+            echo json_encode(["message" => "Invalid authorization header."]);
+            return;
+        }
 
-        $adminModel = new Admin($this->db);
-        $admin = $adminModel->validateToken($token);
+        $token = substr($authHeader, 7);
 
-        if (!$admin) {
+        $studentModel = new Student($this->db);
+        $student = $studentModel->validateToken($token);
+
+        if (!$student) {
             echo json_encode(["message" => "Unauthorized access. Invalid token."]);
             return;
         }
+
+        $student_id = $student['student_id'];
 
         $documents = $this->documentModel->getDocuments($student_id);
         if ($documents) {
             echo json_encode($documents);
         } else {
             echo json_encode(["message" => "No documents found."]);
+        }
+    }
+
+    public function deleteDocument() {
+        $headers = getallheaders();
+        if (!isset($headers['Authorization']) || !isset($_POST['document_id'])) {
+            echo json_encode(["message" => "Missing required fields."]);
+            return;
+        }
+
+        $authHeader = $headers['Authorization'];
+        if (strpos($authHeader, 'Bearer ') !== 0) {
+            echo json_encode(["message" => "Invalid authorization header."]);
+            return;
+        }
+
+        $token = substr($authHeader, 7);
+        $document_id = $_POST['document_id'];
+
+        $studentModel = new Student($this->db);
+        $student = $studentModel->validateToken($token);
+
+        if (!$student) {
+            echo json_encode(["message" => "Unauthorized access. Invalid token."]);
+            return;
+        }
+
+        // Get document info
+        $document = $this->documentModel->getDocumentById($document_id);
+        if (!$document || $document['student_id'] !== $student['student_id']) {
+            echo json_encode(["message" => "Document not found or unauthorized."]);
+            return;
+        }
+
+        // Delete file from storage
+        if (file_exists($document['file_path'])) {
+            unlink($document['file_path']);
+        }
+
+        // Delete from database
+        if ($this->documentModel->delete($document_id)) {
+            echo json_encode(["message" => "Document deleted successfully."]);
+        } else {
+            echo json_encode(["message" => "Failed to delete document."]);
         }
     }
 }

@@ -40,5 +40,31 @@ class Document {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function getDocumentById($document_id) {
+        try {
+            $sql = "SELECT * FROM document WHERE document_id = :document_id";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(':document_id', $document_id);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Database error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function delete($document_id) {
+        try {
+            $sql = "DELETE FROM document WHERE document_id = :document_id";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(':document_id', $document_id);
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            error_log("Database error: " . $e->getMessage());
+            return false;
+        }
+    }
 }
+
 ?>

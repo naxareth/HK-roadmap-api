@@ -83,7 +83,16 @@ switch ($requestMethod) {
         }
         break;
 
+    case 'DELETE':
+        if ($action === 'delete_document') {
+            $documentController->deleteDocument();
+        } else {
+            echo json_encode(["message" => "Invalid action for DELETE request."]);
+        }
+        break;
+
     default:
+
         echo json_encode(["message" => "Method not allowed."]);
         break;
 }
