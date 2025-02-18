@@ -23,76 +23,68 @@ class Api {
     }
 
     public function route($path, $method) {
-        $action = $_GET['action'] ?? null;
-
-        // Parse JSON input for POST requests
-        if ($method === 'POST') {
+        // Parse JSON input for POST/PUT requests
+        if (in_array($method, ['POST', 'PUT'])) {
             $input = json_decode(file_get_contents('php://input'), true);
             if ($input) {
                 $_POST = $input;
             }
         }
 
-        // Handle the request
-        switch ($method) {
-            case 'POST':
-                if ($action === 'admin_register') {
-                    $this->adminController->register();
-                } elseif ($action === 'admin_login') {
-                    $this->adminController->login();
-                } elseif ($action === 'upload_document') {
-                    $this->documentController->upload();
-                } elseif ($action === 'add_requirement') {
-                    $this->requirementController->add();
-                } elseif ($action === 'student_register') {
-                    $this->studentController->register();
-                } elseif ($action === 'student_login') {
-                    $this->studentController->login();
-                } elseif ($action === 'admin_logout') {
-                    $this->adminController->logout();
-                } elseif ($action === 'student_logout') {
-                    $this->studentController->logout();
-                } elseif ($action === 'send_otp') {
-                    $this->studentController->sendOTP();
-                } elseif ($action === 'verify_otp') {
-                    $this->studentController->verifyOTP();
-                } elseif ($action === 'change_password') {
-                    $this->studentController->changePassword();
-                } elseif ($action === 'request_otp') {
-                    $this->adminController->requestOtp();
-                } elseif ($action === 'admin_password_change') {
-                    $this->adminController->requestOtp();
-                } elseif ($action === 'admin_verify_otp') {
-                    $this->adminController->verifyOTP();
-                } elseif ($action === 'admin_change_password') {
-                    $this->adminController->changePassword();
-                } else {
-                    echo json_encode(["message" => "Invalid action for POST request."]);
+        // Handle the request based on path and method
+        $endpoint = implode('/', $path);
+        
+        switch ($endpoint) {
+            case 'admin/register':
+                return $this->adminController->register();
+            case 'admin/login':
+                return $this->adminController->login();
+            case 'admin/logout':
+                return $this->adminController->logout();
+            case 'admin/request-otp':
+                return $this->adminController->requestOtp();
+            case 'admin/verify-otp':
+                return $this->adminController->verifyOTP();
+            case 'admin/change-password':
+                return $this->adminController->changePassword();
+            case 'student/register':
+                return $this->studentController->register();
+            case 'student/login':
+                return $this->studentController->login();
+            case 'student/logout':
+                return $this->studentController->logout();
+            case 'student/send-otp':
+                return $this->studentController->sendOTP();
+            case 'student/verify-otp':
+                return $this->studentController->verifyOTP();
+            case 'student/change-password':
+                return $this->studentController->changePassword();
+            case 'documents/upload':
+
+
+                if ($method === 'POST') {
+                    return $this->documentController->upload();
+                } elseif ($method === 'GET') {
+                    return $this->documentController->getDocuments();
                 }
                 break;
+            case 'requirements/add':
 
-            case 'GET':
-                if ($action === 'get_documents') {
-                    $this->documentController->getDocuments();
-                } elseif ($action === 'get_requirements') {
-                    $this->requirementController->getRequirements();
-                } else {
-                    echo json_encode(["message" => "Invalid action for GET request."]);
+
+                if ($method === 'POST') {
+                    return $this->requirementController->add();
+                } elseif ($method === 'GET') {
+                    return $this->requirementController->getRequirements();
                 }
                 break;
-
-            case 'DELETE':
-                if ($action === 'delete_document') {
-                    $this->documentController->deleteDocument();
-                } else {
-                    echo json_encode(["message" => "Invalid action for DELETE request."]);
-                }
-                break;
-
             default:
-                echo json_encode(["message" => "Method not allowed."]);
+                http_response_code(404);
+                return json_encode(["message" => "Endpoint not found"]);
                 break;
         }
+
+
+
     }
 }
 ?>
