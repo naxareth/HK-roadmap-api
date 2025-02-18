@@ -1,9 +1,15 @@
 <?php
+namespace Controllers;
+
+use Models\Admin;
+
 session_start();
 
 require_once '../models/Admin.php';
 
+
 class AdminController {
+
     private $adminModel;
 
     public function __construct($db) {

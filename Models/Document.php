@@ -1,4 +1,12 @@
 <?php
+namespace Models;
+
+use PDO;
+use PDOException;
+
+
+
+
 class Document {
     private $conn;
 

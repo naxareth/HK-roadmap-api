@@ -1,4 +1,9 @@
 <?php
+
+namespace Controllers;
+
+use Models\Student;
+
 require_once '../models/Student.php';
 
 class StudentController {

@@ -8,4 +8,6 @@ $baseDir = dirname($vendorDir);
 return array(
     'Psr\\Log\\' => array($vendorDir . '/psr/log/src'),
     'PHPMailer\\PHPMailer\\' => array($vendorDir . '/phpmailer/phpmailer/src'),
+    'Models\\' => array($baseDir . '/Models'),
+    'Controllers\\' => array($baseDir . '/Controllers'),
 );

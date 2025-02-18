@@ -1,4 +1,12 @@
 <?php
+namespace Controllers;
+
+use Models\Document;
+use Models\Student;
+
+
+
+
 require_once '../models/Admin.php';
 require_once '../models/Document.php';
 require_once '../models/Student.php';

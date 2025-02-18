@@ -1,4 +1,12 @@
 <?php
+namespace Models;
+
+use PDO;
+use PDOException;
+
+
+
+
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }

@@ -1,0 +1,14 @@
+RewriteEngine On
+
+# Set the base directory
+RewriteBase /
+
+# Redirect all API requests to api.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^api/(.*)$ Routes/api.php?path=$1 [QSA,L]
+
+# Handle index.php requests
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [QSA,L]

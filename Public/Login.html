@@ -1,0 +1,85 @@
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="Login.css">
+        <title>Login Page</title>
+    </head>
+    <body>
+        <div class="section">
+            <div class="design">
+                <div class="school-desc">
+                    <div class="image">
+                        <img src="asus.jpg" alt="logo" class="logo" />
+                    </div>
+                    <h1> University of Pangasinan </h1>
+                    <p> 28WV+R2R, Arellano St, Downtown District, Dagupan, 2400 Pangasinan, Philippines </p>
+                </div>
+            </div>
+            <div class="wrapper">
+                <div class="image">
+                    <img src="asus.jpg" alt="logo" class="logo" />
+                </div>
+                <div class="login-box">
+                    <div class="login-top">
+                        <h2> Login </h2>
+                        <div class="block"></div>
+                    </div>
+                    <div class="login-container">
+                        <form id="loginForm" action="../Routes/api.php?action=admin_login" method="POST">
+                            <div class="form-input">
+                                <label>Email</label>
+                                <input type="email" placeholder="Enter Email" name="email" required>
+                            </div>
+                            <div class="form-input">
+                                <label>Password</label>
+                                <input type="password" placeholder="Enter Password" name="password" required>
+                            </div>
+                            <div class="password-forgot">
+                                <a href="#"> Forgot password?</a>
+                            </div>
+                            <div class="Button">
+                                <button type="submit" class="Submit">Submit</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent the default form submission
+
+            const formData = new FormData(this); // Get form data
+            const submitButton = document.querySelector('.Submit');
+            submitButton.disabled = true; // Disable the button to prevent multiple submissions
+
+            fetch('../Routes/api.php?action=admin_login', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok ' + response.statusText);
+                }
+                return response.json(); // Parse JSON response
+            })
+            .then(data => {
+                if (data.success) {
+                    alert(data.message); // Show success message
+                    window.location.href = 'Home.html'; // Redirect to dashboard
+                } else {
+                    alert(data.message); // Show error message
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            })
+            .finally(() => {
+                submitButton.disabled = false; // Re-enable the button
+            });
+        });
+    </script>
+</html>

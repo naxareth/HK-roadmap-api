@@ -1,4 +1,12 @@
 <?php
+namespace Controllers;
+
+use Models\Requirement;
+use Models\Student;
+use Models\Admin;
+
+
+
 require_once '../models/Admin.php';
 require_once '../models/Requirement.php';
 require_once '../models/Student.php'; // Include the Student model

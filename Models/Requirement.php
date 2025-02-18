@@ -1,4 +1,10 @@
 <?php
+namespace Models;
+
+use PDO;
+use PDOException;
+
+
 class Requirement {
     private $conn;
 

@@ -1,4 +1,10 @@
 <?php
+namespace Models;
+
+use PDO;
+use PDOException;
+
+
 
 
 use PHPMailer\PHPMailer\PHPMailer;

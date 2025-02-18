@@ -1,0 +1,152 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: url('background.jpg') no-repeat;
+    background-size: cover;
+    background-position: center;
+}
+
+.section {
+    display: flex; 
+    min-height: 100vh;
+}
+
+.design {
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    top: 0;
+    right: 170px;
+    left: 30px;
+    width: 700px;
+    height: 100%;
+    background-color: transparent;
+}
+
+.design .school-desc {
+    justify-content: center;
+    margin: 10px 10px;
+    text-align: center;
+}
+
+.school-desc .logo {
+    width: 400px; 
+    height: 200px; 
+    overflow: hidden;
+    align-self: center; 
+}
+
+.school-desc .image {
+    display: flex;
+    justify-content: center;
+    margin: 10px 10px;
+}
+
+.wrapper {
+    padding: 50px;
+    position: absolute;
+    top: 0;
+    right: 870px;
+    left: 770px;
+    width: 700px;
+    height: 100%;
+    background-color: transparent;
+}
+
+.wrapper .image {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    margin: 10px 10px;
+}
+
+.image .logo {
+    width: 400px; 
+    height: 200px; 
+    overflow: hidden; 
+}
+
+
+.login-box {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    max-width: 450px;
+    margin: 0 auto;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.login-top .block {
+    background-color: #45a049;
+    width: 165px;
+    height: 4px;
+}
+
+.login-top {
+    color: black;
+    text-align: left;
+
+
+}
+
+.login-container .form-input {
+    width: 100%;
+    height: 50px;
+    margin: 20px 0;
+    border-bottom: 2px solid #fff;
+}
+
+.login-container .password-forgot {
+    text-align: right;
+    font-size: small;
+}
+
+.login-container .button .submit {
+    background-color: #4CAF50; 
+    border: none; 
+    color: white;
+    padding: 15px 32px;
+    text-align: center; 
+    text-decoration: none; 
+    display: inline-block; 
+    font-size: 16px; 
+    margin: 4px 2px; 
+    cursor: pointer; 
+    border-radius: 8px; 
+    transition: background-color 0.3s, transform 0.2s; 
+}
+
+.submit:hover {
+    background-color: #45a049; 
+    transform: scale(1.05); 
+}
+
+
+.login-container .button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.form-input input{
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    border-color: #45a049;
+}
+
+.form-input label{
+    text-align: left;
+}
