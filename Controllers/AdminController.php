@@ -3,7 +3,10 @@ namespace Controllers;
 
 use Models\Admin;
 
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 
 require_once '../models/Admin.php';
 

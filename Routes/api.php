@@ -14,15 +14,39 @@ class Api {
     private $documentController;
     private $requirementController;
     private $studentController;
+    private $middleware = [];
 
     public function __construct($db) {
+
         $this->adminController = new AdminController($db);
         $this->documentController = new DocumentController($db);
         $this->requirementController = new RequirementController($db);
         $this->studentController = new StudentController($db);
     }
 
+    public function use($middleware) {
+        $this->middleware[] = $middleware;
+        return $this;
+    }
+
+    private function executeMiddleware($request) {
+        $middlewareStack = $this->middleware;
+        
+        $next = function($request) {
+            return $request;
+        };
+        
+        while ($middleware = array_pop($middlewareStack)) {
+            $next = function($request) use ($middleware, $next) {
+                return $middleware->handle($request, $next);
+            };
+        }
+        
+        return $next($request);
+    }
+
     public function route($path, $method) {
+
         // Parse JSON input for POST/PUT requests
         if (in_array($method, ['POST', 'PUT'])) {
             $input = json_decode(file_get_contents('php://input'), true);

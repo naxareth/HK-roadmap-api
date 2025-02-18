@@ -12,11 +12,23 @@ include_once __DIR__ . '/../Controllers/StudentController.php';
 include_once __DIR__ . '/../Controllers/DocumentController.php';
 include_once __DIR__ . '/../Controllers/RequirementController.php';
 
+require_once __DIR__ . '/../Middleware/Middleware.php';
+require_once __DIR__ . '/../Middleware/AuthMiddleware.php';
+require_once __DIR__ . '/../Middleware/LoggingMiddleware.php';
+
 use Routes\Api;
+use Middleware\AuthMiddleware;
+use Middleware\LoggingMiddleware;
+
 
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $path = trim($path, '/');
 $path = explode('/', $path);
+
+// Initialize middleware
+$authMiddleware = new AuthMiddleware();
+$loggingMiddleware = new LoggingMiddleware();
+
 
 // Require 'hk-roadmap' as the first path segment
 if ($path[0] !== 'hk-roadmap') {
@@ -24,11 +36,11 @@ if ($path[0] !== 'hk-roadmap') {
     echo json_encode(["message" => "Invalid base URL. Use /hk-roadmap/"]);
     return;
 }
-array_shift($path); // Remove 'hk-roadmap' prefix for internal routing
+array_shift($path); 
 
 $method = $_SERVER['REQUEST_METHOD'];
 
-// Get dynamic base URL
+//dynamic base URL
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 $host = $_SERVER['HTTP_HOST'];
 $base_url = "$protocol://$host/hk-roadmap/";
@@ -36,8 +48,22 @@ $base_url = "$protocol://$host/hk-roadmap/";
 $db = getDatabaseConnection();
 $router = new Api($db);
 
+// Register middleware
+$router->use($loggingMiddleware);
+$router->use($authMiddleware);
+
+
+// Execute middleware and handle request
+$request = [
+    'method' => $_SERVER['REQUEST_METHOD'],
+    'path' => $path,
+    'headers' => getallheaders(),
+    'body' => file_get_contents('php://input')
+];
+
 // Handle base URL request
 if (empty($path[0])) {
+
     echo json_encode([
         "message" => "Welcome to the HK Roadmap API",
         "version" => "1.0",
