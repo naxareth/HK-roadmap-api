@@ -55,8 +55,12 @@ class AdminController {
     }
 
     public function login() {
+        ob_clean();
+        header('Content-Type: application/json');
+        
         error_log(print_r($_POST, true)); // Log the POST data for debugging
         if (!isset($_POST['email']) || !isset($_POST['password'])) {
+            http_response_code(400);
             echo json_encode(["message" => "Missing required fields."]);
             return;
         }
@@ -65,6 +69,7 @@ class AdminController {
         $password = $_POST['password'];
 
         if (empty($email) || empty($password)) {
+            http_response_code(400);
             echo json_encode(["message" => "All fields are required."]);
             return;
         }
@@ -75,11 +80,14 @@ class AdminController {
             $token = bin2hex(random_bytes(32));
             $this->adminModel->updateToken($admin['admin_id'], $token); // Store token in the database
 
+            http_response_code(200);
             echo json_encode(["message" => "Login successful.", "token" => $token]);
         } else {
+            http_response_code(401);
             echo json_encode(["message" => "Invalid email or password."]);
         }
     }
+
 
     public function logout() {
         $headers = getallheaders();
@@ -107,6 +115,8 @@ class AdminController {
 
 
     public function requestOtp() {
+        ob_clean();
+        header('Content-Type: application/json');
         $email = $_POST['email'];
         if ($this->adminModel->requestOtp($email)) {
             echo "OTP sent to your email.";
@@ -179,4 +189,3 @@ class AdminController {
     }
 }
 ?>
-</create_file>
