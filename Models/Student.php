@@ -3,14 +3,12 @@ namespace Models;
 
 use PDO;
 use PDOException;
+use PhpMailer\MailService;
 
 
-
-
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
 
 require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../PhpMailer/MailService.php';
 
 class Student {
     private $conn;
@@ -92,38 +90,15 @@ class Student {
             } else {
                 return false;
             }
-        } catch (Exception $e) {
+        } catch (PDOException $e) {
             error_log("OTP request error: " . $e->getMessage());
             return false;
         }
     }
 
     private function sendEmail($email, $otp) {
-        $mail = new PHPMailer(true);
-        $mail->SMTPDebug = 2;
-
-        try {
-            $mail->isSMTP(); 
-            $mail->Host = 'smtp.gmail.com';
-            $mail->SMTPAuth = true;
-            $mail->Username = 'acephilipdenulan12@gmail.com';
-            $mail->Password = 'jshj xqip psiv njlc';
-            $mail->SMTPSecure = 'tls';
-            $mail->Port = 587;
-
-            $mail->setFrom('acephilipdenulan12@gmail.com', 'Scholaristech');
-            $mail->addAddress($email);
-
-            $mail->isHTML(true);
-            $mail->Subject = 'Your OTP Code';
-            $mail->Body    = "Your OTP code is: <strong>$otp</strong>";
-            $mail->AltBody = "Your OTP code is: $otp";
-
-            $mail->send();
-            echo 'Message has been sent';
-        } catch (Exception $e) {
-            echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
-        }
+        $mailService = new MailService();
+        return $mailService->sendOTP($email, $otp);
     }
 
 

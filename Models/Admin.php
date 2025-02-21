@@ -41,6 +41,7 @@ class Admin {
         $sql = "INSERT INTO admin (name, email, password, token) VALUES (:name, :email, :password, :token)";
         $stmt = $this->conn->prepare($sql);
 
+        $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':name', $name);
         $stmt->bindParam(':email', $email);
         $stmt->bindParam(':password', $hashedPassword);
@@ -107,33 +108,8 @@ class Admin {
             return false;
         }
     }
-
-                $query = "DELETE FROM admin_tokens WHERE token_id = :token_id";
-                $stmt = $this->conn->prepare($query);
-                $stmt->bindParam(':token_id', $tokenData['token_id']);
-                $deleted = $stmt->execute();
-                error_log("Admin token deleted using token_id: " . ($deleted ? 'true' : 'false'));
-                return $deleted;
-            } else {
-                // Fallback to delete using token if token_id not found
-                $query = "DELETE FROM admin_tokens WHERE token = :token";
-                $stmt = $this->conn->prepare($query);
-                $stmt->bindParam(':token', $token);
-                $deleted = $stmt->execute(['token' => $token]);
-                error_log("Admin token deleted using token: " . ($deleted ? 'true' : 'false'));
-                return $deleted;
-            }
-
-        } catch (PDOException $e) {
-            error_log("Logout error: " . $e->getMessage());
-            return false;
-        }
-    }
-
-
-
-
-    public function verifyOTP($email, $otp) {
+	
+	public function verifyOTP($email, $otp) {
         if (isset($_SESSION['otp']) && $_SESSION['otp'] == $otp && time() < $_SESSION['otp_expiry']) {
             return true;
         }
@@ -152,7 +128,7 @@ class Admin {
             } else {
                 return false;
             }
-        } catch (Exception $e) {
+        } catch (PDOException $e) {
             error_log("OTP request error: " . $e->getMessage());
             return false;
         }
