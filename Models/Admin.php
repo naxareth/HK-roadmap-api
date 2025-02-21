@@ -3,20 +3,14 @@ namespace Models;
 
 use PDO;
 use PDOException;
-
-
-
+use PhpMailer\MailService;
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
 require_once __DIR__ . '/../vendor/autoload.php';
-
-
-
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
+require_once __DIR__ . '/../PhpMailer/MailService.php';
 
 class Admin {
     private $conn;
@@ -38,27 +32,21 @@ class Admin {
         return false;
     }
 
-
-
-
     public function register($name, $email, $password, $token) {
         if ($this->emailExists($email)) {
-            return false; // Email already exists
+            return false;
         }
-
 
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
         $sql = "INSERT INTO admin (name, email, password, token) VALUES (:name, :email, :password, :token)";
         $stmt = $this->conn->prepare($sql);
 
-        $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':name', $name);
         $stmt->bindParam(':email', $email);
         $stmt->bindParam(':password', $hashedPassword);
         $stmt->bindParam(':token', $token);
         return $stmt->execute();
     }
-
 
     public function login($email, $password) {
         $query = "SELECT * FROM admin WHERE email = :email";
@@ -67,11 +55,10 @@ class Admin {
         $admin = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($admin && password_verify($password, $admin['password'])) {
-            return $admin; // Return admin data on successful login
+            return $admin;
         }
-        return false; // Invalid credentials
+        return false;
     }
-
 
     public function validateToken($token) {
         try {
@@ -89,7 +76,6 @@ class Admin {
 
     public function logout($token) {
         try {
-            // First verify token exists
             $query = "SELECT * FROM admin_tokens WHERE token = :token";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':token', $token);
@@ -101,13 +87,27 @@ class Admin {
                 return false;
             }
 
-            // Debug log the token being deleted
-            error_log("Attempting to delete token: " . $token);
-
-            // Try to delete using token_id
             if (isset($tokenData['token_id'])) {
+                $query = "DELETE FROM admin_tokens WHERE token_id = :token_id";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindParam(':token_id', $tokenData['token_id']);
+                $deleted = $stmt->execute();
+                error_log("Admin token deleted using token_id: " . ($deleted ? 'true' : 'false'));
+                return $deleted;
+            } else {
+                $query = "DELETE FROM admin_tokens WHERE token = :token";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindParam(':token', $token);
+                $deleted = $stmt->execute(['token' => $token]);
+                error_log("Admin token deleted using token: " . ($deleted ? 'true' : 'false'));
+                return $deleted;
+            }
+        } catch (PDOException $e) {
+            error_log("Logout error: " . $e->getMessage());
+            return false;
+        }
+    }
 
-                // Delete using token_id if found
                 $query = "DELETE FROM admin_tokens WHERE token_id = :token_id";
                 $stmt = $this->conn->prepare($query);
                 $stmt->bindParam(':token_id', $tokenData['token_id']);
@@ -166,32 +166,10 @@ class Admin {
     }
 
     private function sendEmail($email, $otp) {
-        $mail = new PHPMailer(true);
-        $mail->SMTPDebug = 2;
-
-        try {
-            $mail->isSMTP(); 
-            $mail->Host = 'smtp.gmail.com';
-            $mail->SMTPAuth = true;
-            $mail->Username = 'acephilipdenulan12@gmail.com';
-            $mail->Password = 'jshj xqip psiv njlc';
-            $mail->SMTPSecure = 'tls';
-            $mail->Port = 587;
-
-            $mail->setFrom('acephilipdenulan12@gmail.com', 'Scholaristech');
-            $mail->addAddress($email);
-
-            $mail->isHTML(true);
-            $mail->Subject = 'Your OTP Code';
-            $mail->Body    = "Your OTP code is: <strong>$otp</strong>";
-            $mail->AltBody = "Your OTP code is: $otp";
-
-            $mail->send();
-            echo 'Message has been sent';
-        } catch (Exception $e) {
-            echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
-        }
+        $mailService = new MailService();
+        return $mailService->sendOTP($email, $otp);
     }
+
 
     public function getEmailById($adminId) {
         $query = "SELECT email FROM admin WHERE admin_id = :admin_id";
