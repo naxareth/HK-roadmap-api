@@ -179,4 +179,3 @@ class AdminController {
     }
 }
 ?>
-</create_file>
