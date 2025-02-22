@@ -77,8 +77,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             console.log('All form fields found');
 
-            console.log('All form fields found'); // Debug log
-
             
             const name = nameInput.value.trim();
             const email = emailInput.value.trim();

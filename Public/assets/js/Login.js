@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Redirect after 2 seconds
                     setTimeout(() => {
-                        window.location.href = 'home.html';
+                        window.location.href = 'dashboard.html';
                     }, 2000);
                 } else {
                     showError(response.message || 'Login failed. Please check your credentials.');

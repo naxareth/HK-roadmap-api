@@ -4,9 +4,6 @@ namespace Controllers;
 use Models\Document;
 use Models\Student;
 
-
-
-
 require_once '../models/Admin.php';
 require_once '../models/Document.php';
 require_once '../models/Student.php';
@@ -44,7 +41,6 @@ class DocumentController {
         }
 
         $student_id = $student['student_id'];
-
         $file = $_FILES['document'];
         $file_name = basename($file['name']);
         $file_tmp = $file['tmp_name'];
