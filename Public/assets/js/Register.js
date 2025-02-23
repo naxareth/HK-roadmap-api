@@ -4,8 +4,9 @@ const apiService = new ApiService('http://localhost:8000');
 
 function showError(message) {
     const errorElement = document.getElementById('errorMessage');
-    if (errorElement) {
-        errorElement.textContent = message;
+    const errorText = document.getElementById('errorText');
+    if (errorElement && errorText) {
+        errorText.textContent = message;
         errorElement.style.display = 'block';
     }
 }
@@ -14,6 +15,13 @@ function clearError() {
     const errorElement = document.getElementById('errorMessage');
     if (errorElement) {
         errorElement.style.display = 'none';
+    }
+}
+
+function showSuccess() {
+    const successPopup = document.getElementById('successPopup');
+    if (successPopup) {
+        successPopup.style.display = 'block';
     }
 }
 
@@ -33,18 +41,22 @@ function validateRegistration(name, email, password, confirmPassword) {
         return false;
     }
     
+    if (password.length < 8 || !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+        showError('Password must be at least 8 characters long and include at least one special character');
+        return false;
+    }
+    
     return true;
 }
 
 document.addEventListener('DOMContentLoaded', function() {
     // Close popup when clicking the close button
-    const closePopup = document.querySelector('.close-popup');
-    if (closePopup) {
-        closePopup.addEventListener('click', () => {
-            const popup = document.getElementById('successPopup');
-            popup.style.display = 'none';
+    const closeButtons = document.querySelectorAll('.close-popup');
+    closeButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            this.parentElement.parentElement.style.display = 'none';
         });
-    }
+    });
 
     const registerForm = document.getElementById('registerForm');
     
@@ -90,10 +102,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 confirmPassword
             });
 
-
-
             if (!validateRegistration(name, email, password, confirmPassword)) {
                 console.log('Validation failed');
+                showError('Validation failed');
                 return;
             }
 
@@ -108,8 +119,6 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 console.log('Sending registration request');
                 const response = await apiService.registerAdmin({ 
-
-
                     name, 
                     email, 
                     password, 
@@ -119,11 +128,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (response.success) {
                     console.log('Registration successful');
                     // Show success popup
-                    const popup = document.getElementById('successPopup');
-                    if (popup) {
-                        popup.style.display = 'block';
-                        console.log('Showing success popup');
-                    }
+                    showSuccess("Registered Successfully! Please wait...")
                     
                     // Redirect after 2 seconds
                     setTimeout(() => {

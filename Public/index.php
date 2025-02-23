@@ -10,11 +10,15 @@ include_once __DIR__ . '/../Models/Admin.php';
 include_once __DIR__ . '/../Models/Student.php';
 include_once __DIR__ . '/../Models/Document.php';
 include_once __DIR__ . '/../Models/Requirement.php';
+include_once __DIR__ . '/../Models/Event.php';
+include_once __DIR__ . '/../Models/Submission.php';
 
 include_once __DIR__ . '/../Controllers/AdminController.php';
 include_once __DIR__ . '/../Controllers/StudentController.php';
 include_once __DIR__ . '/../Controllers/DocumentController.php';
 include_once __DIR__ . '/../Controllers/RequirementController.php';
+include_once __DIR__ . '/../Controllers/EventController.php';
+include_once __DIR__ . '/../Controllers/SubmissionController.php';
 
 require_once __DIR__ . '/../Middleware/Middleware.php';
 require_once __DIR__ . '/../Middleware/AuthMiddleware.php';
@@ -124,15 +128,18 @@ if (empty($path[0])) {
             "send_otp" => "POST /student/send-otp",
             "verify_otp" => "POST /student/verify-otp",
             "student_change" => "POST /student/change-password",
-            "document_upload" => "POST /documents",
-            "get_documents" => "GET /documents",
-            "add_requirement" => "POST /requirements",
-            "get_requirements" => "GET /requirements"
+            "document_upload" => "POST /documents/upload",
+            "get_documents" => "GET /documents/upload",
+            "add_requirement" => "POST /requirements/add",
+            "get_requirements" => "GET /requirements",
+            "event_upload" => "POST /event/add",
+            "get_event" => "GET /event",
+            "update_submission" => "PATCH /submission/update",
+            "get_submissions" => "GET /submission/update"
         ]
     ]);
     return;
 }
 
 $router->route($path, $method);
-
 ?>

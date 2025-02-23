@@ -17,6 +17,13 @@ function clearError() {
     }
 }
 
+function showSuccess() {
+    const successPopup = document.getElementById('successPopup');
+    if (successPopup) {
+        successPopup.style.display = 'block';
+    }
+}
+
 function validateInput(email, password) {
     if (!email || !password) {
         showError('Please fill in all fields');
@@ -33,13 +40,12 @@ function validateInput(email, password) {
 
 document.addEventListener('DOMContentLoaded', function() {
     // Close popup when clicking the close button
-    const closePopup = document.querySelector('.close-popup');
-    if (closePopup) {
-        closePopup.addEventListener('click', () => {
-            const popup = document.getElementById('successPopup');
-            popup.style.display = 'none';
+    const closeButtons = document.querySelectorAll('.close-popup');
+    closeButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            this.parentElement.parentElement.style.display = 'none';
         });
-    }
+    });
 
     const loginForm = document.getElementById('loginForm');
     
@@ -75,8 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (response.success) {
                     // Show success popup
-                    const popup = document.getElementById('successPopup');
-                    popup.style.display = 'block';
+                    showSuccess('Logging in successfully! Please wait...')
                     
                     // Redirect after 2 seconds
                     setTimeout(() => {

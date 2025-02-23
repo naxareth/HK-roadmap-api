@@ -32,20 +32,19 @@ class Admin {
         return false;
     }
 
-    public function register($name, $email, $password, $token) {
+    public function register($name, $email, $password) {
         if ($this->emailExists($email)) {
             return false;
         }
 
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-        $sql = "INSERT INTO admin (name, email, password, token) VALUES (:name, :email, :password, :token)";
+        $sql = "INSERT INTO admin (name, email, password) VALUES (:name, :email, :password)";
         $stmt = $this->conn->prepare($sql);
 
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':name', $name);
         $stmt->bindParam(':email', $email);
         $stmt->bindParam(':password', $hashedPassword);
-        $stmt->bindParam(':token', $token);
         return $stmt->execute();
     }
 
@@ -63,12 +62,21 @@ class Admin {
 
     public function validateToken($token) {
         try {
-            $sql = "SELECT * FROM admin WHERE token = :token";
+            $sql = "SELECT * FROM admin_tokens WHERE token = :token";
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':token', $token);
-            $stmt->execute();
-            $admin = $stmt->fetch(PDO::FETCH_ASSOC);
-            return $admin ? $admin : false;
+            if ($stmt->execute()) {
+                $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($admin) {
+                    return $admin ? $admin : false;
+                } else {
+                    error_log("No admin found for token.");
+                    return false;
+                }
+            } else {
+                error_log("Query execution failed.");
+                return false;
+            }
         } catch (PDOException $e) {
             error_log("Database error: " . $e->getMessage());
             return false;

@@ -3,9 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Document and Submission Tables</title>
+    <link rel="stylesheet" href="/assets/css/Dashboard.css">
+    <style>
+    </style>
 </head>
 <body>
-    <h2>HOMEMEEEE</h2>
+    <!-- Princess -->
+    <div class="container">
+        <aside class="sidebar">
+            <h2>HK Roadmap</h2>
+            <ul>
+                <li><a href="#" onclick="showSection('home')">Home</a></li>
+                <li><a href="#" onclick="showSection('announcement')">Announcement</a></li>
+                <li><a href="#" onclick="showSection('admin')">Admin</a></li>
+            </ul>
+        </aside>
+        <main class="content">
+            <section id="home-section">
+                <header>
+                    <h1><i class="fas fa-user-friends"></i> STUDENT INVOLVEMENT</h1>
+                </header>
+                <section class="cards">
+                    <div class="card">INSTITUTIONAL ACTIVITIES <i class="far fa-file-alt"></i></div>
+                    <div class="card">HAWAK-KAMAY ENGAGEMENT <i class="far fa-file-alt"></i></div>
+                    <div class="card">100th FOUNDATION DAY TASKS <i class="far fa-file-alt"></i></div>
+                    <div class="card">FOR SK MLOB <i class="far fa-file-alt"></i></div>
+                    <div class="card">FOR OFFICE DUTY <i class="far fa-file-alt"></i></div>
+                    <div class="card">FOR HK STUDENT FACILITATOR <i class="far fa-file-alt"></i></div>
+                    <div class="card">FOR SIS AMBASSADORS <i class="far fa-file-alt"></i></div>
+                    <div class="card">FOR HK BBBS DUTY <i class="far fa-file-alt"></i></div>
+                  
+                </section>
+            </section>
+            <section id="announcement-section" class="announcement-container">
+                <h2>Announcements</h2>
+                <div class="announcement">🔔 Sir Adele announced that...</div>
+                <div class="announcement">🔔 February 22 2025: 100th fdc...</div>
+            </section>
+
+            <section id="admin-section" class="admin-container">
+                <div class="tab-container">
+                    <button class="tab-button" onclick="showTab('documents')">Documents</button>
+                    <button class="tab-button" onclick="showTab('submissions')">Submissions</button>
+                </div>
+                <div id="documents" class="tab-content">
+                    <h2>Documents Table</h2>
+                    <table id="documentsTable">
+                        <!-- Table headers -->
+                        <thead>
+                            <tr>
+                                <th>Document ID</th>
+                                <th>Event ID</th>
+                                <th>Requirement ID</th>
+                                <th>Student ID</th>
+                                <th>File Path</th>
+                                <th>Upload Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            
+                <div id="submissions" class="tab-content" style="display: none;">
+                    <h2>Submissions Table</h2>
+                    <table id="submissionsTable">
+                        <!-- Table headers -->
+                        <thead>
+                            <tr>
+                                <th>Submission ID</th>
+                                <th>Requirement ID</th>
+                                <th>Event ID</th>
+                                <th>Student ID</th>
+                                <th>File Path</th>
+                                <th>Submission Date</th>
+                                <th>Status</th>
+                                <th>Approved By</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be populated here -->
+                        </tbody>
+                    </table>
+                </div>            
+            </section>
+        </main>
+    </div>
+    <script src="/assets/js/Dashboard.js"></script>
 </body>
 </html>

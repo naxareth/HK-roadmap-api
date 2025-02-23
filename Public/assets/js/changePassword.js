@@ -4,24 +4,54 @@ const apiService = new ApiService('http://localhost:8000');
 
 function showError(message) {
     const errorElement = document.getElementById('errorMessage');
-    if (!errorElement) {
-        console.error('Error element not found');
-        return;
+    const errorText = document.getElementById('errorText');
+    if (errorElement && errorText) {
+        errorText.textContent = message;
+        errorElement.style.display = 'block';
     }
-    errorElement.textContent = message;
-    errorElement.style.display = 'block';
 }
 
 function clearError() {
     const errorElement = document.getElementById('errorMessage');
-    if (!errorElement) {
-        console.error('Error element not found');
-        return;
+    if (errorElement) {
+        errorElement.style.display = 'none';
     }
-    errorElement.style.display = 'none';
+}
+
+function showSuccess() {
+    const successPopup = document.getElementById('successPopup');
+    if (successPopup) {
+        successPopup.style.display = 'block';
+    }
+}
+
+function validateChangePassword(currentPassword, newPassword, confirmNewPassword) {
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+        showError('Please fill in all fields');
+        return false;
+    }
+    
+    if (newPassword !== confirmNewPassword) {
+        showError('New passwords do not match');
+        return false;
+    }
+    
+    if (newPassword.length < 8 || !/[!@#$%^&*(),.?":{}|<>]/.test(newPassword)) {
+        showError('New password must be at least 8 characters long and include at least one special character');
+        return false;
+    }
+    
+    return true;
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    const closeButtons = document.querySelectorAll('.close-popup');
+    closeButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            this.parentElement.parentElement.style.display = 'none';
+        });
+    });
+    
     const verifyForm = document.getElementById('verifyForm');
     const changePasswordForm = document.getElementById('changePasswordForm');
 
@@ -86,6 +116,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
+            if (!validateChangePassword(email, newPassword, confirmedPassword)) {
+                console.log('Validation failed');
+                showError('Validation failed');
+                return;
+            }
+
             // Disable submit button during request
             const submitButton = changePasswordForm.querySelector('button[type="submit"]');
             submitButton.disabled = true;
@@ -98,7 +134,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 
                 if (response.success) {
-                    alert('Password changed successfully!');
+                    showSuccess('Password changed successfully!');
                     window.location.href = 'login.html';
                 } else {
                     showError(response.error.message || 'Password change failed. Please try again.');

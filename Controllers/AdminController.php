@@ -48,7 +48,7 @@ class AdminController {
 
         $token = bin2hex(random_bytes(32)); // Generate a token
         if ($this->adminModel->register($name, $email, $password, $token)) { // Pass the token
-            echo json_encode(["message" => "Admin registered successfully.", "token" => $token]);
+            echo json_encode(["message" => "Admin registered successfully."]);
         } else {
             echo json_encode(["message" => "Admin registration failed."]);
         }

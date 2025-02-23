@@ -4,8 +4,10 @@ namespace Routes;
 require_once '../config/database.php';
 use Controllers\AdminController;
 use Controllers\DocumentController;
+use Controllers\EventController;
 use Controllers\RequirementController;
 use Controllers\StudentController;
+use Controllers\SubmissionController;
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
@@ -14,6 +16,8 @@ class Api {
     private $documentController;
     private $requirementController;
     private $studentController;
+    private $eventController;
+    private $submissionController;
     private $middleware = [];
 
     public function __construct($db) {
@@ -22,6 +26,8 @@ class Api {
         $this->documentController = new DocumentController($db);
         $this->requirementController = new RequirementController($db);
         $this->studentController = new StudentController($db);
+        $this->eventController = new EventController($db);
+        $this->submissionController = new SubmissionController($db);
     }
 
     public function use($middleware) {
@@ -84,21 +90,31 @@ class Api {
             case 'student/change-password':
                 return $this->studentController->changePassword();
             case 'documents/upload':
-
-
                 if ($method === 'POST') {
-                    return $this->documentController->upload();
+                    return $this->documentController->uploadDocument();
                 } elseif ($method === 'GET') {
-                    return $this->documentController->getDocuments();
+                    return $this->documentController->getAllDocuments();
                 }
                 break;
             case 'requirements/add':
-
-
                 if ($method === 'POST') {
-                    return $this->requirementController->add();
+                    return $this->requirementController->createRequirement();
                 } elseif ($method === 'GET') {
                     return $this->requirementController->getRequirements();
+                }
+                break;
+            case 'event/add':
+                if ($method === 'POST') {
+                    return $this->eventController->createEvent();
+                } elseif ($method === 'GET') {
+                    return $this->eventController->getEvents();
+                }
+                break;
+            case 'submission/update':
+                if ($method === 'PATCH') {
+                    return $this->submissionController->updateSubmissionStatus();
+                } elseif ($method === 'GET') {
+                    return $this->submissionController->getAllSubmissions();
                 }
                 break;
             default:

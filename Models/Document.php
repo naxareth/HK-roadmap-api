@@ -1,78 +1,85 @@
 <?php
+
 namespace Models;
 
 use PDO;
-use PDOException;
-
-
-
 
 class Document {
-    private $conn;
+    private $db;
 
     public function __construct($db) {
-        $this->conn = $db;
-    }
-
-    public function upload($student_id, $file_path) {
-        try {
-            $created_at = date('Y-m-d H:i:s');
-            $sql = "INSERT INTO document (student_id, file_path, created_at) VALUES (:student_id, :file_path, :created_at)";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bindParam(':student_id', $student_id);
-            $stmt->bindParam(':file_path', $file_path);
-            $stmt->bindParam(':created_at', $created_at);
-            return $stmt->execute();
-        } catch (PDOException $e) {
-            error_log("Database error: " . $e->getMessage());
-            return false;
-        }
-    }
-
-    public function getDocuments($student_id) {
-        try {
-            $sql = "SELECT * FROM document WHERE student_id = :student_id";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bindParam(':student_id', $student_id);
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("Database error: " . $e->getMessage());
-            return false;
-        }
+        $this->db = $db;
     }
 
     public function getAllDocuments() {
         $query = "SELECT * FROM document";
-        $stmt = $this->conn->prepare($query);
+        $stmt = $this->db->query($query);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getDocumentsByEventId($eventId) {
+        $query = "SELECT * FROM document WHERE event_id = :event_id";
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':event_id', $eventId);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getDocumentById($document_id) {
+    public function uploadDocument($eventId, $requirementId, $studentId, $filePath) {
         try {
-            $sql = "SELECT * FROM document WHERE document_id = :document_id";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bindParam(':document_id', $document_id);
+            $this->db->beginTransaction();
+    
+            // Debug: Log the start of the transaction
+            error_log("Starting transaction for uploading document.");
+    
+            // Insert into documents table
+            $query = "INSERT INTO document (event_id, requirement_id, student_id, file_path, upload_at, status) 
+                      VALUES (:event_id, :requirement_id, :student_id, :file_path, NOW(), 'pending')";
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':event_id', $eventId);
+            $stmt->bindParam(':requirement_id', $requirementId);
+            $stmt->bindParam(':student_id', $studentId);
+            $stmt->bindParam(':file_path', $filePath);
+    
+            // Debug: Log before executing the first query
+            error_log("Executing query for documents table: $query with eventId: $eventId, requirementId: $requirementId, studentId: $studentId, filePath: $filePath");
+    
             $stmt->execute();
-            return $stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("Database error: " . $e->getMessage());
-            return false;
-        }
-    }
-
-    public function delete($document_id) {
-        try {
-            $sql = "DELETE FROM document WHERE document_id = :document_id";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bindParam(':document_id', $document_id);
-            return $stmt->execute();
-        } catch (PDOException $e) {
-            error_log("Database error: " . $e->getMessage());
+    
+            // Debug: Log after executing the first query
+            error_log("Document inserted into documents table.");
+    
+            // Insert into submissions table
+            $query = "INSERT INTO submission (requirement_id, event_id, student_id, file_path, submission_date, status, approved_by) 
+                      VALUES (:requirement_id, :event_id, :student_id, :file_path, NOW(), 'pending', 'not yet approved')";
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':requirement_id', $requirementId);
+            $stmt->bindParam(':event_id', $eventId);
+            $stmt->bindParam(':student_id', $studentId);
+            $stmt->bindParam(':file_path', $filePath);
+    
+            // Debug: Log before executing the second query
+            error_log("Executing query for submissions table: $query with requirementId: $requirementId, eventId: $eventId, studentId: $studentId, filePath: $filePath");
+    
+            $stmt->execute();
+    
+            // Debug: Log after executing the second query
+            error_log("Document inserted into submissions table.");
+    
+            $this->db->commit();
+    
+            // Debug: Log successful transaction commit
+            error_log("Transaction committed successfully.");
+    
+            return true;
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+    
+            // Debug: Log exception message
+            error_log("Exception occurred: " . $e->getMessage());
+    
             return false;
         }
     }
 }
-
 ?>
