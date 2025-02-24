@@ -39,16 +39,23 @@ class RequirementController {
     }
 
     public function createRequirement() {
-        if (!$this->adminController->validateToken()) {
+        $headers = apache_request_headers();
+        if (!isset($headers['Authorization'])) {
             echo json_encode(["message" => "Unauthorized access."]);
             return;
         }
 
-        $admin = $this->adminController->validateToken();
-        if (!$admin) {
+        $token = str_replace('Bearer ', '', $headers['Authorization']);
+        if (!$this->adminController->validateToken($token)) {
             echo json_encode(["message" => "Invalid token."]);
             return;
         }
+
+
+        // Removed redundant token validation
+
+        // The rest of the method remains unchanged
+
 
         if (!isset($_POST['event_id'], $_POST['requirement_name'], $_POST['due_date'])) {
             echo json_encode(["message" => "Missing required fields."]);

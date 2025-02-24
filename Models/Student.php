@@ -1,11 +1,10 @@
 <?php
+
 namespace Models;
 
 use PDO;
 use PDOException;
 use PhpMailer\MailService;
-
-
 
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../PhpMailer/MailService.php';
@@ -24,21 +23,18 @@ class Student {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function register($name, $email, $password, $token) {
+    public function register($name, $email, $password) {
         if ($this->emailExists($email)) {
             return false; // Email already exists
         }
 
-
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-        $sql = "INSERT INTO student (name, email, password, token) VALUES (:name, :email, :password, :token)";
-        $stmt = $this->conn->prepare($sql);
+        $sql = "INSERT INTO student (name, email, password) VALUES (:name, :email, :password)";
 
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':name', $name);
         $stmt->bindParam(':email', $email);
         $stmt->bindParam(':password', $hashedPassword);
-        $stmt->bindParam(':token', $token);
         return $stmt->execute();
     }
 
@@ -50,7 +46,6 @@ class Student {
     }
 
     public function login($email, $password) {
-
         $query = "SELECT * FROM student WHERE email = :email";
         $stmt = $this->conn->prepare($query);
         $stmt->execute(['email' => $email]);
@@ -60,21 +55,18 @@ class Student {
             return $student; // Return student data on successful login
         }
         return false; // Invalid credentials
-
-
     }
 
     public function validateToken($token) {
-        // Query to validate token and get student info
         $query = "SELECT student_id FROM student_tokens WHERE token = :token";
         $stmt = $this->conn->prepare($query);
-        $stmt->execute(['token' => $token]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        $stmt->bindParam(':token', $token);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC); // Return student ID if token is valid
     }
 
     public function updateToken($student_id, $token) {
         $query = "INSERT INTO student_tokens (student_id, token) VALUES (:student_id, :token)";
-
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':token', $token);
         $stmt->bindParam(':student_id', $student_id);
@@ -84,7 +76,6 @@ class Student {
         }
         return false;
     }
-
     public function requestOtp($email) {
         try {
             if ($this->emailExists($email)) {
@@ -108,14 +99,12 @@ class Student {
         return $mailService->sendOTP($email, $otp);
     }
 
-
     public function verifyOTP($email, $otp) {
         if (isset($_SESSION['otp']) && $_SESSION['otp'] == $otp && time() < $_SESSION['otp_expiry']) {
             return true;
         }
         return false;
     }
-
 
     public function changePassword($email, $newPassword) {
         $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
@@ -125,7 +114,6 @@ class Student {
         $stmt->bindParam(':email', $email);
         return $stmt->execute(); // Return true if password changed successfully
     }
-
 
     public function logout($token) {
         try {
@@ -152,7 +140,6 @@ class Student {
         }
     }
 
-
     public function studentExists($student_id) {
         try {
             $query = "SELECT student_id FROM student WHERE student_id = :student_id";
@@ -165,6 +152,6 @@ class Student {
             return false;
         }
     }
-
 }
 ?>
+

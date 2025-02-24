@@ -7,12 +7,36 @@ use Models\Student;
 require_once '../models/Student.php';
 
 class StudentController {
-
     private $studentModel;
 
     public function __construct($db) {
         $this->studentModel = new Student($db);
     }
+
+    public function validateToken() {
+        $headers = getallheaders();
+        if (!isset($headers['Authorization'])) {
+            echo json_encode(["message" => "Token is required."]);
+            return false;
+        }
+
+        $authHeader = $headers['Authorization'];
+        if (strpos($authHeader, 'Bearer ') !== 0) {
+            echo json_encode(["message" => "Invalid Authorization header format."]);
+            return false;
+        }
+
+        $token = substr($authHeader, 7);
+        $student = $this->studentModel->validateToken($token);
+        if ($student) {
+            echo json_encode(["message" => "Token is valid.", "student" => $student]);
+            return true;
+        } else {
+            echo json_encode(["message" => "Invalid token."]);
+            return false;
+        }
+    }
+
 
     public function getStudent() {
         $students = $this->studentModel->getAllStudents();
@@ -33,7 +57,6 @@ class StudentController {
             echo json_encode(["message" => "Failed to send OTP."]);
         }
     }
-
 
     public function verifyOTP() {
         if (!isset($_POST['email'], $_POST['otp'])) {
@@ -96,13 +119,11 @@ class StudentController {
 
         $token = bin2hex(random_bytes(32));
         if ($this->studentModel->register($name, $email, $password, $token)) {
-            echo json_encode(["message" => "Student registered successfully.", "token" => $token]);
+            echo json_encode(["message" => "Student registered successfully."]);
         } else {
             echo json_encode(["message" => "Student registration failed."]);
         }
     }
-
-
 
     public function login() {
         if (!isset($_POST['email'], $_POST['password'])) {
@@ -151,7 +172,5 @@ class StudentController {
             echo json_encode(["message" => "Failed to log out student."]);
         }
     }
-
-
 }
 ?>

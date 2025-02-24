@@ -66,7 +66,48 @@ export default class ApiService {
         };
     }
 
-    async verifyAdminCredentials(credentials) {
+    async addEvent(eventData, token) {
+        try {
+            const response = await this.request('POST', '/hk-roadmap/event/add', eventData, token);
+            return {
+                success: true,
+                data: response,
+                error: null
+            };
+        } catch (error) {
+            return this.handleError(error, 'Event creation error');
+        }
+    }
+
+    async addRequirement(requirementData, token) {
+        try {
+            const response = await this.request('POST', '/hk-roadmap/requirement/add', requirementData, token);
+            return {
+                success: true,
+                data: response,
+                error: null
+            };
+        } catch (error) {
+            return this.handleError(error, 'Requirement creation error');
+        }
+    }
+
+    async request(method, endpoint, data = null, token = null) {
+        const url = `${this.baseURL}${endpoint}`;
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const options = {
+            method,
+            headers,
+            body: data ? JSON.stringify(data) : null,
+        };
+
         try {
             const response = await this.request('POST', '/hk-roadmap/admin/login', credentials);
             return {

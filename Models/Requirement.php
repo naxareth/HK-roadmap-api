@@ -2,6 +2,8 @@
 
 namespace Models;
 
+use PDO;
+
 class Requirement {
     private $db;
 

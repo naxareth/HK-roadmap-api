@@ -2,6 +2,8 @@
 
 namespace Models;
 
+use PDO;
+
 class Event {
     private $db;
 

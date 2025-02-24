@@ -185,12 +185,20 @@ class AdminController {
     }
 
     public function validateToken() {
-        if (!isset($_POST['token'])) {
+        $headers = getallheaders();
+        if (!isset($headers['Authorization'])) {
             echo json_encode(["message" => "Token is required."]);
             return false;
         }
 
-        $token = $_POST['token'];
+        $authHeader = $headers['Authorization'];
+        if (strpos($authHeader, 'Bearer ') !== 0) {
+            echo json_encode(["message" => "Invalid Authorization header format."]);
+            return false;
+        }
+
+        $token = substr($authHeader, 7);
+
         $admin = $this->adminModel->validateToken($token);
         if ($admin) {
             echo json_encode(["message" => "Token is valid.", "admin" => $admin]);

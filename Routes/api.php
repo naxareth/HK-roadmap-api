@@ -108,6 +108,8 @@ class Api {
                 }
                 break;
             case 'event/add':
+            case 'event/get':
+
                 if ($method === 'POST') {
                     return $this->eventController->createEvent();
                 } elseif ($method === 'GET') {
