@@ -71,7 +71,7 @@ export default class ApiService {
             const response = await this.request('POST', '/hk-roadmap/admin/login', credentials);
             return {
                 success: true,
-                data: response,
+                data: response, // Ensure the response contains the token
                 error: null
             };
         } catch (error) {
@@ -96,11 +96,25 @@ export default class ApiService {
         try {
             console.log('Attempting to send OTP to:', emailData.email);
             const response = await this.request('POST', '/hk-roadmap/admin/request-otp', emailData);
-            return {
-                success: true,
-                data: response,
-                error: null
-            };
+            
+            // Check if the response indicates success
+            if (response.success) {
+                return {
+                    success: true,
+                    data: response,
+                    error: null
+                };
+            } else {
+                // Handle the case where the email is not found
+                return {
+                    success: false,
+                    data: null,
+                    error: {
+                        message: response.message || 'Failed to send OTP. Please try again.',
+                        status: 404 // or appropriate status code
+                    }
+                };
+            }
         } catch (error) {
             return this.handleError(error, 'OTP request error');
         }

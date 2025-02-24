@@ -67,6 +67,8 @@ class Api {
         switch ($endpoint) {
             case 'admin/register':
                 return $this->adminController->register();
+            case 'admin/profile':
+                return $this->adminController->getAdmin();
             case 'admin/login':
                 return $this->adminController->login();
             case 'admin/logout':
@@ -79,6 +81,8 @@ class Api {
                 return $this->adminController->changePassword();
             case 'student/register':
                 return $this->studentController->register();
+            case 'student/profile':
+                return $this->studentController->getStudent();
             case 'student/login':
                 return $this->studentController->login();
             case 'student/logout':

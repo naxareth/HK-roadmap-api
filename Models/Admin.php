@@ -19,6 +19,13 @@ class Admin {
         $this->conn = $db;
     }
 
+    public function getAllAdmins() {
+        $query = "SELECT * FROM admin";
+        $stmt = $this->conn->prepare($query); 
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function updateToken($admin_id, $token) {
         $query = "INSERT INTO admin_tokens (admin_id, token) VALUES (:admin_id, :token)";
 

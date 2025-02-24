@@ -17,6 +17,13 @@ class Student {
         $this->conn = $db;
     }
 
+    public function getAllStudents() {
+        $query = "SELECT * FROM student";
+        $stmt = $this->conn->query($query);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function register($name, $email, $password, $token) {
         if ($this->emailExists($email)) {
             return false; // Email already exists

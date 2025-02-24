@@ -10,9 +10,12 @@
 </head>
 <body>
     <!-- Princess -->
+    <div class="top-nav">
+        <h1>HK Roadmap</h1>
+        <button class="account-button" onclick="togglePopup()">Account Settings</button>
+    </div>
     <div class="container">
         <aside class="sidebar">
-            <h2>HK Roadmap</h2>
             <ul>
                 <li><a href="#" onclick="showSection('home')">Home</a></li>
                 <li><a href="#" onclick="showSection('announcement')">Announcement</a></li>
@@ -46,6 +49,8 @@
                 <div class="tab-container">
                     <button class="tab-button" onclick="showTab('documents')">Documents</button>
                     <button class="tab-button" onclick="showTab('submissions')">Submissions</button>
+                    <button class="tab-button" onclick="showTab('students')">Students</button>
+                    <button class="tab-button" onclick="showTab('admins')">Admin</button>
                 </div>
                 <div id="documents" class="tab-content">
                     <h2>Documents Table</h2>
@@ -88,8 +93,50 @@
                             <!-- Data will be populated here -->
                         </tbody>
                     </table>
-                </div>            
+                </div>
+
+                <div id="students" class="tab-content" style="display: none;">
+                    <h2>Student Table</h2>
+                    <table id="studentsTable">
+                        <!-- Table headers -->
+                        <thead>
+                            <tr>
+                                <th>Student ID</th>
+                                <th>Email</th>
+                                <th>Password</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="admins" class="tab-content" style="display: none;">
+                    <h2>Admin Table</h2>
+                    <table id="adminsTable">
+                        <!-- Table headers -->
+                        <thead>
+                            <tr>
+                                <th>Admin ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Password</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be populated here -->
+                        </tbody>
+                    </table>
+                </div>                            
             </section>
+
+            <!-- Popup structure -->
+            <div id="popup" class="popup">
+                <span class="close-popup" onclick="togglePopup()">×</span>
+                <div class="popup-header">Account Settings</div>
+                <button class="popup-button" onclick="logout()">Logout</button>
+            </div>
         </main>
     </div>
     <script src="/assets/js/Dashboard.js"></script>

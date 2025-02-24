@@ -4,21 +4,18 @@ const apiService = new ApiService('http://localhost:8000');
 
 function showError(message) {
     const errorElement = document.getElementById('errorMessage');
-    if (!errorElement) {
-        console.error('Error element not found');
-        return;
+    const errorText = document.getElementById('errorText');
+    if (errorElement && errorText) {
+        errorText.textContent = message;
+        errorElement.style.display = 'block';
     }
-    errorElement.textContent = message;
-    errorElement.style.display = 'block';
 }
 
 function clearError() {
     const errorElement = document.getElementById('errorMessage');
-    if (!errorElement) {
-        console.error('Error element not found');
-        return;
+    if (errorElement) {
+        errorElement.style.display = 'none';
     }
-    errorElement.style.display = 'none';
 }
 
 
@@ -50,7 +47,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert('OTP has been sent to your email');
                     window.location.href = 'changePassword.html';
                 } else {
-                    showError(response.message || 'Failed to send OTP. Please try again.');
+                    alert(response.message || 'Failed to send OTP. Please try again.');
 
                 }
             } catch (error) {

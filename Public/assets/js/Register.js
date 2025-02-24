@@ -58,6 +58,22 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    document.getElementById('togglePassword').addEventListener('click', function() {
+        const passwordField = document.getElementById('password');
+        const type = passwordField.type === 'password' ? 'text' : 'password';
+        passwordField.type = type;
+        this.classList.toggle('fa-eye');
+        this.classList.toggle('fa-eye-slash');
+    });
+
+    document.getElementById('toggleConfirmPassword').addEventListener('click', function() {
+        const confirmPasswordField = document.getElementById('confirm-password');
+        const type = confirmPasswordField.type === 'password' ? 'text' : 'password';
+        confirmPasswordField.type = type;
+        this.classList.toggle('fa-eye');
+        this.classList.toggle('fa-eye-slash');
+    });
+
     const registerForm = document.getElementById('registerForm');
     
     if (registerForm) {
@@ -103,8 +119,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             if (!validateRegistration(name, email, password, confirmPassword)) {
-                console.log('Validation failed');
-                showError('Validation failed');
                 return;
             }
 

@@ -19,6 +19,12 @@ class AdminController {
         $this->adminModel = new Admin($db);
     }
 
+    public function getAdmin() {
+        $admins = $this->adminModel->getAllAdmins();
+        echo json_encode($admins);
+        return $admins;
+    }
+
     public function register() {
         if (!isset($_POST['name'], $_POST['email'], $_POST['password'], $_POST['confirm_password'])) {
             echo json_encode(["message" => "Missing required fields."]);
@@ -118,10 +124,17 @@ class AdminController {
         ob_clean();
         header('Content-Type: application/json');
         $email = $_POST['email'];
+    
         if ($this->adminModel->requestOtp($email)) {
-            echo "OTP sent to your email.";
+            echo json_encode([
+                'success' => true,
+                'message' => 'OTP sent to your email.'
+            ]);
         } else {
-            echo "Email does not exist.";
+            echo json_encode([
+                'success' => false,
+                'message' => 'Email does not exist.'
+            ]);
         }
     }
 

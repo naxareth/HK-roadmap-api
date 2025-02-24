@@ -5,7 +5,20 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="stylesheet" href="/assets/css/Register.css">
         <link rel="stylesheet" href="/assets/css/popup.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
         <title>Register Page</title>
+        <style>
+            .form-input {
+                position: relative;
+            }
+            .toggle-password {
+                position: absolute;
+                right: 10px;
+                top: 75%;
+                transform: translateY(-50%);
+                cursor: pointer;
+            }
+        </style>
     </head>
     <body>
         <div class="section">
@@ -20,7 +33,7 @@
             </div>
             <div class="wrapper">
                 <div class="image">
-                    <img src="/assets/jpg/logo_phinma.png" alt="logo" class="logo" />
+                    <img src="/assets/jpg/logo_college.png" alt="logo" class="logo" />
                 </div>
                 <div class="register-box">
                     <div class="register-top">
@@ -37,14 +50,15 @@
                                 <label>Email</label>
                                 <input type="email" placeholder="Enter Email" name="email" required autocomplete="username">
                             </div>
-
                             <div class="form-input">
                                 <label>Password</label>
-                                <input type="password" placeholder="Enter Password" name="password" required autocomplete="current-password">
+                                <input type="password" placeholder="Enter Password" name="password" id="password" required autocomplete="current-password">
+                                <i class="fas fa-eye-slash toggle-password" id="togglePassword"></i>
                             </div>
                             <div class="form-input">
                                 <label>Confirm Password</label>
-                                <input type="password" placeholder="Confirm Password" name="confirm-password" required autocomplete="current-password">
+                                <input type="password" placeholder="Confirm Password" name="confirm-password" id="confirm-password" required autocomplete="current-password">
+                                <i class="fas fa-eye-slash toggle-password" id="toggleConfirmPassword"></i>
                             </div>
                             <div class="Button">
                                 <button type="submit" class="Submit">Submit</button>

@@ -71,9 +71,9 @@ body {
 }
 
 .image .logo {
-    width: 400px; 
-    height: 200px; 
-    overflow: hidden; 
+    width: 250px; 
+    height: auto; 
+    margin-bottom: 20px;
 }
 
 

@@ -100,12 +100,13 @@ class DocumentController {
     
         // Insert document into database
         if (!$this->documentModel->uploadDocument($eventId, $requirementId, $studentId, $target_path)) {
-            error_log("Failed to insert document into database with eventId: $eventId, requirementId: $requirementId, studentId: $studentId, path: $target_path");
-            echo json_encode(["message" => "Failed to record document in database."]);
+            error_log("Failed to insert document into database with eventId: $eventId, requirementId: $requirementId, studentId: $studentId, path: $target_path"); 
+            echo json_encode(["success" => false, "message" => "Failed to record document in database."]);
             return;
         }
     
-        echo json_encode(["message" => "Document uploaded successfully."]);
+        // Send a JSON response indicating success
+        echo json_encode(["success" => true, "message" => "Document uploaded successfully."]);
     }
 }
 ?>

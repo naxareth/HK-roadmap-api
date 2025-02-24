@@ -7,6 +7,19 @@ use Models\Student;
 require_once '../models/Student.php';
 
 class StudentController {
+
+    private $studentModel;
+
+    public function __construct($db) {
+        $this->studentModel = new Student($db);
+    }
+
+    public function getStudent() {
+        $students = $this->studentModel->getAllStudents();
+        echo json_encode($students);
+        return $students;
+    }
+
     public function sendOTP() {
         if (!isset($_POST['email'])) {
             echo json_encode(["message" => "Email is required."]);
@@ -52,13 +65,6 @@ class StudentController {
         } else {
             echo json_encode(["message" => "Failed to change password."]);
         }
-    }
-
-
-    private $studentModel;
-
-    public function __construct($db) {
-        $this->studentModel = new Student($db);
     }
 
     public function register() {

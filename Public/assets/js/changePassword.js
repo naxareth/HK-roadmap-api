@@ -51,6 +51,22 @@ document.addEventListener('DOMContentLoaded', function() {
             this.parentElement.parentElement.style.display = 'none';
         });
     });
+
+    document.getElementById('togglePassword').addEventListener('click', function() {
+        const passwordField = document.getElementById('new-password');
+        const type = passwordField.type === 'password' ? 'text' : 'password';
+        passwordField.type = type;
+        this.classList.toggle('fa-eye');
+        this.classList.toggle('fa-eye-slash');
+    });
+    
+    document.getElementById('toggleConfirmPassword').addEventListener('click', function() {
+        const confirmPasswordField = document.getElementById('confirm-password');
+        const type = confirmPasswordField.type === 'password' ? 'text' : 'password';
+        confirmPasswordField.type = type;
+        this.classList.toggle('fa-eye');
+        this.classList.toggle('fa-eye-slash');
+    });
     
     const verifyForm = document.getElementById('verifyForm');
     const changePasswordForm = document.getElementById('changePasswordForm');

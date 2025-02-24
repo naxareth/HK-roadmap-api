@@ -47,6 +47,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    document.getElementById('togglePassword').addEventListener('click', function() {
+        const passwordField = document.getElementById('password');
+        const type = passwordField.type === 'password' ? 'text' : 'password';
+        passwordField.type = type;
+        this.classList.toggle('fa-eye');
+        this.classList.toggle('fa-eye-slash');
+    });
+
     const loginForm = document.getElementById('loginForm');
     
     if (loginForm) {
@@ -80,10 +88,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const response = await apiService.verifyAdminCredentials({ email, password });
                 
                 if (response.success) {
-                    // Show success popup
-                    showSuccess('Logging in successfully! Please wait...')
-                    
-                    // Redirect after 2 seconds
+                    localStorage.setItem('authToken', response.data.token); // Assuming the token is in response.data.token
+                
+                    showSuccess('Logging in successfully! Please wait...');
                     setTimeout(() => {
                         window.location.href = 'dashboard.html';
                     }, 2000);
