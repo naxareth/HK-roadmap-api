@@ -100,7 +100,12 @@ class Api {
                     return $this->documentController->getAllDocuments();
                 }
                 break;
+            case 'requirements/get':
+                if ($method === 'GET') {
+                    return $this->requirementController->getRequirements();
+                }
             case 'requirements/add':
+
                 if ($method === 'POST') {
                     return $this->requirementController->createRequirement();
                 } elseif ($method === 'GET') {

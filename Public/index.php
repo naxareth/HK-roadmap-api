@@ -132,7 +132,9 @@ if (empty($path[0])) {
             "student_change" => "POST /student/change-password",
             "document_upload" => "POST /documents/upload",
             "get_documents" => "GET /documents/upload",
+            "get_requirements" => "GET /requirements/get",
             "add_requirement" => "POST /requirements/add",
+
             "get_requirements" => "GET /requirements",
             "event_upload" => "POST /event/add",
             "get_event" => "GET /event/get",

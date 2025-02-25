@@ -4,17 +4,21 @@ namespace Controllers;
 
 use Models\Requirement;
 use Controllers\AdminController;
+use Controllers\StudentController;
 
 require_once '../models/Requirement.php';
 require_once 'AdminController.php';
+require_once 'StudentController.php';
 
 class RequirementController {
     private $requirementModel;
     private $adminController;
+    private $studentController;
 
     public function __construct($db) {
         $this->requirementModel = new Requirement($db);
         $this->adminController = new AdminController($db);
+        $this->studentController = new StudentController($db);
     }
 
     public function getRequirementsByEventId() {
@@ -33,9 +37,21 @@ class RequirementController {
         }
     }
 
-
     public function getRequirements() {
-        return $this->requirementModel->getAllRequirements();
+        $headers = apache_request_headers();
+        if (!isset($headers['Authorization'])) {
+            echo json_encode(["message" => "Unauthorized access."]);
+            return;
+        }
+
+        $token = str_replace('Bearer ', '', $headers['Authorization']);
+        if (!$this->adminController->validateToken($token) && !$this->studentController->validateToken($token)) {
+            echo json_encode(["message" => "Invalid token."]);
+            return;
+        }
+
+        $requirements = $this->requirementModel->getAllRequirements();
+        echo json_encode($requirements);
     }
 
     public function createRequirement() {
@@ -50,12 +66,6 @@ class RequirementController {
             echo json_encode(["message" => "Invalid token."]);
             return;
         }
-
-
-        // Removed redundant token validation
-
-        // The rest of the method remains unchanged
-
 
         if (!isset($_POST['event_id'], $_POST['requirement_name'], $_POST['due_date'])) {
             echo json_encode(["message" => "Missing required fields."]);
