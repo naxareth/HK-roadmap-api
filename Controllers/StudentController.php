@@ -29,12 +29,11 @@ class StudentController {
         $token = substr($authHeader, 7);
         $student = $this->studentModel->validateToken($token);
         if ($student) {
-            echo json_encode(["message" => "Token is valid.", "student" => $student]);
             return true;
         } else {
-            echo json_encode(["message" => "Invalid token."]);
             return false;
         }
+
     }
 
 
