@@ -26,6 +26,9 @@ class Document {
     }
 
     public function uploadDocument($eventId, $requirementId, $studentId, $filePath) {
+        // Debug: Log the start of the upload process
+        error_log("Uploading document for student ID: $studentId");
+
         try {
             $this->db->beginTransaction();
     
@@ -80,6 +83,21 @@ class Document {
     
             return false;
         }
+    }
+
+    public function getDocumentById($documentId) {
+        $query = "SELECT * FROM document WHERE id = :document_id";
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':document_id', $documentId);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function deleteDocument($documentId) {
+        $query = "DELETE FROM document WHERE id = :document_id";
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':document_id', $documentId);
+        return $stmt->execute();
     }
 }
 ?>

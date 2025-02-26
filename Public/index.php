@@ -131,7 +131,7 @@ if (empty($path[0])) {
             "verify_otp" => "POST /student/verify-otp",
             "student_change" => "POST /student/change-password",
             "document_upload" => "POST /documents/upload",
-            "get_documents" => "GET /documents/upload",
+            "get_documents" => "GET /documents/get",
             "get_requirements" => "GET /requirements/get",
             "add_requirement" => "POST /requirements/add",
             "id_requirement" => "GET /requirements/add",

@@ -21,7 +21,6 @@ class Api {
     private $middleware = [];
 
     public function __construct($db) {
-
         $this->adminController = new AdminController($db);
         $this->documentController = new DocumentController($db);
         $this->requirementController = new RequirementController($db);
@@ -52,7 +51,6 @@ class Api {
     }
 
     public function route($path, $method) {
-
         // Parse JSON input for POST/PUT requests
         if (in_array($method, ['POST', 'PUT'])) {
             $input = json_decode(file_get_contents('php://input'), true);
@@ -93,54 +91,19 @@ class Api {
                 return $this->studentController->verifyOTP();
             case 'student/change-password':
                 return $this->studentController->changePassword();
+            case 'documents/get':
+                if ($method === 'GET') {
+                    return $this->documentController->getAllDocumentsByAdmin();
+                }
+                break;
+            case 'documents/get':
+                if ($method === 'GET') {
+                    return $this->documentController->getDocumentById($path[2]); // Assuming {documentId} is the third segment
+                }
+                break;
             case 'documents/upload':
                 if ($method === 'POST') {
                     return $this->documentController->uploadDocument();
-                } elseif ($method === 'GET') {
-                    return $this->documentController->getAllDocuments();
-                }
-                break;
-            case 'requirements/get':
-                if ($method === 'GET') {
-                    return $this->requirementController->getRequirements();
-                }
-            case 'requirements/add':
-
-                if ($method === 'POST') {
-                    return $this->requirementController->createRequirement();
-                } elseif ($method === 'GET') {
-                    return $this->requirementController->getRequirementById();
-                }
-                break;
-            case 'requirements/get':
-                if ($method === 'GET') {
-                    return $this->requirementController->getRequirementsByEventId();
-                }
-                break;
-            case "requirements/edit":
-                if ($method === 'PUT') {
-                    return $this->requirementController->editRequirement();
-                }
-                break;
-            case 'event/get':
-                if ($method === 'POST') {
-                    return $this->eventController->createEvent();
-                } elseif ($method === 'GET') {
-                    return $this->eventController->getEvents();
-                }
-                break;
-            case "event/edit":
-                if ($method === 'PUT') {
-                    return $this->eventController->editEvent();
-                } elseif ($method == 'GET') {
-                    return $this->eventController->getEventById();
-                }
-                break;
-            case 'submission/update':
-                if ($method === 'PATCH') {
-                    return $this->submissionController->updateSubmissionStatus();
-                } elseif ($method === 'GET') {
-                    return $this->submissionController->getAllSubmissions();
                 }
                 break;
             default:
@@ -148,9 +111,6 @@ class Api {
                 return json_encode(["message" => "Endpoint not found"]);
                 break;
         }
-
-
-
     }
 }
 ?>
