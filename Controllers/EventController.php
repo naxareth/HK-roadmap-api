@@ -61,7 +61,7 @@ class EventController {
             return;
         }
 
-        $events = $this->eventModel->getAllEvents();
+        $events = $this->eventModel->getAllEvent();
         echo json_encode($events);
     }
     

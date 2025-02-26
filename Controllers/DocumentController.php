@@ -85,7 +85,11 @@ class DocumentController {
     }
     
     public function uploadDocument() {
-        if (!isset($_POST['event_id'], $_POST['requirement_id'], $_FILES['documents']) || !is_array($_FILES['documents']['name'])) {
+        // Log incoming request data
+        error_log("Incoming POST data: " . json_encode($_POST));
+        error_log("Incoming FILES data: " . json_encode($_FILES));
+        
+        if (!isset($_POST['event_id'], $_POST['requirement_id'], $_FILES['documents'])) {
             echo json_encode(["message" => "Missing required fields."]);
             return;
         }
@@ -114,56 +118,56 @@ class DocumentController {
         }
         $studentId = $studentData['student_id']; // Retrieve student ID from validated token
 
-        $files = $_FILES['documents'];
+        $file = $_FILES['documents'];
     
         // Check for file upload errors
-        foreach ($files['name'] as $key => $file_name) {
-            if ($files['error'][$key] !== UPLOAD_ERR_OK) {
-                switch ($files['error'][$key]) {
-                    case UPLOAD_ERR_INI_SIZE:
-                    case UPLOAD_ERR_FORM_SIZE:
-                        echo json_encode(["message" => "File is too large."]);
-                        error_log("Uploaded file size: " . $files['size'][$key]);
-                        break;
-                    case UPLOAD_ERR_PARTIAL:
-                        echo json_encode(["message" => "File was only partially uploaded."]);
-                        break;
-                    case UPLOAD_ERR_NO_FILE:
-                        echo json_encode(["message" => "No file was uploaded."]);
-                        break;
-                    case UPLOAD_ERR_NO_TMP_DIR:
-                        echo json_encode(["message" => "Missing a temporary folder."]);
-                        break;
-                    case UPLOAD_ERR_CANT_WRITE:
-                        echo json_encode(["message" => "Failed to write file to disk."]);
-                        break;
-                    case UPLOAD_ERR_EXTENSION:
-                        echo json_encode(["message" => "File upload stopped by extension."]);
-                        break;
-                    default:
-                        echo json_encode(["message" => "Unknown upload error."]);
-                        break;
-                }
-                return;
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            switch ($file['error']) {
+                case UPLOAD_ERR_INI_SIZE:
+                case UPLOAD_ERR_FORM_SIZE:
+                    echo json_encode(["message" => "File is too large."]);
+                    error_log("Uploaded file size: " . $file['size']);
+                    break;
+                case UPLOAD_ERR_PARTIAL:
+                    echo json_encode(["message" => "File was only partially uploaded."]);
+                    break;
+                case UPLOAD_ERR_NO_FILE:
+                    echo json_encode(["message" => "No file was uploaded."]);
+                    break;
+                case UPLOAD_ERR_NO_TMP_DIR:
+                    echo json_encode(["message" => "Missing a temporary folder."]);
+                    break;
+                case UPLOAD_ERR_CANT_WRITE:
+                    echo json_encode(["message" => "Failed to write file to disk."]);
+                    break;
+                case UPLOAD_ERR_EXTENSION:
+                    echo json_encode(["message" => "File upload stopped by extension."]);
+                    break;
+                default:
+                    echo json_encode(["message" => "Unknown upload error."]);
+                    break;
             }
-            $file_tmp = $files['tmp_name'][$key];
-            $target_path = "uploads/" . basename($file_name);
-            // Ensure uploads directory exists
-            if (!is_dir("uploads/")) {
-                mkdir("uploads/", 0755, true);
-            }
-            // Move the uploaded file
-            if (!move_uploaded_file($file_tmp, $target_path)) {
-                error_log("Failed to move uploaded file from $file_tmp to $target_path");
-                echo json_encode(["message" => "Failed to move uploaded file."]);
-                return;
-            }
-            // Insert document into database
-            if (!$this->documentModel->uploadDocument($eventId, $requirementId, $studentId, $target_path)) {
-                error_log("Failed to insert document into database with eventId: $eventId, requirementId: $requirementId, studentId: $studentId, path: $target_path"); 
-                echo json_encode(["message" => "Failed to record document in database."]);
-                return;
-            }
+            return;
+        }
+
+        $file_tmp = $file['tmp_name'];
+        $target_path = "uploads/" . basename($file['name']);
+        // Ensure uploads directory exists
+        if (!is_dir("uploads/")) {
+            mkdir("uploads/", 0755, true);
+        }
+        // Move the uploaded file
+        if (!move_uploaded_file($file_tmp, $target_path)) {
+            error_log("Failed to move uploaded file from $file_tmp to $target_path");
+            echo json_encode(["message" => "Failed to move uploaded file."]);
+            return;
+        }
+        
+        // Insert document into the database
+        if (!$this->documentModel->uploadDocument($eventId, $requirementId, $studentId, $target_path)) {
+            error_log("Failed to insert document into database with eventId: $eventId, requirementId: $requirementId, studentId: $studentId, path: $target_path"); 
+            echo json_encode(["message" => "Document uploaded successfully."]);
+            return;
         }
     }
 
@@ -217,4 +221,3 @@ class DocumentController {
         return $decoded['student_id'] ?? null; // Adjust according to your token structure
     }
 }
-?>

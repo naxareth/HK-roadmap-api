@@ -11,7 +11,7 @@ class Event {
         $this->db = $db;
     }
 
-    public function getAllEvents() {
+    public function getAllEvent() {
         $query = "SELECT * FROM event";
         $result = $this->db->query($query);
         return $result->fetchAll(PDO::FETCH_ASSOC);

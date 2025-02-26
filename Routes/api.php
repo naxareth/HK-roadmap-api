@@ -116,12 +116,47 @@ class Api {
                     return $this->documentController->deleteDocument();
                 }
                 break;
-
-            default:
-                http_response_code(404);
-                return json_encode(["message" => "Endpoint not found"]);
-                break;
-        }
+                case 'requirements/get':
+                    if ($method === 'GET') {
+                        return $this->requirementController->getRequirements();
+                    }
+                case 'requirements/add':
+    
+                    if ($method === 'POST') {
+                        return $this->requirementController->createRequirement();
+                    } elseif ($method === 'GET') {
+                        return $this->requirementController->getRequirements();
+                    }
+                    break;
+                case 'event/add':
+                case 'event/get':
+    
+                    if ($method === 'POST') {
+                        return $this->eventController->createEvent();
+                    } elseif ($method === 'GET') {
+                        return $this->eventController->getEvent();
+                    }
+                    break;
+                    case "event/edit":
+                        if ($method === 'PUT') {
+                            return $this->eventController->editEvent();
+                        } elseif ($method == 'GET') {
+                            return $this->eventController->getEventById();
+                        }
+                        break;
+                    case 'submission/update':
+                        if ($method === 'PATCH') {
+                            return $this->submissionController->updateSubmissionStatus();
+                        } elseif ($method === 'GET') {
+                            return $this->submissionController->getAllSubmissions();
+                        }
+                        break;
+                    default:
+                        http_response_code(404);
+                        return json_encode(["message" => "Endpoint not found"]);
+                        break;
+                }
+    
     }
 }
 ?>
