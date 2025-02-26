@@ -93,7 +93,7 @@ class Api {
                 return $this->studentController->changePassword();
             case 'documents/get':
                 if ($method === 'GET') {
-                    return $this->documentController->getAllDocumentsByAdmin();
+                    return $this->documentController->getAllDocumentsByAdmin(); // Existing method for admin
                 }
                 break;
             case 'documents/get':
@@ -106,6 +106,17 @@ class Api {
                     return $this->documentController->uploadDocument();
                 }
                 break;
+            case 'documents/student':
+                if ($method === 'GET') {
+                    return $this->documentController->getDocumentsByStudent();
+                }
+                break;
+            case 'documents/delete':
+                if ($method === 'DELETE') {
+                    return $this->documentController->deleteDocument();
+                }
+                break;
+
             default:
                 http_response_code(404);
                 return json_encode(["message" => "Endpoint not found"]);

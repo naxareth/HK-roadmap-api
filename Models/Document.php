@@ -93,8 +93,18 @@ class Document {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    public function getDocumentsByStudentId($studentId) {
+        $query = "SELECT * FROM document WHERE student_id = :student_id";
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':student_id', $studentId);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function deleteDocument($documentId) {
-        $query = "DELETE FROM document WHERE id = :document_id";
+
+        $query = "DELETE FROM document WHERE document_id = :document_id"; // Updated to use the correct column name
+
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(':document_id', $documentId);
         return $stmt->execute();

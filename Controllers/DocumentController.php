@@ -6,7 +6,6 @@ use Models\Document;
 use Models\Student; // Include the Student model
 use Controllers\AdminController;
 
-
 require_once '../models/Document.php';
 require_once '../models/Student.php'; // Require the Student model
 require_once 'AdminController.php';
@@ -15,7 +14,6 @@ class DocumentController {
     private $documentModel;
     private $adminController;
     private $studentModel; // Add a property for the Student model
-
 
     public function __construct($db) {
         $this->documentModel = new Document($db);
@@ -50,13 +48,39 @@ class DocumentController {
         return $documents;
     }
 
+    public function getDocumentsByStudent() {
+        // Extract student_id from the bearer token
+        $headers = getallheaders();
+        if (!isset($headers['Authorization'])) {
+            echo json_encode(["message" => "Authorization header missing."]);
+            return;
+        }
+        
+        $authHeader = $headers['Authorization'];
+        if (strpos($authHeader, 'Bearer ') !== 0) {
+            echo json_encode(["message" => "Invalid Authorization header format."]);
+            return;
+        }
+        
+        $token = substr($authHeader, 7);
+        // Validate the token and get the student_id
+        $studentData = $this->studentModel->validateToken($token);
+        if ($studentData === false) {
+            echo json_encode(["message" => "Invalid token or student ID not found."]);
+            return;
+        }
+        $studentId = $studentData['student_id']; // Retrieve student ID from validated token
+
+        $documents = $this->documentModel->getDocumentsByStudentId($studentId); // Fetch documents for the student
+        echo json_encode($documents);
+        return $documents;
+    }
 
     public function getDocumentById($documentId) {
         return $this->documentModel->getDocumentById($documentId);
     }
 
     public function getDocumentsByEventId($eventId) {
-
         return $this->documentModel->getDocumentsByEventId($eventId);
     }
     
@@ -143,25 +167,43 @@ class DocumentController {
         }
     }
 
-    public function deleteDocument($documentId) {
-        // Logic to delete the document from the database and filesystem
-        $document = $this->documentModel->getDocumentById($documentId);
-        if (!$document) {
-            echo json_encode(["message" => "Document not found."]);
+    public function deleteDocument() {
+        $headers = getallheaders();
+        if (!isset($headers['Authorization'])) {
+            echo json_encode(["message" => "Authorization header missing."]);
             return;
         }
 
-        // Remove the file from the filesystem
-        if (file_exists($document['file_path'])) {
-            unlink($document['file_path']);
+        $authHeader = $headers['Authorization'];
+        if (strpos($authHeader, 'Bearer ') !== 0) {
+            echo json_encode(["message" => "Invalid Authorization header format."]);
+            return;
         }
 
-        // Remove the document record from the database
-        if ($this->documentModel->deleteDocument($documentId)) {
-            echo json_encode(["message" => "Document deleted successfully."]);
-        } else {
-            echo json_encode(["message" => "Failed to delete document from database."]);
+        $token = substr($authHeader, 7);
+        // Validate the token and get the student_id
+        $studentData = $this->studentModel->validateToken($token);
+        if ($studentData === false) {
+            echo json_encode(["message" => "Invalid token or student ID not found."]);
+            return;
         }
+        $studentId = $studentData['student_id'];
+
+        // Get parameters from the request body
+        $input = json_decode(file_get_contents('php://input'), true);
+        $eventId = $input['event_id'] ?? null;
+        $requirementId = $input['requirement_id'] ?? null;
+        $documentId = $input['document_id'] ?? null; // Changed to singular
+
+        if (empty($eventId) || empty($requirementId) || empty($documentId)) {
+            echo json_encode(["message" => "Missing required fields."]);
+            return;
+        }
+
+        // Logic to delete the document
+        $this->documentModel->deleteDocument($documentId);
+
+        echo json_encode(["message" => "Document deleted successfully."]);
     }
 
     private function decodeTokenAndGetStudentId($token) {
@@ -173,7 +215,6 @@ class DocumentController {
         
         $decoded = json_decode(base64_decode(str_replace('_', '/', str_replace('-','+', $parts[1]))), true);
         return $decoded['student_id'] ?? null; // Adjust according to your token structure
-
     }
 }
 ?>

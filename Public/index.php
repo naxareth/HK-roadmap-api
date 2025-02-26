@@ -72,7 +72,6 @@ if (preg_match('/\.(jpg|png)$/', $_SERVER['REQUEST_URI'])) {
 
 }
 
-
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $path = trim($path, '/');
 $path = explode('/', $path);
@@ -132,8 +131,10 @@ if (empty($path[0])) {
             "student_change" => "POST /student/change-password",
             "document_upload" => "POST /documents/upload",
             "get_documents" => "GET /documents/get",
+            "get_student_documents" => "GET /documents/student",
             "get_requirements" => "GET /requirements/get",
             "add_requirement" => "POST /requirements/add",
+            "delete_document" => "DELETE /documents/delete",
             "id_requirement" => "GET /requirements/add",
             "get_requirements" => "GET /requirements/get",
             "event_upload" => "POST /event/add",
