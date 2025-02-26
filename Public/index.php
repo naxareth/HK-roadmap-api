@@ -134,10 +134,12 @@ if (empty($path[0])) {
             "get_documents" => "GET /documents/upload",
             "get_requirements" => "GET /requirements/get",
             "add_requirement" => "POST /requirements/add",
-
-            "get_requirements" => "GET /requirements",
+            "id_requirement" => "GET /requirements/add",
+            "get_requirements" => "GET /requirements/get",
             "event_upload" => "POST /event/add",
             "get_event" => "GET /event/get",
+            "edit_event" => "GET /event/edit",
+            "update_event" => "PUT /event/edit",
             "update_submission" => "PATCH /submission/update",
             "get_submissions" => "GET /submission/update"
         ]

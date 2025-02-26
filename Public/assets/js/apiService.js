@@ -3,46 +3,14 @@ export default class ApiService {
         this.baseURL = baseURL;
     }
 
-    async request(method, endpoint, data = null) {
-        const url = `${this.baseURL}${endpoint}`;
-        const headers = {
-            'Content-Type': 'application/json',
+    setAuthToken(token) {
+        this.authToken = token; // Store the token in the service
+
+        // Set the default headers for future requests
+        this.defaultHeaders = {
+            'Authorization': `Bearer ${token}`,
+            // Add other headers if needed
         };
-
-        const options = {
-            method,
-            headers,
-            body: data ? JSON.stringify(data) : null,
-        };
-
-        try {
-            const response = await fetch(url, options);
-            const responseText = await response.text();
-            
-            if (!response.ok) {
-                let errorData;
-                try {
-                    errorData = JSON.parse(responseText);
-                } catch {
-                    errorData = { message: responseText };
-                }
-                
-                throw {
-                    message: errorData.message || 'Request failed',
-                    status: response.status,
-                    details: errorData.details || null
-                };
-            }
-
-            try {
-                return JSON.parse(responseText);
-            } catch {
-                return { message: responseText };
-            }
-        } catch (error) {
-            console.error('API request failed:', error);
-            throw error;
-        }
     }
 
     handleError(error, defaultMessage) {
@@ -108,6 +76,35 @@ export default class ApiService {
             body: data ? JSON.stringify(data) : null,
         };
 
+        try {
+            const response = await fetch(url, options);
+            const responseText = await response.text();
+
+            let responseData;
+            try {
+                responseData = JSON.parse(responseText);
+            } catch (error) {
+                responseData = { message: responseText };
+            }
+
+            if (!response.ok) {
+                throw {
+                    message: responseData.message || 'Request failed',
+                    status: response.status,
+                    details: responseData.details || null
+                };
+            }
+
+
+            return responseData;
+
+        } catch (error) {
+            console.error('API request failed:', error);
+            throw error; 
+        }
+    }
+
+    async verifyAdminCredentials(credentials) {
         try {
             const response = await this.request('POST', '/hk-roadmap/admin/login', credentials);
             return {

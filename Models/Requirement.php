@@ -26,6 +26,25 @@ class Requirement {
         return $stmt->execute();
     }
 
+    public function getRequirementById($requirementId) {
+        // Assuming you have a database connection established
+        $stmt = $this->db->prepare("SELECT * FROM requirements WHERE id = :requirementId");
+        $stmt->bindParam(':requirementId', $requirementId);
+        $stmt->execute();
+        
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function updateRequirement($requirementId, $requirementName, $dueDate) {
+        $query = "UPDATE requirement SET requirement_name = :requirement_name, due_date = :due_date 
+                  WHERE requirement_id = :requirement_id";
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':requirement_name', $requirementName);
+        $stmt->bindParam(':due_date', $dueDate);
+        $stmt->bindParam(':requirement_id', $requirementId);
+        return $stmt->execute();
+    }
+
     public function getRequirementsByEventId($eventId) {
         $query = "SELECT * FROM requirement WHERE event_id = :event_id";
         $stmt = $this->db->prepare($query);
