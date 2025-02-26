@@ -104,16 +104,31 @@ class Api {
                 if ($method === 'POST') {
                     return $this->requirementController->createRequirement();
                 } elseif ($method === 'GET') {
-                    return $this->requirementController->getRequirements();
+                    return $this->requirementController->getRequirementById();
                 }
                 break;
-            case 'event/add':
+            case 'requirements/get':
+                if ($method === 'GET') {
+                    return $this->requirementController->getRequirementsByEventId();
+                }
+                break;
+            case "requirements/edit":
+                if ($method === 'PUT') {
+                    return $this->requirementController->editRequirement();
+                }
+                break;
             case 'event/get':
-
                 if ($method === 'POST') {
                     return $this->eventController->createEvent();
                 } elseif ($method === 'GET') {
                     return $this->eventController->getEvents();
+                }
+                break;
+            case "event/edit":
+                if ($method === 'PUT') {
+                    return $this->eventController->editEvent();
+                } elseif ($method == 'GET') {
+                    return $this->eventController->getEventById();
                 }
                 break;
             case 'submission/update':

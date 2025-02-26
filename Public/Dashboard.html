@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document and Submission Tables</title>
     <link rel="stylesheet" href="/assets/css/Dashboard.css">
-    <style>
-    </style>
+    <script>
+    </script>
 </head>
 <body>
     <!-- Princess -->
@@ -17,34 +17,27 @@
     <div class="container">
         <aside class="sidebar">
             <ul>
-                <li><a href="#" onclick="showSection('home')">Home</a></li>
-                <li><a href="#" onclick="showSection('announcement')">Announcement</a></li>
-                <li><a href="#" onclick="showSection('admin')">Admin</a></li>
+                <li><a href="#" onclick="showSection('home')" id="showHomeButton">Home</a></li>
+                <li><a href="#" onclick="showSection('admin')" id="showAdminButton">Admin</a></li>
             </ul>
         </aside>
         <main class="content">
             <section id="home-section">
                 <header>
-                    <h1><i class="fas fa-user-friends"></i> STUDENT INVOLVEMENT</h1>
+                    <h1> Events and Requirements </h1>
                 </header>
-                <section class="cards">
-                    <div class="card">INSTITUTIONAL ACTIVITIES <i class="far fa-file-alt"></i></div>
-                    <div class="card">HAWAK-KAMAY ENGAGEMENT <i class="far fa-file-alt"></i></div>
-                    <div class="card">100th FOUNDATION DAY TASKS <i class="far fa-file-alt"></i></div>
-                    <div class="card">FOR SK MLOB <i class="far fa-file-alt"></i></div>
-                    <div class="card">FOR OFFICE DUTY <i class="far fa-file-alt"></i></div>
-                    <div class="card">FOR HK STUDENT FACILITATOR <i class="far fa-file-alt"></i></div>
-                    <div class="card">FOR SIS AMBASSADORS <i class="far fa-file-alt"></i></div>
-                    <div class="card">FOR HK BBBS DUTY <i class="far fa-file-alt"></i></div>
-                  
+                <section class="cards" id="event-section" style="display: none;">
+                    <button id="event-create">Create Event</button>
+                    <!-- Table Data -->
                 </section>
+                <section class="cards" id="requirements-section" style="display: none;">
+                    <button id="requirement-create">Create Requirement</button>
+                    <!-- Table Data -->
+                </section>
+                <div style="text-align: center; margin-top: 20px; display: none;" class="backToEventsButton" id="backToEventsButton">
+                    <button class="backToEventsBtn" id="backToEventsBtn">Back to Events</button>
+                </div>
             </section>
-            <section id="announcement-section" class="announcement-container">
-                <h2>Announcements</h2>
-                <div class="announcement">🔔 Sir Adele announced that...</div>
-                <div class="announcement">🔔 February 22 2025: 100th fdc...</div>
-            </section>
-
             <section id="admin-section" class="admin-container">
                 <div class="tab-container">
                     <button class="tab-button" onclick="showTab('documents')">Documents</button>
@@ -132,10 +125,32 @@
             </section>
 
             <!-- Popup structure -->
-            <div id="popup" class="popup">
-                <span class="close-popup" onclick="togglePopup()">×</span>
+            <div id="accountPopup" class="popup">
+                <span class="close-popup" onclick="toggleAccountPopup()">×</span>
                 <div class="popup-header">Account Settings</div>
                 <button class="popup-button" onclick="logout()">Logout</button>
+            </div>
+
+            <div id="eventPopup" class="popup" style="display: none;">
+                <span class="close-popup" onclick="toggleEventPopup()">×</span>
+                <div class="popup-header">Event Form</div>
+                <input type="hidden" id="eventId" value="">
+                <label for="eventName">Event Name:</label>
+                <input type="text" id="eventName" required>
+                <label for="eventDate">Event Date:</label>
+                <input type="date" id="eventDate" required>
+                <button onclick="saveEvent()">Save Event</button>
+            </div>
+            
+            <div id="requirementPopup" class="popup" style="display: none;">
+                <span class="close-popup" onclick="toggleRequirementPopup()">×</span>
+                <div class="popup-header">Requirement Form</div>
+                <input type="hidden" id="requirementId">
+                <label for="requirementName">Requirement Name:</label>
+                <input type="text" id="requirementName" required>
+                <label for="dueDate">Due Date:</label>
+                <input type="date" id="dueDate" required>
+                <button onclick="saveRequirement()">Save Requirement</button>
             </div>
         </main>
     </div>

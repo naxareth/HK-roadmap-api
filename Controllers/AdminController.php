@@ -201,7 +201,7 @@ class AdminController {
 
         $admin = $this->adminModel->validateToken($token);
         if ($admin) {
-            echo json_encode(["message" => "Token is valid.", "admin" => $admin]);
+            /* echo json_encode(["message" => "Token is valid.", "admin" => $admin]); */ //no >:( 
             return true;
         } else {
             echo json_encode(["message" => "Invalid token."]);

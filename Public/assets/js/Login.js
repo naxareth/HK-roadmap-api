@@ -40,6 +40,14 @@ function validateInput(email, password) {
 
 document.addEventListener('DOMContentLoaded', function() {
     // Close popup when clicking the close button
+
+    const authToken = localStorage.getItem('authToken');
+    if (authToken) {
+        // Redirect to the dashboard if the token exists
+        window.location.href = 'dashboard.html';
+        return; // Exit the function to prevent further execution
+    }
+
     const closeButtons = document.querySelectorAll('.close-popup');
     closeButtons.forEach(button => {
         button.addEventListener('click', function() {
@@ -73,8 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const email = emailInput.value.trim();
             const password = passwordInput.value.trim();
-
-
+        
             if (!validateInput(email, password)) {
                 return;
             }
@@ -83,13 +90,16 @@ document.addEventListener('DOMContentLoaded', function() {
             const submitButton = loginForm.querySelector('button[type="submit"]');
             submitButton.disabled = true;
             submitButton.textContent = 'Logging in...';
-
+        
             try {
                 const response = await apiService.verifyAdminCredentials({ email, password });
                 
                 if (response.success) {
-                    localStorage.setItem('authToken', response.data.token); // Assuming the token is in response.data.token
-                
+                    const token = response.data.token; // Define the token variable here
+                    localStorage.setItem('authToken', token); // Store the token in local storage
+                    
+                    apiService.setAuthToken(token); // Use the defined token variable
+        
                     showSuccess('Logging in successfully! Please wait...');
                     setTimeout(() => {
                         window.location.href = 'dashboard.html';
@@ -107,7 +117,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } finally {
                 // Re-enable submit button
-                const submitButton = loginForm.querySelector('button[type="submit"]');
                 submitButton.disabled = false;
                 submitButton.textContent = 'Login';
             }
