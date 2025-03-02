@@ -51,18 +51,17 @@ class Api {
     }
 
     public function route($path, $method) {
-        // Parse JSON input for POST/PUT requests
-        if (in_array($method, ['POST', 'PUT'])) {
+        if (in_array($method, ['POST', 'PUT', 'PATCH'])) {
             $input = json_decode(file_get_contents('php://input'), true);
             if ($input) {
                 $_POST = $input;
             }
         }
 
-        // Handle the request based on path and method
         $endpoint = implode('/', $path);
         
         switch ($endpoint) {
+            // Admin Routes
             case 'admin/register':
                 return $this->adminController->register();
             case 'admin/profile':
@@ -77,6 +76,8 @@ class Api {
                 return $this->adminController->verifyOTP();
             case 'admin/change-password':
                 return $this->adminController->changePassword();
+
+            // Student Routes
             case 'student/register':
                 return $this->studentController->register();
             case 'student/profile':
@@ -91,72 +92,105 @@ class Api {
                 return $this->studentController->verifyOTP();
             case 'student/change-password':
                 return $this->studentController->changePassword();
-            case 'documents/get':
+
+            // Document Routes
+            case 'documents/admin':
                 if ($method === 'GET') {
-                    return $this->documentController->getAllDocumentsByAdmin(); // Existing method for admin
+                    return $this->documentController->getAllDocumentsByAdmin();
                 }
                 break;
-            case 'documents/get':
-                if ($method === 'GET') {
-                    return $this->documentController->getDocumentById($path[2]); // Assuming {documentId} is the third segment
-                }
-                break;
-            case 'documents/upload':
-                if ($method === 'POST') {
-                    return $this->documentController->uploadDocument();
-                }
-                break;
+
             case 'documents/student':
                 if ($method === 'GET') {
                     return $this->documentController->getDocumentsByStudent();
                 }
                 break;
+
+            case 'documents/upload':
+                if ($method === 'POST') {
+                    return $this->documentController->uploadDocument();
+                }
+                break;
+
+
+            case 'documents/submit':
+                if ($method === 'POST') {
+                    return $this->documentController->submitDocument();
+                }
+                break;
+
+            case 'documents/unsubmit':
+                if ($method === 'POST') {
+                    return $this->documentController->unsubmitDocument();
+                }
+                break;
+
             case 'documents/delete':
                 if ($method === 'DELETE') {
                     return $this->documentController->deleteDocument();
                 }
                 break;
-                case 'requirements/get':
-                    if ($method === 'GET') {
-                        return $this->requirementController->getRequirements();
-                    }
-                case 'requirements/add':
-    
-                    if ($method === 'POST') {
-                        return $this->requirementController->createRequirement();
-                    } elseif ($method === 'GET') {
-                        return $this->requirementController->getRequirements();
-                    }
-                    break;
-                case 'event/add':
-                case 'event/get':
-    
-                    if ($method === 'POST') {
-                        return $this->eventController->createEvent();
-                    } elseif ($method === 'GET') {
-                        return $this->eventController->getEvent();
-                    }
-                    break;
-                    case "event/edit":
-                        if ($method === 'PUT') {
-                            return $this->eventController->editEvent();
-                        } elseif ($method == 'GET') {
-                            return $this->eventController->getEventById();
-                        }
-                        break;
-                    case 'submission/update':
-                        if ($method === 'PATCH') {
-                            return $this->submissionController->updateSubmissionStatus();
-                        } elseif ($method === 'GET') {
-                            return $this->submissionController->getAllSubmissions();
-                        }
-                        break;
-                    default:
-                        http_response_code(404);
-                        return json_encode(["message" => "Endpoint not found"]);
-                        break;
+
+            case (preg_match('/^documents\/status\/(\d+)$/', $endpoint, $matches) ? $endpoint : !$endpoint):
+                if ($method === 'GET') {
+                    return $this->documentController->getDocumentStatus($matches[1]);
                 }
-    
+                break;
+
+            // Requirement Routes
+            case 'requirements/get':
+                if ($method === 'GET') {
+                    return $this->requirementController->getRequirements();
+                }
+                break;
+
+            case 'requirements/add':
+                if ($method === 'POST') {
+                    return $this->requirementController->createRequirement();
+                } elseif ($method === 'GET') {
+                    return $this->requirementController->getRequirements();
+                }
+                break;
+
+            // Event Routes
+            case 'event/add':
+                if ($method === 'POST') {
+                    return $this->eventController->createEvent();
+                }
+                break;
+
+            case 'event/get':
+                if ($method === 'GET') {
+                    return $this->eventController->getEvent();
+                }
+                break;
+
+            case "event/edit":
+                if ($method === 'PUT') {
+                    return $this->eventController->editEvent();
+                } elseif ($method === 'GET') {
+                    return $this->eventController->getEventById();
+                }
+                break;
+
+            // Submission Routes
+            case 'submission/update':
+                if ($method === 'PATCH') {
+                    return $this->submissionController->updateSubmissionStatus();
+                } elseif ($method === 'GET') {
+                    return $this->submissionController->getAllSubmissions();
+                }
+                break;
+
+            default:
+                http_response_code(404);
+                return json_encode([
+                    "message" => "Endpoint not found",
+                    "endpoint" => $endpoint,
+                    "method" => $method,
+                    "path" => $path
+                ]);
+        }
     }
 }
 ?>

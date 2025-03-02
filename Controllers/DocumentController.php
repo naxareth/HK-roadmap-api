@@ -3,226 +3,399 @@
 namespace Controllers;
 
 use Models\Document;
-use Models\Student; // Include the Student model
+use Models\Student;
 use Controllers\AdminController;
-
-require_once '../models/Document.php';
-require_once '../models/Student.php'; // Require the Student model
-require_once 'AdminController.php';
 
 class DocumentController {
     private $documentModel;
     private $adminController;
-    private $studentModel; // Add a property for the Student model
+    private $studentModel;
 
     public function __construct($db) {
         $this->documentModel = new Document($db);
-        $this->studentModel = new Student($db); // Initialize the Student model
+        $this->studentModel = new Student($db);
         $this->adminController = new AdminController($db);
     }
 
-    public function getAllDocumentsByAdmin() {
-        // Extract admin_id from the bearer token
+    private function validateAuthHeader() {
         $headers = getallheaders();
         if (!isset($headers['Authorization'])) {
-            echo json_encode(["message" => "Authorization header missing."]);
-            return;
+            http_response_code(401);
+            echo json_encode(["message" => "Authorization header missing"]);
+            return null;
         }
-        
+
         $authHeader = $headers['Authorization'];
         if (strpos($authHeader, 'Bearer ') !== 0) {
-            echo json_encode(["message" => "Invalid Authorization header format."]);
-            return;
+            http_response_code(401);
+            echo json_encode(["message" => "Invalid authorization format"]);
+            return null;
         }
-        
-        $token = substr($authHeader, 7);
-        // Validate the token and check if it's an admin token
+
+        return substr($authHeader, 7);
+    }
+
+    public function getAllDocumentsByAdmin() {
+        $token = $this->validateAuthHeader();
+        if (!$token) return;
+
         $adminData = $this->adminController->validateToken($token);
         if ($adminData === false) {
-            echo json_encode(["message" => "Invalid token or admin ID not found."]);
+            http_response_code(401);
+            echo json_encode(["message" => "Invalid token or unauthorized access"]);
             return;
         }
 
         $documents = $this->documentModel->getAllDocuments();
-        echo json_encode($documents);
-        return $documents;
+        if ($documents) {
+            echo json_encode([
+                "documents" => $documents
+            ]);
+        } else {
+            http_response_code(404);
+            echo json_encode(["message" => "No documents found"]);
+        }
     }
 
     public function getDocumentsByStudent() {
-        // Extract student_id from the bearer token
-        $headers = getallheaders();
-        if (!isset($headers['Authorization'])) {
-            echo json_encode(["message" => "Authorization header missing."]);
-            return;
-        }
-        
-        $authHeader = $headers['Authorization'];
-        if (strpos($authHeader, 'Bearer ') !== 0) {
-            echo json_encode(["message" => "Invalid Authorization header format."]);
-            return;
-        }
-        
-        $token = substr($authHeader, 7);
-        // Validate the token and get the student_id
+        $token = $this->validateAuthHeader();
+        if (!$token) return;
+
         $studentData = $this->studentModel->validateToken($token);
         if ($studentData === false) {
-            echo json_encode(["message" => "Invalid token or student ID not found."]);
+            http_response_code(401);
+            echo json_encode(["message" => "Invalid token or student ID not found"]);
             return;
         }
-        $studentId = $studentData['student_id']; // Retrieve student ID from validated token
 
-        $documents = $this->documentModel->getDocumentsByStudentId($studentId); // Fetch documents for the student
-        echo json_encode($documents);
-        return $documents;
+        $documents = $this->documentModel->getDocumentsByStudentId($studentData['student_id']);
+        if ($documents) {
+            echo json_encode([
+                "documents" => $documents
+            ]);
+        } else {
+            http_response_code(404);
+            echo json_encode(["message" => "No documents found"]);
+        }
     }
 
-    public function getDocumentById($documentId) {
-        return $this->documentModel->getDocumentById($documentId);
-    }
-
-    public function getDocumentsByEventId($eventId) {
-        return $this->documentModel->getDocumentsByEventId($eventId);
-    }
-    
     public function uploadDocument() {
-        // Log incoming request data
-        error_log("Incoming POST data: " . json_encode($_POST));
-        error_log("Incoming FILES data: " . json_encode($_FILES));
-        
+        $token = $this->validateAuthHeader();
+        if (!$token) return;
+
         if (!isset($_POST['event_id'], $_POST['requirement_id'], $_FILES['documents'])) {
-            echo json_encode(["message" => "Missing required fields."]);
+            http_response_code(400);
+            echo json_encode(["message" => "Missing required fields"]);
             return;
         }
-    
+
+        $studentData = $this->studentModel->validateToken($token);
+        if ($studentData === false) {
+            http_response_code(401);
+            echo json_encode(["message" => "Invalid token or student ID not found"]);
+            return;
+        }
+
         $eventId = $_POST['event_id'];
         $requirementId = $_POST['requirement_id'];
-        // Extract student_id from the bearer token
-        $headers = getallheaders();
-        if (!isset($headers['Authorization'])) {
-            echo json_encode(["message" => "Authorization header missing."]);
+        $studentId = $studentData['student_id'];
+        $file = $_FILES['documents'];
+
+        if ($this->documentModel->checkDocumentExists($eventId, $requirementId, $studentId)) {
+            http_response_code(409);
+            echo json_encode(["message" => "A document for this requirement has already been submitted"]);
             return;
         }
-        
-        $authHeader = $headers['Authorization'];
-        if (strpos($authHeader, 'Bearer ') !== 0) {
-            echo json_encode(["message" => "Invalid Authorization header format."]);
+
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            $this->handleFileUploadError($file['error']);
             return;
         }
-        
-        $token = substr($authHeader, 7);
-        // Validate the token and get the student_id
+
+        $uploadResult = $this->handleFileUpload($file, $eventId, $requirementId, $studentId);
+        if (!$uploadResult['success']) {
+            http_response_code(400);
+            echo json_encode(["message" => $uploadResult['message']]);
+            return;
+        }
+
+        echo json_encode([
+            "document_id" => $uploadResult['document_id'],
+            "status" => "draft"
+        ]);
+    }
+
+    public function submitDocument() {
+        $token = $this->validateAuthHeader();
+        if (!$token) return;
+
         $studentData = $this->studentModel->validateToken($token);
         if ($studentData === false) {
-            echo json_encode(["message" => "Invalid token or student ID not found."]);
-            return;
-        }
-        $studentId = $studentData['student_id']; // Retrieve student ID from validated token
-
-        $file = $_FILES['documents'];
-    
-        // Check for file upload errors
-        if ($file['error'] !== UPLOAD_ERR_OK) {
-            switch ($file['error']) {
-                case UPLOAD_ERR_INI_SIZE:
-                case UPLOAD_ERR_FORM_SIZE:
-                    echo json_encode(["message" => "File is too large."]);
-                    error_log("Uploaded file size: " . $file['size']);
-                    break;
-                case UPLOAD_ERR_PARTIAL:
-                    echo json_encode(["message" => "File was only partially uploaded."]);
-                    break;
-                case UPLOAD_ERR_NO_FILE:
-                    echo json_encode(["message" => "No file was uploaded."]);
-                    break;
-                case UPLOAD_ERR_NO_TMP_DIR:
-                    echo json_encode(["message" => "Missing a temporary folder."]);
-                    break;
-                case UPLOAD_ERR_CANT_WRITE:
-                    echo json_encode(["message" => "Failed to write file to disk."]);
-                    break;
-                case UPLOAD_ERR_EXTENSION:
-                    echo json_encode(["message" => "File upload stopped by extension."]);
-                    break;
-                default:
-                    echo json_encode(["message" => "Unknown upload error."]);
-                    break;
-            }
+            http_response_code(401);
+            echo json_encode(["message" => "Invalid token or student ID not found"]);
             return;
         }
 
-        $file_tmp = $file['tmp_name'];
-        $target_path = "uploads/" . basename($file['name']);
-        // Ensure uploads directory exists
-        if (!is_dir("uploads/")) {
-            mkdir("uploads/", 0755, true);
-        }
-        // Move the uploaded file
-        if (!move_uploaded_file($file_tmp, $target_path)) {
-            error_log("Failed to move uploaded file from $file_tmp to $target_path");
-            echo json_encode(["message" => "Failed to move uploaded file."]);
+        $input = json_decode(file_get_contents('php://input'), true);
+        $documentId = $input['document_id'] ?? null;
+
+        if (!$documentId) {
+            http_response_code(400);
+            echo json_encode(["message" => "Document ID is required"]);
             return;
         }
+
+        $document = $this->documentModel->getDocumentById($documentId);
         
-        // Insert document into the database
-        if ($this->documentModel->uploadDocument($eventId, $requirementId, $studentId, $target_path)) {
-            error_log("Document uploaded successfully for student ID: $studentId, event ID: $eventId, requirement ID: $requirementId, path: $target_path");
-            echo json_encode(["message" => "Document uploaded successfully."]);
-            return; // Ensure the response is sent immediately
+        if (!$document) {
+            http_response_code(404);
+            echo json_encode(["message" => "Document not found"]);
+            return;
+        }
+
+        if ($document['student_id'] != $studentData['student_id']) {
+            http_response_code(403);
+            echo json_encode(["message" => "Unauthorized access"]);
+            return;
+        }
+
+        if ($document['status'] !== 'draft') {
+            http_response_code(400);
+            echo json_encode(["message" => "Document must be in draft status to submit"]);
+            return;
+        }
+
+        if ($this->documentModel->submitDocument($documentId, $studentData['student_id'])) {
+            echo json_encode([
+                "document_id" => (int)$documentId,
+                "status" => "pending"
+            ]);
         } else {
-            error_log("Failed to insert document into database with eventId: $eventId, requirementId: $requirementId, studentId: $studentId, path: $target_path"); 
-            echo json_encode(["message" => "Failed to upload document."]);
-            return; // Ensure the response is sent immediately
+            http_response_code(500);
+            echo json_encode(["message" => "Failed to submit document"]);
+        }
+    }
+
+    public function unsubmitDocument() {
+        $token = $this->validateAuthHeader();
+        if (!$token) return;
+
+        $studentData = $this->studentModel->validateToken($token);
+        if ($studentData === false) {
+            http_response_code(401);
+            echo json_encode(["message" => "Invalid token or student ID not found"]);
+            return;
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        $documentId = $input['document_id'] ?? null;
+
+        if (!$documentId) {
+            http_response_code(400);
+            echo json_encode(["message" => "Document ID is required"]);
+            return;
+        }
+
+        $document = $this->documentModel->getDocumentById($documentId);
+        
+        if (!$document) {
+            http_response_code(404);
+            echo json_encode(["message" => "Document not found"]);
+            return;
+        }
+
+        if ($document['student_id'] != $studentData['student_id']) {
+            http_response_code(403);
+            echo json_encode(["message" => "Unauthorized access"]);
+            return;
+        }
+
+        if ($document['status'] !== 'pending') {
+            http_response_code(400);
+            echo json_encode(["message" => "Document must be in pending status to unsubmit"]);
+            return;
+        }
+
+        if ($this->documentModel->unsubmitDocument($documentId, $studentData['student_id'])) {
+            echo json_encode([
+                "document_id" => (int)$documentId,
+                "status" => "draft"
+            ]);
+        } else {
+            http_response_code(500);
+            echo json_encode(["message" => "Failed to unsubmit document"]);
+        }
+    }
+
+    public function getDocumentStatus($documentId = null) {
+        $token = $this->validateAuthHeader();
+        if (!$token) return;
+
+        if (!$documentId) {
+            http_response_code(400);
+            echo json_encode(["message" => "Document ID is required"]);
+            return;
+        }
+
+        $studentData = $this->studentModel->validateToken($token);
+        $adminData = $this->adminController->validateToken($token);
+
+        if ($studentData === false && $adminData === false) {
+            http_response_code(401);
+            echo json_encode(["message" => "Invalid token or unauthorized access"]);
+            return;
+        }
+
+        $document = $this->documentModel->getDocumentById($documentId);
+
+        if (!$document) {
+            http_response_code(404);
+            echo json_encode(["message" => "Document not found"]);
+            return;
+        }
+
+        if ($studentData !== false && $document['student_id'] !== $studentData['student_id']) {
+            http_response_code(403);
+            echo json_encode(["message" => "Unauthorized access to this document"]);
+            return;
+        }
+
+        $status = $this->documentModel->getDocumentStatus($documentId);
+        if ($status) {
+            echo json_encode([
+                "document_id" => $status['document_id'],
+                "status" => $status['status']
+            ]);
+        } else {
+            http_response_code(500);
+            echo json_encode(["message" => "Error retrieving document status"]);
         }
     }
 
     public function deleteDocument() {
-        $headers = getallheaders();
-        if (!isset($headers['Authorization'])) {
-            echo json_encode(["message" => "Authorization header missing."]);
-            return;
-        }
+        $token = $this->validateAuthHeader();
+        if (!$token) return;
 
-        $authHeader = $headers['Authorization'];
-        if (strpos($authHeader, 'Bearer ') !== 0) {
-            echo json_encode(["message" => "Invalid Authorization header format."]);
-            return;
-        }
-
-        $token = substr($authHeader, 7);
-        // Validate the token and get the student_id
         $studentData = $this->studentModel->validateToken($token);
         if ($studentData === false) {
-            echo json_encode(["message" => "Invalid token or student ID not found."]);
+            http_response_code(401);
+            echo json_encode(["message" => "Invalid token or student ID not found"]);
             return;
         }
-        $studentId = $studentData['student_id'];
 
-        // Get parameters from the request body
         $input = json_decode(file_get_contents('php://input'), true);
-        $eventId = $input['event_id'] ?? null;
-        $requirementId = $input['requirement_id'] ?? null;
-        $documentId = $input['document_id'] ?? null; // Changed to singular
+        $documentId = $input['document_id'] ?? null;
 
-        if (empty($eventId) || empty($requirementId) || empty($documentId)) {
-            echo json_encode(["message" => "Missing required fields."]);
+        if (!$documentId) {
+            http_response_code(400);
+            echo json_encode(["message" => "Document ID is required"]);
             return;
         }
 
-        // Logic to delete the document
-        $this->documentModel->deleteDocument($documentId);
+        $document = $this->documentModel->getDocumentById($documentId);
+        
+        if (!$document) {
+            http_response_code(404);
+            echo json_encode(["message" => "Document not found"]);
+            return;
+        }
 
-        echo json_encode(["message" => "Document deleted successfully."]);
+        if ($document['student_id'] != $studentData['student_id']) {
+            http_response_code(403);
+            echo json_encode(["message" => "Unauthorized access"]);
+            return;
+        }
+
+        if ($document['status'] !== 'draft') {
+            http_response_code(400);
+            echo json_encode(["message" => "Can only delete documents in draft status"]);
+            return;
+        }
+
+        if ($this->documentModel->deleteDocument($documentId, $studentData['student_id'])) {
+            if (file_exists($document['file_path'])) {
+                unlink($document['file_path']);
+            }
+            echo json_encode([
+                "document_id" => $documentId,
+                "status" => "deleted"
+            ]);
+        } else {
+            http_response_code(500);
+            echo json_encode(["message" => "Failed to delete document"]);
+        }
     }
 
-    private function decodeTokenAndGetStudentId($token) {
-        // Check if the token is valid and structured correctly
-        $parts = explode('.', $token);
-        if (count($parts) !== 3) {
-            return null; // Invalid token structure
+    private function handleFileUpload($file, $eventId, $requirementId, $studentId) {
+        $allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+        if (!in_array($file['type'], $allowedTypes)) {
+            return [
+                'success' => false,
+                'message' => "Invalid file type. Allowed types: PDF, JPEG, PNG"
+            ];
         }
+
+        $maxSize = 5 * 1024 * 1024; // 5MB
+        if ($file['size'] > $maxSize) {
+            return [
+                'success' => false,
+                'message' => "File too large. Maximum size: 5MB"
+            ];
+        }
+
+        $uploadDir = "uploads/";
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $newFileName = uniqid() . '_' . time() . '.' . $extension;
+        $filePath = $uploadDir . $newFileName;
+
+        if (!move_uploaded_file($file['tmp_name'], $filePath)) {
+            return [
+                'success' => false,
+                'message' => "Failed to save file"
+            ];
+        }
+
+        $documentId = $this->documentModel->uploadDocument(
+            $eventId,
+            $requirementId,
+            $studentId,
+            $filePath
+        );
+
+        if ($documentId) {
+            return [
+                'success' => true,
+                'document_id' => $documentId,
+                'message' => "Document uploaded successfully"
+            ];
+        } else {
+            if (file_exists($filePath)) {
+                unlink($filePath);
+            }
+            return [
+                'success' => false,
+                'message' => "Failed to save document in database"
+            ];
+        }
+    }
+
+    private function handleFileUploadError($errorCode) {
+        $message = match ($errorCode) {
+            UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => "File is too large",
+            UPLOAD_ERR_PARTIAL => "File was only partially uploaded",
+            UPLOAD_ERR_NO_FILE => "No file was uploaded",
+            UPLOAD_ERR_NO_TMP_DIR => "Missing temporary folder",
+            UPLOAD_ERR_CANT_WRITE => "Failed to write file to disk",
+            UPLOAD_ERR_EXTENSION => "File upload stopped by extension",
+            default => "Unknown upload error"
+        };
         
-        $decoded = json_decode(base64_decode(str_replace('_', '/', str_replace('-','+', $parts[1]))), true);
-        return $decoded['student_id'] ?? null; // Adjust according to your token structure
+        http_response_code(400);
+        echo json_encode(["message" => $message]);
     }
 }
 ?>
