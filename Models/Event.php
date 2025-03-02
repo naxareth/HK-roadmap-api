@@ -4,7 +4,10 @@ namespace Models;
 
 use PDO;
 
+use Exception;
+
 class Event {
+
     private $db;
 
     public function __construct($db) {
@@ -65,4 +68,4 @@ class Event {
     }
 }
 
-?> 
+?>

@@ -164,10 +164,14 @@ class DocumentController {
         }
         
         // Insert document into the database
-        if (!$this->documentModel->uploadDocument($eventId, $requirementId, $studentId, $target_path)) {
-            error_log("Failed to insert document into database with eventId: $eventId, requirementId: $requirementId, studentId: $studentId, path: $target_path"); 
+        if ($this->documentModel->uploadDocument($eventId, $requirementId, $studentId, $target_path)) {
+            error_log("Document uploaded successfully for student ID: $studentId, event ID: $eventId, requirement ID: $requirementId, path: $target_path");
             echo json_encode(["message" => "Document uploaded successfully."]);
-            return;
+            return; // Ensure the response is sent immediately
+        } else {
+            error_log("Failed to insert document into database with eventId: $eventId, requirementId: $requirementId, studentId: $studentId, path: $target_path"); 
+            echo json_encode(["message" => "Failed to upload document."]);
+            return; // Ensure the response is sent immediately
         }
     }
 
@@ -221,3 +225,4 @@ class DocumentController {
         return $decoded['student_id'] ?? null; // Adjust according to your token structure
     }
 }
+?>
