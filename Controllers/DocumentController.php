@@ -2,6 +2,7 @@
 
 namespace Controllers;
 
+use Exception;
 use Models\Document;
 use Models\Student;
 use Controllers\AdminController;
@@ -197,7 +198,6 @@ class DocumentController {
         }
 
         $document = $this->documentModel->getDocumentById($documentId);
-        
         if (!$document) {
             http_response_code(404);
             echo json_encode(["message" => "Document not found"]);

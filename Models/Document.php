@@ -2,6 +2,7 @@
 
 namespace Models;
 
+use Exception;
 use PDO;
 
 class Document {
@@ -73,9 +74,9 @@ class Document {
     public function submitDocument($documentId, $studentId) {
         try {
             $this->db->beginTransaction();
-    
-            // First get the document details
-            $query = "SELECT event_id, requirement_id, file_path FROM document 
+
+            // Get document details
+            $query = "SELECT event_id, requirement_id, file_path, status FROM document 
                      WHERE document_id = :document_id 
                      AND student_id = :student_id";
             
@@ -86,11 +87,11 @@ class Document {
             
             $document = $stmt->fetch(PDO::FETCH_ASSOC);
             
-            if (!$document) {
+            if (!$document || $document['status'] !== 'draft') {
                 $this->db->rollBack();
                 return false;
             }
-    
+
             // Update document status
             $updateQuery = "UPDATE document 
                            SET status = 'pending', 
@@ -104,15 +105,14 @@ class Document {
             $stmt->bindParam(':document_id', $documentId);
             $stmt->bindParam(':student_id', $studentId);
             
-            $result = $stmt->execute();
-    
-            if (!$result || $stmt->rowCount() === 0) {
+            if (!$stmt->execute() || $stmt->rowCount() === 0) {
                 $this->db->rollBack();
                 return false;
             }
-    
+
             // Create submission record
             $submissionQuery = "INSERT INTO submission (
+                document_id,
                 student_id,
                 event_id,
                 requirement_id,
@@ -121,6 +121,7 @@ class Document {
                 status,
                 approved_by
             ) VALUES (
+                :document_id,
                 :student_id,
                 :event_id,
                 :requirement_id,
@@ -129,48 +130,52 @@ class Document {
                 'pending',
                 'not yet approved'
             )";
-    
+
             $stmt = $this->db->prepare($submissionQuery);
+            $stmt->bindParam(':document_id', $documentId);
             $stmt->bindParam(':student_id', $studentId);
             $stmt->bindParam(':event_id', $document['event_id']);
             $stmt->bindParam(':requirement_id', $document['requirement_id']);
             $stmt->bindParam(':file_path', $document['file_path']);
             
-            $result = $stmt->execute();
-    
-            if (!$result) {
+            if (!$stmt->execute()) {
                 $this->db->rollBack();
                 return false;
             }
-    
+
             $this->db->commit();
             return true;
         } catch (\Exception $e) {
-            $this->db->rollBack();
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             return false;
         }
     }
+
     public function unsubmitDocument($documentId, $studentId) {
         try {
             $this->db->beginTransaction();
-    
-            // First get the document details
-            $query = "SELECT event_id, requirement_id FROM document 
-                     WHERE document_id = :document_id 
-                     AND student_id = :student_id";
+
+            // Verify document exists and get details
+            $verifyQuery = "SELECT d.*, s.submission_id 
+                          FROM document d
+                          LEFT JOIN submission s ON d.document_id = s.document_id
+                          WHERE d.document_id = :document_id 
+                          AND d.student_id = :student_id";
             
-            $stmt = $this->db->prepare($query);
+            $stmt = $this->db->prepare($verifyQuery);
             $stmt->bindParam(':document_id', $documentId);
             $stmt->bindParam(':student_id', $studentId);
             $stmt->execute();
             
             $document = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            if (!$document) {
+
+            if (!$document || $document['status'] !== 'pending') {
                 $this->db->rollBack();
                 return false;
             }
-    
+
             // Update document status
             $updateQuery = "UPDATE document 
                          SET status = 'draft', 
@@ -184,37 +189,33 @@ class Document {
             $stmt->bindParam(':document_id', $documentId);
             $stmt->bindParam(':student_id', $studentId);
             
-            $result = $stmt->execute();
-            
-            if (!$result || $stmt->rowCount() === 0) {
+            if (!$stmt->execute() || $stmt->rowCount() === 0) {
                 $this->db->rollBack();
                 return false;
             }
-    
-            // Delete corresponding submission record
-            $deleteQuery = "DELETE FROM submission 
-                           WHERE document_id = :document_id 
-                           AND student_id = :student_id 
-                           AND event_id = :event_id 
-                           AND requirement_id = :requirement_id";
-            
-            $stmt = $this->db->prepare($deleteQuery);
-            $stmt->bindParam(':document_id', $documentId);
-            $stmt->bindParam(':student_id', $studentId);
-            $stmt->bindParam(':event_id', $document['event_id']);
-            $stmt->bindParam(':requirement_id', $document['requirement_id']);
-            
-            $result = $stmt->execute();
-    
-            if (!$result) {
-                $this->db->rollBack();
-                return false;
+
+            // Delete submission if exists
+            if (isset($document['submission_id'])) {
+                $deleteQuery = "DELETE FROM submission 
+                              WHERE document_id = :document_id 
+                              AND student_id = :student_id";
+                
+                $stmt = $this->db->prepare($deleteQuery);
+                $stmt->bindParam(':document_id', $documentId);
+                $stmt->bindParam(':student_id', $studentId);
+                
+                if (!$stmt->execute()) {
+                    $this->db->rollBack();
+                    return false;
+                }
             }
-    
+
             $this->db->commit();
             return true;
         } catch (\Exception $e) {
-            $this->db->rollBack();
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             return false;
         }
     }
