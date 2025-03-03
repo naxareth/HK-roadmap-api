@@ -71,7 +71,7 @@ class RequirementController {
         $requirement = $this->requirementModel->getRequirementById($requirementId);
     
         if ($requirement) {
-            echo json_encode($requirement);
+            echo json_encode([$requirement]);
         } else {
             echo json_encode(["message" => "No requirement found for this ID."]);
         }
@@ -90,7 +90,7 @@ class RequirementController {
             return;
         }
     
-        parse_str(file_get_contents("php://input"), $putData);
+        $putData = json_decode(file_get_contents("php://input"), true);;
     
         if (!isset($putData['requirement_id'], $putData['requirement_name'], $putData['due_date'])) {
             echo json_encode(["message" => "Missing required fields."]);

@@ -96,13 +96,12 @@ header h1 {
     text-align: center;
 }
 
+
 .cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-    width: 100%;
-    max-width: 1200px;
-    margin-left: 20px;
+    display: grid; 
+    grid-template-columns: 1fr; 
+    gap: 20px; 
+    padding: 20px; 
 }
 
 .card h2 {
@@ -116,8 +115,9 @@ header h1 {
 }
 
 .card {
-    display: flex; /* Use flexbox for layout */
-    flex-direction: column; /* Stack children vertically */
+    min-width: 900px;
+    display: flex; 
+    flex-direction: row;
     background: #4caf50;
     color: white;
     padding: 20px;
@@ -129,6 +129,18 @@ header h1 {
     font-size: 18px;
     cursor: pointer;
     transition: 0.3s;
+}
+
+.text-content {
+    flex-grow: 1;
+    text-align: left;
+}
+
+.button-content {
+    display: flex; 
+    flex-direction: column;
+    margin-left: auto;
+    gap: 10px; 
 }
 
 .card:hover {
@@ -183,40 +195,6 @@ header h1 {
     }
 }
 
-.popup {
-    display: none;
-    position: fixed;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    border: 1px solid #ccc;
-    background-color: #fff;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    z-index: 1000;
-    padding: 20px;
-    width: 300px;
-}
-.popup-header {
-    font-size: 18px;
-    margin-bottom: 10px;
-}
-.popup-button {
-    margin-top: 10px;
-    padding: 10px;
-    background-color: #007bff;
-    color: #fff;
-    border: none;
-    cursor: pointer;
-}
-.popup-button:hover {
-    background-color: #0056b3;
-}
-.close-popup {
-    float: right;
-    cursor: pointer;
-    font-size: 18px;
-}
-
 .top-nav {
     display: flex;
     justify-content: space-between;
@@ -229,20 +207,14 @@ header h1 {
     top: 0;
     z-index: 1000;
 }
+
 .top-nav h1 {
     margin: 0;
     font-size: 24px;
 }
+
 .account-button {
-    background-color: #007bff;
-    color: #fff;
-    border: none;
-    margin-right: 30px;
-    padding: 10px 15px;
-    cursor: pointer;
-}
-.account-button:hover {
-    background-color: #0056b3;
+    margin-right: 50px;
 }
 
 .sidebar {
@@ -254,16 +226,20 @@ header h1 {
     overflow-y: auto;
     padding-top: 20px;
 }
+
 .sidebar h2 {
     text-align: center;
 }
+
 .sidebar ul {
     list-style-type: none;
     padding: 0;
 }
+
 .sidebar ul li {
     margin: 15px 0;
 }
+
 .sidebar ul li a {
     text-decoration: none;
     color: #333;
@@ -274,6 +250,7 @@ header h1 {
     text-align: center;
     transition: background-color 0.3s, color 0.3s;
 }
+
 .sidebar ul li a:hover {
     background-color: #007bff;
     color: #fff;
@@ -299,7 +276,7 @@ header h1 {
 #requirement-create {
     padding: 10px 15px;
     margin: 10px 0;
-    background-color: #007BFF; /* Bootstrap primary color */
+    background-color: #007BFF; 
     color: white;
     border: none;
     border-radius: 5px;
@@ -307,13 +284,13 @@ header h1 {
 }
 
 #requirement-create:hover {
-    background-color: #0056b3; /* Darker shade on hover */
+    background-color: #0056b3; 
 }
 
 #event-create {
     padding: 10px 15px;
     margin: 10px 0;
-    background-color: #007BFF; /* Bootstrap primary color */
+    background-color: #007BFF; 
     color: white;
     border: none;
     border-radius: 5px;
@@ -321,5 +298,89 @@ header h1 {
 }
 
 #event-create:hover {
-    background-color: #0056b3; /* Darker shade on hover */
+    background-color: #0056b3; 
+}
+
+.popup {
+    position: fixed; 
+    top: 50%; 
+    left: 50%; 
+    transform: translate(-50%, -50%);
+    background-color: #fff; 
+    border-radius: 10px; 
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    padding: 20px;
+    width: 500px; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center;
+}
+
+
+.popup-header {
+    font-size: 24px; 
+    margin-bottom: 20px; 
+    color: #4caf50; 
+    text-align: center; 
+}
+
+.close-popup {
+    cursor: pointer; 
+    position: absolute; 
+    top: 10px;
+    right: 15px; 
+    font-size: 24px; 
+    color: #aaa; 
+}
+
+.close-popup:hover {
+    color: #f00;
+}
+
+input[type="text"],
+input[type="date"] {
+    width: 95%; 
+    padding: 10px; 
+    margin: 10px 0; 
+    border: 1px solid #ccc; 
+    border-radius: 5px; 
+    font-size: 16px; 
+}
+
+.popup-button {
+    margin-top: 20px;
+    background-color: #4caf50; 
+    color: white; 
+    border: none; 
+    border-radius: 5px; 
+    padding: 10px; 
+    font-size: 16px; 
+    cursor: pointer; 
+    transition: background-color 0.3s; 
+    width: 300px;
+    align-self: center;
+    padding: 10px 20px;
+    margin-left: 110px;
+}
+
+button {
+    background-color: #007BFF; 
+    color: white; 
+    border: none; 
+    border-radius: 5px; 
+    padding: 10px; 
+    font-size: 16px; 
+    cursor: pointer; 
+    transition: background-color 0.3s; 
+}
+
+button:hover {
+    background-color: #0056b3; 
+}
+
+
+@media (max-width: 500px) {
+    .popup {
+        width: 90%;
+    }
 }

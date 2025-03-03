@@ -1,3 +1,5 @@
+// All Popups
+
 function toggleAccountPopup() {
     const popup = document.getElementById('accountPopup');
     if (popup) {
@@ -19,15 +21,14 @@ function toggleRequirementPopup() {
     }
 }
 
+// Tabs for the tables and tabs
+
 function showTab(tabId) {
-    // Hide all tab contents
     const tabContents = document.querySelectorAll('.tab-content');
     tabContents.forEach(content => content.style.display = 'none');
 
-    // Show the selected tab content
     document.getElementById(tabId).style.display = 'block';
 
-    // Fetch data for the selected tab
     if (tabId === 'documents') {
         fetchDocuments();
     } else if (tabId === 'submissions') {
@@ -39,27 +40,50 @@ function showTab(tabId) {
     }
 }
 
+function showSection(section) {
+    const sectionToShow = document.getElementById(section + '-section');
+    console.log(`Trying to show section: ${sectionToShow ? sectionToShow.id : 'not found'}`);
+    const sectionsToHide = ['home-section', 'admin-section'];
+
+    sectionsToHide.forEach(sec => {
+        const element = document.getElementById(sec);
+        if (element) {
+            element.style.display = 'none';
+        } else {
+            console.error(`Section "${sec}" not found.`);
+        }
+    });
+
+    if (sectionToShow) {
+        sectionToShow.style.display = 'block';
+    } else {
+        console.error(`Section "${section}-section" not found.`);
+    }
+}
+
+// admin logout, start of fetching functions for database interaction and modifications
+
 
 async function adminLogout() {
-    const authToken = localStorage.getItem('authToken'); // Retrieve the token from local storage
+    const authToken = localStorage.getItem('authToken'); 
 
     try {
         const response = await fetch('/hk-roadmap/admin/logout', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}` // Include the token in the Authorization header
+                'Authorization': `Bearer ${authToken}` 
             }
         });
 
-        const data = await response.json(); // Parse the JSON response
+        const data = await response.json(); 
 
         if (response.ok) {
-            alert(data.message); // Show success message
-            localStorage.removeItem('authToken'); // Remove the token from local storage
-            window.location.href = 'login.html'; // Redirect to login page
+            alert(data.message); 
+            localStorage.removeItem('authToken'); 
+            window.location.href = 'login.html'; 
         } else {
-            alert(data.message || 'Logout failed. Please try again.'); // Show error message
+            alert(data.message || 'Logout failed. Please try again.'); 
         }
     } catch (error) {
         console.error('Logout error:', error);
@@ -69,12 +93,11 @@ async function adminLogout() {
 
 
 function fetchStudent() {
-    // Fetch data from the server for documents
     fetch('/hk-roadmap/student/profile')
         .then(response => response.json())
         .then(data => {
             const tableBody = document.querySelector('#studentsTable tbody');
-            tableBody.innerHTML = ''; // Clear existing data
+            tableBody.innerHTML = ''; 
             data.forEach(doc => {
                 const row = `<tr>
                     <td>${doc.student_id}</td>
@@ -88,12 +111,11 @@ function fetchStudent() {
 }
 
 function fetchAdmin() {
-    // Fetch data from the server for documents
     fetch('/hk-roadmap/admin/profile')
         .then(response => response.json())
         .then(data => {
             const tableBody = document.querySelector('#adminsTable tbody');
-            tableBody.innerHTML = ''; // Clear existing data
+            tableBody.innerHTML = ''; 
             data.forEach(doc => {
                 const row = `<tr>
                     <td>${doc.admin_id}</td>
@@ -108,12 +130,11 @@ function fetchAdmin() {
 }
 
 function fetchDocuments() {
-    // Fetch data from the server for documents
     fetch('/hk-roadmap/documents/upload')
         .then(response => response.json())
         .then(data => {
             const tableBody = document.querySelector('#documentsTable tbody');
-            tableBody.innerHTML = ''; // Clear existing data
+            tableBody.innerHTML = ''; 
             data.forEach(doc => {
                 const row = `<tr>
                     <td>${doc.document_id}</td>
@@ -131,12 +152,11 @@ function fetchDocuments() {
 }
 
 function fetchSubmissions() {
-    // Fetch data from the server for submissions
     fetch('/hk-roadmap/submission/update')
         .then(response => response.json())
         .then(data => {
             const tableBody = document.querySelector('#submissionsTable tbody');
-            tableBody.innerHTML = ''; // Clear existing data
+            tableBody.innerHTML = ''; 
             data.forEach(sub => {
                 const row = `<tr>
                     <td>${sub.submission_id}</td>
@@ -153,8 +173,46 @@ function fetchSubmissions() {
         })
         .catch(error => console.error('Error fetching submissions:', error));
 }
-async function fetchCardEvents() {
-    const authToken = localStorage.getItem('authToken'); 
+
+// others, misc, etc
+
+function groupEventsByMonth(events) {
+    const groupedEvents = {};
+
+    events.forEach(event => {
+        const eventDate = new Date(event.date);
+        const monthYear = eventDate.toLocaleString('default', { month: 'long', year: 'numeric' }); // e.g., "January 2023"
+
+        if (!groupedEvents[monthYear]) {
+            groupedEvents[monthYear] = [];
+        }
+        groupedEvents[monthYear].push(event);
+    });
+
+    return groupedEvents;
+}
+
+function populateYearDropdown(data, yearSelect, selectedYear) {
+    const years = new Set();
+
+    // Extract unique years from the data
+    data.forEach(doc => {
+        const eventYear = new Date(doc.date).getFullYear();
+        years.add(eventYear);
+    });
+
+    // Clear existing options
+    yearSelect.innerHTML = '<option value="">All Years</option>'; // Reset dropdown to default
+
+    // Populate the dropdown with unique years
+    years.forEach(year => {
+        yearSelect.innerHTML += `<option value="${year}" ${year === selectedYear ? 'selected' : ''}>${year}</option>`;
+    });
+}
+
+async function initializeYearDropdown() {
+    const authToken = localStorage.getItem('authToken');
+    const yearSelect = document.getElementById('yearSelect');
 
     try {
         const response = await fetch('/hk-roadmap/event/get', {
@@ -165,43 +223,115 @@ async function fetchCardEvents() {
             }
         });
 
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-
+        if (!response.ok) throw new Error('Failed to fetch events');
         const data = await response.json();
-        const eventSection = document.getElementById('event-section');
-        
-        // Clear only the event cards, not the entire section
-        const eventCards = eventSection.querySelectorAll('.card');
-        eventCards.forEach(card => card.remove());
 
-        if (Array.isArray(data)) {
-            data.forEach(doc => {
-                console.log('Event ID:', doc.event_id); 
-                const card = `
-                    <div class="card" onclick="showRequirements(${doc.event_id})">
-                        <h2>Event ID: ${doc.event_id}</h2>
-                        <br>
-                        <p><strong>Event:</strong> ${doc.event_name}</p>
-                        <p><strong>Date:</strong> ${doc.date}</p>
-                        <i class="far fa-file-alt"></i>
-                        <button class="edit-event" data-event-id="${doc.event_id}">Edit</button>
-                    </div>`;
-                eventSection.insertAdjacentHTML('beforeend', card); // Append the card
-            });
-            eventSection.style.display = 'grid';
-        } else {
-            console.error('Expected an array but received:', data);
-            alert('Failed to load events. Please try again later.');
-        }
+        // Extract unique years
+        const years = new Set();
+        data.forEach(doc => {
+            const eventYear = new Date(doc.date).getFullYear();
+            years.add(eventYear);
+        });
+
+        // Populate dropdown
+        yearSelect.innerHTML = '<option value="">All Years</option>';
+        years.forEach(year => {
+            yearSelect.innerHTML += `<option value="${year}">${year}</option>`;
+        });
     } catch (error) {
-        console.error('Error fetching events:', error);
+        console.error('Error initializing year dropdown:', error);
     }
 }
 
+// cards
+
+async function fetchCardEvents(selectedYear) {
+    const authToken = localStorage.getItem('authToken');
+    const eventSection = document.getElementById('event-section');
+    const createEvent = document.getElementById('event-create');
+    const yearSelect = document.getElementById('yearSelect');
+
+    try {
+        const response = await fetch('/hk-roadmap/event/get', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+
+        if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`);
+        const data = await response.json();
+
+        const eventCards = eventSection.querySelectorAll('.card');
+        const monthLabels = eventSection.querySelectorAll('.month-label');
+        eventCards.forEach(card => card.remove());
+        monthLabels.forEach(label => label.remove());
+
+        if (Array.isArray(data)) {
+            data.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            const filteredData = selectedYear
+                ? data.filter(doc => new Date(doc.date).getFullYear() === parseInt(selectedYear))
+                : data;
+
+            const groupedEvents = groupEventsByMonth(filteredData);
+            for (const [monthYear, events] of Object.entries(groupedEvents)) {
+                const monthLabel = document.createElement('h3');
+                monthLabel.classList.add('month-label');
+                monthLabel.textContent = monthYear;
+                eventSection.appendChild(monthLabel);
+
+                events.forEach(doc => {
+                    const card = `
+                        <div class="card" data-event-id="${doc.event_id}" data-date="${doc.date}">
+                            <div class="text-content">
+                                <h2>Event ID: ${doc.event_id}</h2>
+                                <br>
+                                <p><strong>Event:</strong> ${doc.event_name}</p>
+                                <p><strong>Date:</strong> ${doc.date}</p>
+                                <i class="far fa-file-alt"></i>
+                            </div>
+                            <div class="button-content">
+                                <button class="show-requirements" aria-label="Show requirements for event ${doc.event_id}">Show Requirements</button>
+                                <button class="edit-event" data-event-id="${doc.event_id}" aria-label="Edit event ${doc.event_id}">Edit</button>
+                            </div>
+                        </div>
+                    `;
+                    eventSection.insertAdjacentHTML('beforeend', card);
+                });
+            }
+
+            eventSection.style.display = 'grid';
+            createEvent.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Error fetching events:', error);
+        alert('Failed to load events. Please try again later.');
+    }
+}
+
+// Function to group events by month
+function groupEventsByMonth(events) {
+    const groupedEvents = {};
+
+    events.forEach(event => {
+        const eventDate = new Date(event.date);
+        const monthYear = eventDate.toLocaleString('default', { month: 'long', year: 'numeric' }); // e.g., "January 2023"
+
+        if (!groupedEvents[monthYear]) {
+            groupedEvents[monthYear] = [];
+        }
+        groupedEvents[monthYear].push(event);
+    });
+
+    return groupedEvents;
+}
+
+
 async function showRequirements(eventId) {
     const authToken = localStorage.getItem('authToken');
+    document.getElementById('eventId').value = eventId;
     
     try {
         const response = await fetch(`/hk-roadmap/requirements/get?event_id=${eventId}`, {
@@ -220,27 +350,29 @@ async function showRequirements(eventId) {
             const requirementsSection = document.getElementById('requirements-section');
             const backButton = document.getElementById('backToEventsBtn');
             
-            // Clear only the requirement cards, not the entire section
             const requirementCards = requirementsSection.querySelectorAll('.card');
             requirementCards.forEach(card => card.remove());
 
-            data.forEach(req => {
+            data.forEach(req => {    
+                console.log('Identifications:', req.requirement_id, req.event_id); 
                 const requirement = `
-                    <div class="card">
+                    <div class="card" data-requirement-id="${req.requirement_id}" data-event-id="${req.event_id}">
                         <h2>Requirement: ${req.requirement_name}</h2>
                         <br>
                         <p><strong>Due:</strong> ${req.due_date}</p>
                         <button class="edit-requirement" data-requirement-id="${req.requirement_id}">Edit</button>
                     </div>`;
-                requirementsSection.insertAdjacentHTML('beforeend', requirement); // Append the requirement
+                requirementsSection.insertAdjacentHTML('beforeend', requirement); 
             });
 
             if (backButton) {
                 backButton.style.display = 'block';
                 backButton.parentElement.style.display = 'block'; 
             }
-
             document.getElementById('event-section').style.display = 'none';
+            document.getElementById('event-create').style.display = 'none';
+            document.getElementById('yearSelect').style.display = 'none';
+            document.getElementById('yearSelected').style.display = 'none';
             requirementsSection.style.display = 'grid';
             backButton.style.display = 'block'; 
         }
@@ -250,31 +382,7 @@ async function showRequirements(eventId) {
     }
 }
 
-
-function showSection(section) {
-    const sectionToShow = document.getElementById(section + '-section');
-    console.log(`Trying to show section: ${sectionToShow ? sectionToShow.id : 'not found'}`);
-
-    // List of all sections to hide
-    const sectionsToHide = ['home-section', 'admin-section']; // Add other sections as needed
-
-    // Hide all sections
-    sectionsToHide.forEach(sec => {
-        const element = document.getElementById(sec);
-        if (element) {
-            element.style.display = 'none';
-        } else {
-            console.error(`Section "${sec}" not found.`);
-        }
-    });
-
-    // Show the specified section
-    if (sectionToShow) {
-        sectionToShow.style.display = 'block';
-    } else {
-        console.error(`Section "${section}-section" not found.`);
-    }
-}
+// Event CRUD functions
 
 async function updateEvent(eventId, eventData) {
     const authToken = localStorage.getItem('authToken');
@@ -308,36 +416,57 @@ async function updateEvent(eventId, eventData) {
     }
 }
 
-async function updateRequirement(requirementId, requirementData) {
+async function createEvent(eventData) {
+    const authToken = localStorage.getItem('authToken');
+
+    console.log(eventId, eventData);
     try {
-        const response = await fetch(`/hk-roadmap/requirement/edit?id=${requirementId}`, {
-            method: 'PUT',
+        const response = await fetch(`/hk-roadmap/event/get`, {
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                'Authorization': `Bearer ${authToken}`
             },
-            body: JSON.stringify(requirementData)
+            body: JSON.stringify(eventData)
         });
 
+        console.log(response)
+
         const data = await response.json();
+        console.log(data)
         if (response.ok) {
-            alert('Requirement updated successfully!');
-            const eventId = new URLSearchParams(window.location.search).get('eventId');
-            if (eventId) showRequirements(eventId); // Refresh requirements list
+            alert('Event created successfully!');
+            fetchCardEvents();
             return true;
         } else {
-            throw new Error(data.message || 'Failed to update requirement');
+            throw new Error(data.message || 'Failed to create event');
         }
     } catch (error) {
-        console.error('Error updating requirement:', error);
+        console.error('Error create event:', error);
         alert(error.message);
+
         return false;
     }
 }
 
 async function saveEvent() {
     const eventId = document.getElementById('eventId').value;
-    console.log('Event ID:', eventId);
+    const eventDate = document.getElementById('eventDate').value;
+    const selectedDate = new Date(eventDate);
+    const currentDate = new Date();
+
+    currentDate.setHours(0, 0, 0, 0);
+
+    if (selectedDate < currentDate) {
+        alert("The event date cannot be in the past. Please select a valid date.");
+        return; 
+    }
+
+    const eventDataId = {
+        event_id: eventId,
+        event_name: document.getElementById('eventName').value,
+        date: document.getElementById('eventDate').value
+    };
     const eventData = {
         event_id: eventId,
         event_name: document.getElementById('eventName').value,
@@ -345,38 +474,21 @@ async function saveEvent() {
     };
 
     if (eventId) {
-        await updateEvent(eventId, eventData);
+        await updateEvent(eventId, eventDataId);
     } else {
         await createEvent(eventData);
     }
     toggleEventPopup();
 }
 
-async function saveRequirement() {
-    const requirementId = document.getElementById('requirementId').value;
-    const requirementData = {
-        requirement_name: document.getElementById('requirementName').value,
-        due_date: document.getElementById('dueDate').value,
-        event_id: document.querySelector('.event-section').dataset.eventId // Get current event ID
-    };
-
-    if (requirementId) {
-        await updateRequirement(requirementId, requirementData);
-    } else {
-        await createRequirement(requirementData);
-    }
-    toggleRequirementPopup();
-}
-
 async function loadEventForEdit(eventId) {
-    const authToken = localStorage.getItem('authToken'); // Retrieve the token from local storage
+    const authToken = localStorage.getItem('authToken'); 
 
     try {
-        const response = await fetch(`/hk-roadmap/event/edit?event_id=${eventId}`, { // Ensure the endpoint is correct
-            method: 'GET', // Use GET to fetch the event details
+        const response = await fetch(`/hk-roadmap/event/edit?event_id=${eventId}`, { 
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}` // Include the token in the Authorization header
+                'Authorization': `Bearer ${authToken}`
             }
         });
 
@@ -384,10 +496,7 @@ async function loadEventForEdit(eventId) {
         console.log('Event data:', data); 
 
         if (response.ok) {
-            // Access the first element of the array
-            const eventData = data[0]; // Get the first object from the array
-
-            // Populate the form fields with the event data
+            const eventData = data[0]; 
             if (eventData.event_id !== undefined) {
                 document.getElementById('eventId').value = eventData.event_id;
             } else {
@@ -400,15 +509,14 @@ async function loadEventForEdit(eventId) {
                 console.warn('Event name is undefined');
             }
 
-            // Directly set the date input if it exists
             if (eventData.date) {
-                const dateParts = eventData.date.split('-'); // Split the date string
-                const formattedDate = `${dateParts[1]}/${dateParts[2]}/${dateParts[0]}`; // Rearrange to MM/DD/YYYY
-                document.getElementById('eventDate').value = formattedDate; // Set the formatted date
+                const dateParts = eventData.date.split('-'); 
+                const formattedDate = `${dateParts[1]}/${dateParts[2]}/${dateParts[0]}`; 
+                document.getElementById('eventDate').value = formattedDate; 
             } else {
                 console.warn('Date is undefined, setting to default date.');
-                const defaultDate = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
-                document.getElementById('eventDate').value = defaultDate; // Set to today's date
+                const defaultDate = new Date().toISOString().split('T')[0]; 
+                document.getElementById('eventDate').value = defaultDate; 
             }
             toggleEventPopup();  
         } else {
@@ -420,23 +528,165 @@ async function loadEventForEdit(eventId) {
     }
 }
 
-async function loadRequirementForEdit(requirementId) {
+// Requirement CRUD functions
+
+async function updateRequirement(requirementId, requirementData) {
+    console.log('Creating requirement with data:', requirementId, requirementData);
+    const eventId = document.getElementById('eventId').value;
+
+    requirementData.event_id = eventId;
+
     try {
-        const response = await fetch(`/hk-roadmap/requirements/add?id=${requirementId}`);
+        const response = await fetch(`/hk-roadmap/requirements/edit?requirement_id=${requirementId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+            },
+            body: JSON.stringify(requirementData)
+        });
+
         const data = await response.json();
-        
-        document.getElementById('requirementId').value = data.requirement_id;
-        document.getElementById('requirementName').value = data.requirement_name;
-        document.getElementById('dueDate').value = data.due_date.split('T')[0];
-        toggleRequirementPopup();
+        if (response.ok) {
+            alert('Requirement updated successfully!');
+            showRequirements(eventId);
+            return true;
+        } else {
+            throw new Error(data.message || 'Failed to update requirement');
+        }
+    } catch (error) {
+        console.error('Error updating requirement:', error);
+        alert(error.message);
+        return false;
+    }
+}
+
+async function createRequirement(requirementData) {
+    console.log('Creating requirement with data:', requirementData);
+    const authToken = localStorage.getItem('authToken');
+
+    console.log(requirementData);
+    try {
+        const response = await fetch(`/hk-roadmap/requirements/add`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify(requirementData)
+        });
+
+        console.log(response)
+
+        const data = await response.json();
+        console.log(data)
+
+        if (response.ok) {
+            alert('Requirement created successfully!');
+            showRequirements(requirementData.event_id);
+            return true;
+        } else {
+            throw new Error(data.message || 'Failed to create requirement');
+        }
+    } catch (error) {
+        console.error('Error create event:', error);
+        alert(error.message);
+        return false;
+    }
+}
+
+async function saveRequirement() {
+    const requirementId = document.getElementById('requirementId').value;
+    const eventId = document.getElementById('eventId').value;
+    const requirementDate = document.getElementById('dueDate').value;
+    const selectedDate = new Date(requirementDate);
+    const currentDate = new Date();
+
+    currentDate.setHours(0, 0, 0, 0);
+
+    if (selectedDate < currentDate) {
+        alert("The event date cannot be in the past. Please select a valid date.");
+        return; 
+    }
+
+    const requirementDataId = {
+        requirement_name: document.getElementById('requirementName').value,
+        due_date: document.getElementById('dueDate').value,
+        requirement_id: requirementId,
+    };
+
+    const requirementData = {
+        event_id: eventId,
+        requirement_id: requirementId,
+        requirement_name: document.getElementById('requirementName').value,
+        due_date: document.getElementById('dueDate').value,
+    };
+
+    if (requirementId) {
+        await updateRequirement(requirementId, requirementDataId);
+    } else {
+        await createRequirement(requirementData);
+    }
+    toggleRequirementPopup();
+}
+
+async function loadRequirementForEdit(requirementId) {
+    const authToken = localStorage.getItem('authToken'); 
+
+    try {
+        const response = await fetch(`/hk-roadmap/requirements/edit?requirement_id=${requirementId}`, { 
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+
+        const data = await response.json(); 
+        console.log('Requirement data:', data); 
+
+        if (!response.ok) {
+            const errorText = await response.text(); // Get the response text for debugging
+            console.error('Error response:', errorText);
+            throw new Error(`Failed to load requirement data: ${response.status} ${response.statusText}`);
+        }
+
+        if (response.ok) {
+            const requirementData = data[0]; 
+            if (requirementData.requirement_id !== undefined) {
+                document.getElementById('requirementId').value = requirementData.requirement_id;
+            } else {
+                console.warn('Requirement ID is undefined');
+            }
+
+            if (requirementData.requirement_name !== undefined) {
+                document.getElementById('requirementName').value = requirementData.requirement_name;
+            } else {
+                console.warn('Requirement name is undefined');
+            }
+
+            if (requirementData.due_date) {
+                const dateParts = requirementData.due_date.split('-'); 
+                const formattedDate = `${dateParts[1]}/${dateParts[2]}/${dateParts[0]}`; 
+                document.getElementById('dueDate').value = formattedDate; 
+            } else {
+                console.warn('Due date is undefined, setting to default date.');
+                const defaultDate = new Date().toISOString().split('T')[0]; 
+                document.getElementById('dueDate').value = defaultDate; 
+            }
+            toggleRequirementPopup();
+        } else {
+            console.warn('No requirement data found');
+            alert('No requirement data found for the given ID.');
+        }
     } catch (error) {
         console.error('Error loading requirement:', error);
         alert('Failed to load requirement data');
     }
 }
 
+// frontend listener
+document.addEventListener('DOMContentLoaded', initializeYearDropdown);
 
-// Initialize the first tab
 document.addEventListener('DOMContentLoaded', () => {
     showSection('home');
     fetchCardEvents();
@@ -446,6 +696,23 @@ document.addEventListener('DOMContentLoaded', () => {
         alert('Logging out...');
         adminLogout();
     }
+
+    document.getElementById('event-section').addEventListener('click', function(event) {
+        if (event.target.classList.contains('show-requirements')) {
+            const eventId = event.target.closest('.card').dataset.eventId;
+            showRequirements(eventId);
+        } else if (event.target.classList.contains('edit-event')) {
+            const eventId = event.target.closest('.card').dataset.eventId;
+            console.log(`Edit event ID: ${eventId}`);
+        }
+    });
+
+    document.getElementById('requirements-section').addEventListener('click', function(event) {
+        if (event.target.classList.contains('edit-requirement')) {
+            const requirementId = event.target.closest('.card').dataset.requirementId;
+            console.log(`Edit requirement ID: ${requirementId}`);
+        }
+    });
 
     const eventCreateButton = document.getElementById('event-create');
     const requirementCreateButton = document.getElementById('requirement-create');
@@ -474,8 +741,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.addEventListener('click', (e) => {
         if (e.target.classList.contains('edit-event')) {
-            const eventId = e.target.dataset.eventId; // Get the event ID from the button's data attribute
-            console.log('Event ID:', eventId); // Log the event ID to verify it's being retrieved correctly
+            const eventId = e.target.dataset.eventId; 
+            console.log('Event ID:', eventId); 
             if (eventId) {
                 loadEventForEdit(eventId); 
             } else {
@@ -485,17 +752,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('edit-requirement')) {
+            const requirementId = e.target.dataset.requirementId; 
+            console.log('Requirement ID:', requirementId); 
+            if (requirementId) {
+                loadRequirementForEdit(requirementId); 
+            } else {
+                console.error('Requirement ID is not defined.');
+                alert('Requirement ID is required to load the event for editing.');
+            }
+        }
+    });
+
+    document.getElementById('yearSelect').addEventListener('change', function() {
+        const selectedYear = this.value;
+        fetchCardEvents(selectedYear); // Fetch events for the selected year
+    });
+
     const backButton = document.querySelector('.backToEventsBtn');
     if (backButton) {
         backButton.addEventListener('click', () => {
             const requirementsSection = document.getElementById('requirements-section');
             const eventSection = document.getElementById('event-section');
             const backButtonContainer = document.getElementById('backToEventsButton');
+            const createEvent = document.getElementById('event-create');
+            const yearSelect = document.getElementById('yearSelect');
+            const yearSelected = document.getElementById('yearSelected');
 
-            if (requirementsSection && eventSection && backButtonContainer) {
+            if (requirementsSection && eventSection && backButtonContainer && yearSelect && yearSelected) {
                 requirementsSection.style.display = 'none';
                 eventSection.style.display = 'grid'; 
                 backButtonContainer.style.display = 'none';
+                createEvent.style.display = 'block';
+                yearSelect.style.display = 'block';
             }
         });
     }

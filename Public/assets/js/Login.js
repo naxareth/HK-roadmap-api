@@ -4,8 +4,9 @@ const apiService = new ApiService('http://localhost:8000');
 
 function showError(message) {
     const errorElement = document.getElementById('errorMessage');
-    if (errorElement) {
-        errorElement.textContent = message;
+    const errorText = document.getElementById('errorText');
+    if (errorElement && errorText) {
+        errorText.textContent = message;
         errorElement.style.display = 'block';
     }
 }
@@ -39,13 +40,11 @@ function validateInput(email, password) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Close popup when clicking the close button
 
     const authToken = localStorage.getItem('authToken');
     if (authToken) {
-        // Redirect to the dashboard if the token exists
         window.location.href = 'dashboard.html';
-        return; // Exit the function to prevent further execution
+        return; 
     }
 
     const closeButtons = document.querySelectorAll('.close-popup');
@@ -86,7 +85,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // Disable submit button during request
             const submitButton = loginForm.querySelector('button[type="submit"]');
             submitButton.disabled = true;
             submitButton.textContent = 'Logging in...';
@@ -95,11 +93,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const response = await apiService.verifyAdminCredentials({ email, password });
                 
                 if (response.success) {
-                    const token = response.data.token; // Define the token variable here
-                    localStorage.setItem('authToken', token); // Store the token in local storage
+                    const token = response.data.token;
+                    localStorage.setItem('authToken', token); 
                     
-                    apiService.setAuthToken(token); // Use the defined token variable
-        
+                    apiService.setAuthToken(token);
                     showSuccess('Logging in successfully! Please wait...');
                     setTimeout(() => {
                         window.location.href = 'dashboard.html';

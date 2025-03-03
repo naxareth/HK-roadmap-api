@@ -27,11 +27,10 @@ class Requirement {
     }
 
     public function getRequirementById($requirementId) {
-        // Assuming you have a database connection established
-        $stmt = $this->db->prepare("SELECT * FROM requirements WHERE id = :requirementId");
+        $query = "SELECT * FROM requirement WHERE requirement_id = :requirementId";
+        $stmt = $this->db->prepare($query);
         $stmt->bindParam(':requirementId', $requirementId);
         $stmt->execute();
-        
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 

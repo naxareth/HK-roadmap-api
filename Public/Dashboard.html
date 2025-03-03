@@ -26,13 +26,18 @@
                 <header>
                     <h1> Events and Requirements </h1>
                 </header>
+                <label for="yearSelect" id="yearSelected">Select Year:</label>
+                <select id="yearSelect">
+                    <option value="">All Years</option>
+                    <!--- See Javascript -->
+                </select>
                 <section class="cards" id="event-section" style="display: none;">
-                    <button id="event-create">Create Event</button>
-                    <!-- Table Data -->
+                    <button id="event-create" style="display: none;">Create Event</button>
+                    <!-- See Javascript -->
                 </section>
                 <section class="cards" id="requirements-section" style="display: none;">
                     <button id="requirement-create">Create Requirement</button>
-                    <!-- Table Data -->
+                    <!-- See Javascript -->
                 </section>
                 <div style="text-align: center; margin-top: 20px; display: none;" class="backToEventsButton" id="backToEventsButton">
                     <button class="backToEventsBtn" id="backToEventsBtn">Back to Events</button>
@@ -124,8 +129,7 @@
                 </div>                            
             </section>
 
-            <!-- Popup structure -->
-            <div id="accountPopup" class="popup">
+            <div id="accountPopup" class="popup" style="display: none;">
                 <span class="close-popup" onclick="toggleAccountPopup()">×</span>
                 <div class="popup-header">Account Settings</div>
                 <button class="popup-button" onclick="logout()">Logout</button>
@@ -139,18 +143,19 @@
                 <input type="text" id="eventName" required>
                 <label for="eventDate">Event Date:</label>
                 <input type="date" id="eventDate" required>
-                <button onclick="saveEvent()">Save Event</button>
+                <button class="popup-button" onclick="saveEvent()">Save Event</button>
             </div>
             
             <div id="requirementPopup" class="popup" style="display: none;">
                 <span class="close-popup" onclick="toggleRequirementPopup()">×</span>
                 <div class="popup-header">Requirement Form</div>
+                <input type="hidden" id="eventId" value="">
                 <input type="hidden" id="requirementId">
                 <label for="requirementName">Requirement Name:</label>
                 <input type="text" id="requirementName" required>
                 <label for="dueDate">Due Date:</label>
                 <input type="date" id="dueDate" required>
-                <button onclick="saveRequirement()">Save Requirement</button>
+                <button class="popup-button" onclick="saveRequirement()">Save Requirement</button>
             </div>
         </main>
     </div>
