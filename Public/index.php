@@ -1,5 +1,4 @@
 <?php
-
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
@@ -29,24 +28,15 @@ use Middleware\AuthMiddleware;
 use Middleware\LoggingMiddleware;
 
 // Handle asset requests first
-// Handle HTML files separately
-if (preg_match('/\.html$/', $_SERVER['REQUEST_URI'])) {
-    $filePath = __DIR__ . str_replace('/hk-roadmap', '', $_SERVER['REQUEST_URI']);
-    if (file_exists($filePath)) {
-        header('Content-Type: text/html');
-        readfile($filePath);
-        return;
-    }
-}
-
-// Handle other assets (CSS, JS, images)
-// Handle CSS and JS files
-if (preg_match('/\.(css|js)$/', $_SERVER['REQUEST_URI'])) {
+if (preg_match('/\.(html|css|js|jpg|png)$/', $_SERVER['REQUEST_URI'])) {
     $filePath = __DIR__ . str_replace('/hk-roadmap', '', $_SERVER['REQUEST_URI']);
     if (file_exists($filePath)) {
         $mimeTypes = [
+            'html' => 'text/html',
             'css' => 'text/css',
-            'js' => 'application/javascript'
+            'js' => 'application/javascript',
+            'jpg' => 'image/jpeg',
+            'png' => 'image/png'
         ];
         $extension = pathinfo($filePath, PATHINFO_EXTENSION);
         header('Content-Type: ' . ($mimeTypes[$extension] ?? 'text/plain'));
@@ -54,24 +44,6 @@ if (preg_match('/\.(css|js)$/', $_SERVER['REQUEST_URI'])) {
         return;
     }
 }
-
-// Handle image files (jpg, png)
-if (preg_match('/\.(jpg|png)$/', $_SERVER['REQUEST_URI'])) {
-    $filePath = __DIR__ . str_replace('/hk-roadmap', '', $_SERVER['REQUEST_URI']);
-
-    if (file_exists($filePath)) {
-        $mimeTypes = [
-            'png' => 'image/png',
-            'jpg' => 'image/jpeg'
-        ];
-        $extension = pathinfo($filePath, PATHINFO_EXTENSION);
-        header('Content-Type: ' . ($mimeTypes[$extension] ?? 'text/plain'));
-        readfile($filePath);
-        return;
-    }
-
-}
-
 
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $path = trim($path, '/');
@@ -118,37 +90,84 @@ if (empty($path[0])) {
         "version" => "1.0",
         "base_url" => $base_url,
         "endpoints" => [
-            "admin_register" => "POST /admin/register",
-            "admin_login" => "POST /admin/login",
-            "admin_otp" => "POST admin/request-otp",
-            "admin_verify" => "POST /admin/verify",
-            "admin_change" => "POST /admin/change-password",
-            "admin_profile" => "GET /admin/profile",
-            "student_register" => "POST /student/register",
-            "student_login" => "POST /student/login",
-            "student_profile" => "GET /student/profile",
-            "send_otp" => "POST /student/send-otp",
-            "verify_otp" => "POST /student/verify-otp",
-            "student_change" => "POST /student/change-password",
-            "document_upload" => "POST /documents/upload",
-            "get_documents" => "GET /documents/upload",
-            "get_requirements" => "GET /requirements/get",
-            "add_requirement" => "POST /requirements/add",
-            "id_requirement" => "GET /requirements/add",
-            "get_requirements" => "GET /requirements/get",
-            "edit_requirement" => "GET /requirements/edit",
-            "update_requirement" => "PATCH /requirements/edit",
-            "event_upload" => "POST /event/add",
-            "get_event" => "GET /event/get",
-            "post_event" => "POST /event/get",
-            "edit_event" => "GET /event/edit",
-            "update_event" => "PUT /event/edit",
-            "update_submission" => "PATCH /submission/update",
-            "get_submissions" => "GET /submission/update"
+            // Admin endpoints
+            "admin" => [
+                "register" => "POST /admin/register",
+                "login" => "POST /admin/login",
+                "profile" => "GET /admin/profile",
+                "logout" => "POST /admin/logout",
+                "request_otp" => "POST /admin/request-otp",
+                "verify_otp" => "POST /admin/verify-otp",
+                "change_password" => "POST /admin/change-password"
+            ],
+            // Student endpoints
+            "student" => [
+                "register" => "POST /student/register",
+                "login" => "POST /student/login",
+                "profile" => "GET /student/profile",
+                "logout" => "POST /student/logout",
+                "send_otp" => "POST /student/send-otp",
+                "verify_otp" => "POST /student/verify-otp",
+                "change_password" => "POST /student/change-password"
+            ],
+            // Document endpoints
+            "documents" => [
+                "upload" => "POST /documents/upload",
+                "submit" => "POST /documents/submit",
+                "unsubmit" => "POST /documents/unsubmit",
+                "delete" => "DELETE /documents/delete",
+                "get_admin" => "GET /documents/admin",
+                "get_student" => "GET /documents/student",
+                "get_status" => "GET /documents/status/{id}"
+            ],
+            // Requirement endpoints
+            "requirements" => [
+                "get" => "GET /requirements/get",
+                "add" => "POST /requirements/add",
+                "get_by_id" => "GET /requirements/add"
+            ],
+            // Event endpoints
+            "events" => [
+                "add" => "POST /event/add",
+                "get" => "GET /event/get",
+                "get_by_id" => "GET /event/edit",
+                "update" => "PUT /event/edit"
+            ],
+            // Submission endpoints
+            "submissions" => [
+                "update_status" => "PATCH /submission/update",
+                "get_all" => "GET /submission/update"
+            ]
+        ],
+        "documentation" => [
+            "description" => "API for HK Roadmap application",
+            "authentication" => "Bearer token required for most endpoints",
+            "errors" => [
+                "400" => "Bad Request - Invalid input parameters",
+                "401" => "Unauthorized - Authentication required",
+                "403" => "Forbidden - Insufficient permissions",
+                "404" => "Not Found - Resource not found",
+                "500" => "Internal Server Error"
+            ]
         ]
     ]);
     return;
 }
 
+// Handle CORS preflight requests
+if ($method === 'OPTIONS') {
+    header('Access-Control-Allow-Origin: *');
+    header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type, Authorization');
+    header('Access-Control-Max-Age: 86400'); // 24 hours
+    http_response_code(200);
+    return;
+}
+
+// Set CORS headers for all responses
+header('Access-Control-Allow-Origin: *');
+header('Content-Type: application/json');
+
+// Route the request
 $router->route($path, $method);
 ?>

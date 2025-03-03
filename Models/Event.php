@@ -4,14 +4,17 @@ namespace Models;
 
 use PDO;
 
+use Exception;
+
 class Event {
+
     private $db;
 
     public function __construct($db) {
         $this->db = $db;
     }
 
-    public function getAllEvents() {
+    public function getAllEvent() {
         $query = "SELECT * FROM event";
         $result = $this->db->query($query);
         return $result->fetchAll(PDO::FETCH_ASSOC);
@@ -65,4 +68,4 @@ class Event {
     }
 }
 
-?> 
+?>
