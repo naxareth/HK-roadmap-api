@@ -119,10 +119,23 @@ class Api {
                 }
                 break;
 
+            case 'documents/submit-multiple':
+                if ($method === 'POST') {
+                     return $this->documentController->submitMultiple();
+                }
+                break;
+    
+
             case 'documents/unsubmit':
                 if ($method === 'POST') {
                     return $this->documentController->unsubmitDocument();
                 }
+                break;
+
+            case 'documents/unsubmit-multiple':
+                if ($method === 'POST') {
+                     return $this->documentController->unsubmitMultiple();
+                 }
                 break;
 
             case 'documents/delete':

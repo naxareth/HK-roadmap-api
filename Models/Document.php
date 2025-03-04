@@ -23,6 +23,7 @@ class Document {
                      LEFT JOIN event e ON d.event_id = e.event_id
                      LEFT JOIN requirement r ON d.requirement_id = r.requirement_id
                      ORDER BY d.upload_at DESC";
+            
             $stmt = $this->db->query($query);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (\Exception $e) {
@@ -30,27 +31,31 @@ class Document {
         }
     }
 
-    public function uploadDocument($eventId, $requirementId, $studentId, $filePath) {
+    public function uploadLinkDocument($eventId, $requirementId, $studentId, $linkUrl) {
         try {
             $this->db->beginTransaction();
 
             $query = "INSERT INTO document (
-                event_id, 
-                requirement_id, 
-                student_id, 
-                file_path, 
-                upload_at, 
+                event_id,
+                requirement_id,
+                student_id,
+                file_path,
+                document_type,
+                link_url,
+                upload_at,
                 status,
                 is_submitted,
                 submitted_at
             ) VALUES (
-                :event_id, 
-                :requirement_id, 
-                :student_id, 
-                :file_path, 
-                NOW(), 
+                :event_id,
+                :requirement_id,
+                :student_id,
+                '', -- Empty file_path for link documents
+                'link',
+                :link_url,
+                NOW(),
                 'draft',
-                FALSE,
+                0,
                 NULL
             )";
 
@@ -58,8 +63,8 @@ class Document {
             $stmt->bindParam(':event_id', $eventId);
             $stmt->bindParam(':requirement_id', $requirementId);
             $stmt->bindParam(':student_id', $studentId);
-            $stmt->bindParam(':file_path', $filePath);
-            
+            $stmt->bindParam(':link_url', $linkUrl);
+
             $stmt->execute();
             $documentId = $this->db->lastInsertId();
 
@@ -71,12 +76,156 @@ class Document {
         }
     }
 
-    public function submitDocument($documentId, $studentId) {
+    public function uploadDocument($eventId, $requirementId, $studentId, $filePath) {
         try {
             $this->db->beginTransaction();
 
+            $query = "INSERT INTO document (
+                event_id,
+                requirement_id,
+                student_id,
+                file_path,
+                document_type,
+                link_url,
+                upload_at,
+                status,
+                is_submitted,
+                submitted_at
+            ) VALUES (
+                :event_id,
+                :requirement_id,
+                :student_id,
+                :file_path,
+                'file',
+                NULL,
+                NOW(),
+                'draft',
+                0,
+                NULL
+            )";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':event_id', $eventId);
+            $stmt->bindParam(':requirement_id', $requirementId);
+            $stmt->bindParam(':student_id', $studentId);
+            $stmt->bindParam(':file_path', $filePath);
+
+            $stmt->execute();
+            $documentId = $this->db->lastInsertId();
+
+            $this->db->commit();
+            return $documentId;
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            return false;
+        }
+    }
+
+    public function submitMultipleDocuments($documentIds, $studentId) {
+        try {
+            $this->db->beginTransaction();
+    
+            foreach ($documentIds as $documentId) {
+                // Get document details
+                $query = "SELECT event_id, requirement_id, file_path, link_url, document_type, status 
+                         FROM document
+                         WHERE document_id = :document_id
+                         AND student_id = :student_id";
+                
+                $stmt = $this->db->prepare($query);
+                $stmt->bindParam(':document_id', $documentId);
+                $stmt->bindParam(':student_id', $studentId);
+                $stmt->execute();
+                $document = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+                if (!$document || $document['status'] !== 'draft') {
+                    $this->db->rollBack();
+                    return false;
+                }
+    
+                // Update document status
+                $updateQuery = "UPDATE document
+                               SET status = 'pending',
+                                   is_submitted = 1,
+                                   submitted_at = NOW()
+                               WHERE document_id = :document_id
+                               AND student_id = :student_id
+                               AND status = 'draft'";
+                
+                $stmt = $this->db->prepare($updateQuery);
+                $stmt->bindParam(':document_id', $documentId);
+                $stmt->bindParam(':student_id', $studentId);
+                
+                if (!$stmt->execute() || $stmt->rowCount() === 0) {
+                    $this->db->rollBack();
+                    return false;
+                }
+    
+                // Create submission record
+                $submissionQuery = "INSERT INTO submission (
+                    document_id,
+                    student_id,
+                    event_id,
+                    requirement_id,
+                    file_path,
+                    document_type,
+                    link_url,
+                    submission_date,
+                    status,
+                    approved_by
+                ) VALUES (
+                    :document_id,
+                    :student_id,
+                    :event_id,
+                    :requirement_id,
+                    :file_path,
+                    :document_type,
+                    :link_url,
+                    NOW(),
+                    'pending',
+                    'not yet approved'
+                )";
+    
+                $stmt = $this->db->prepare($submissionQuery);
+                $stmt->bindParam(':document_id', $documentId);
+                $stmt->bindParam(':student_id', $studentId);
+                $stmt->bindParam(':event_id', $document['event_id']);
+                $stmt->bindParam(':requirement_id', $document['requirement_id']);
+                
+                // Handle file_path based on document_type
+                if ($document['document_type'] === 'link') {
+                    $filePath = ''; // Empty string for links since file_path can't be NULL
+                } else {
+                    $filePath = $document['file_path'];
+                }
+                $stmt->bindParam(':file_path', $filePath);
+                
+                $stmt->bindParam(':document_type', $document['document_type']);
+                $stmt->bindParam(':link_url', $document['link_url']);
+                
+                if (!$stmt->execute()) {
+                    $this->db->rollBack();
+                    return false;
+                }
+            }
+    
+            $this->db->commit();
+            return true;
+        } catch (\Exception $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            return false;
+        }
+    }
+
+    public function submitDocument($documentId, $studentId) {
+        try {
+            $this->db->beginTransaction();
+    
             // Get document details
-            $query = "SELECT event_id, requirement_id, file_path, status FROM document 
+            $query = "SELECT event_id, requirement_id, file_path, link_url, document_type, status 
+                     FROM document 
                      WHERE document_id = :document_id 
                      AND student_id = :student_id";
             
@@ -91,7 +240,7 @@ class Document {
                 $this->db->rollBack();
                 return false;
             }
-
+    
             // Update document status
             $updateQuery = "UPDATE document 
                            SET status = 'pending', 
@@ -109,14 +258,16 @@ class Document {
                 $this->db->rollBack();
                 return false;
             }
-
-            // Create submission record
+    
+            // Create submission record with appropriate handling for file_path
             $submissionQuery = "INSERT INTO submission (
                 document_id,
                 student_id,
                 event_id,
                 requirement_id,
                 file_path,
+                document_type,
+                link_url,
                 submission_date,
                 status,
                 approved_by
@@ -126,23 +277,35 @@ class Document {
                 :event_id,
                 :requirement_id,
                 :file_path,
+                :document_type,
+                :link_url,
                 NOW(),
                 'pending',
                 'not yet approved'
             )";
-
+    
             $stmt = $this->db->prepare($submissionQuery);
             $stmt->bindParam(':document_id', $documentId);
             $stmt->bindParam(':student_id', $studentId);
             $stmt->bindParam(':event_id', $document['event_id']);
             $stmt->bindParam(':requirement_id', $document['requirement_id']);
-            $stmt->bindParam(':file_path', $document['file_path']);
+            
+            // Handle file_path based on document_type
+            if ($document['document_type'] === 'link') {
+                $filePath = ''; // Empty string for links since file_path can't be NULL
+            } else {
+                $filePath = $document['file_path'];
+            }
+            $stmt->bindParam(':file_path', $filePath);
+            
+            $stmt->bindParam(':document_type', $document['document_type']);
+            $stmt->bindParam(':link_url', $document['link_url']);
             
             if (!$stmt->execute()) {
                 $this->db->rollBack();
                 return false;
             }
-
+    
             $this->db->commit();
             return true;
         } catch (\Exception $e) {
@@ -210,6 +373,75 @@ class Document {
                 }
             }
 
+            $this->db->commit();
+            return true;
+        } catch (\Exception $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            return false;
+        }
+    }
+
+    public function unsubmitMultipleDocuments($documentIds, $studentId) {
+        try {
+            $this->db->beginTransaction();
+    
+            foreach ($documentIds as $documentId) {
+                // Verify document exists and get details
+                $verifyQuery = "SELECT d.*, s.submission_id 
+                              FROM document d
+                              LEFT JOIN submission s ON d.document_id = s.document_id
+                              WHERE d.document_id = :document_id 
+                              AND d.student_id = :student_id";
+                
+                $stmt = $this->db->prepare($verifyQuery);
+                $stmt->bindParam(':document_id', $documentId);
+                $stmt->bindParam(':student_id', $studentId);
+                $stmt->execute();
+                
+                $document = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+                if (!$document || $document['status'] !== 'pending') {
+                    $this->db->rollBack();
+                    return false;
+                }
+    
+                // Update document status
+                $updateQuery = "UPDATE document 
+                              SET status = 'draft', 
+                                  is_submitted = FALSE,
+                                  submitted_at = NULL
+                              WHERE document_id = :document_id 
+                              AND student_id = :student_id
+                              AND status = 'pending'";
+                
+                $stmt = $this->db->prepare($updateQuery);
+                $stmt->bindParam(':document_id', $documentId);
+                $stmt->bindParam(':student_id', $studentId);
+                
+                if (!$stmt->execute() || $stmt->rowCount() === 0) {
+                    $this->db->rollBack();
+                    return false;
+                }
+    
+                // Delete submission if exists
+                if (isset($document['submission_id'])) {
+                    $deleteQuery = "DELETE FROM submission 
+                                  WHERE document_id = :document_id 
+                                  AND student_id = :student_id";
+                    
+                    $stmt = $this->db->prepare($deleteQuery);
+                    $stmt->bindParam(':document_id', $documentId);
+                    $stmt->bindParam(':student_id', $studentId);
+                    
+                    if (!$stmt->execute()) {
+                        $this->db->rollBack();
+                        return false;
+                    }
+                }
+            }
+    
             $this->db->commit();
             return true;
         } catch (\Exception $e) {
@@ -288,6 +520,100 @@ class Document {
         }
     }
 
+    public function isRequirementOverdue($eventId, $requirementId) {
+        try {
+            $query = "SELECT due_date < NOW() as is_overdue
+                     FROM requirement 
+                     WHERE requirement_id = :requirement_id 
+                     AND event_id = :event_id";
+    
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':requirement_id', $requirementId);
+            $stmt->bindParam(':event_id', $eventId);
+            $stmt->execute();
+            
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result && $result['is_overdue'];
+        } catch (\Exception $e) {
+            return true; // Return true (overdue) on error to be safe
+        }
+    }
+    
+    public function updateOverdueDocuments() {
+        try {
+            $this->db->beginTransaction();
+    
+            // Find all draft documents with overdue requirements
+            $query = "UPDATE document d
+                     INNER JOIN requirement r 
+                        ON d.requirement_id = r.requirement_id 
+                        AND d.event_id = r.event_id
+                     SET d.status = 'missing'
+                     WHERE d.status = 'draft' 
+                     AND r.due_date < NOW()";
+    
+            $stmt = $this->db->prepare($query);
+            $result = $stmt->execute();
+    
+            if (!$result) {
+                $this->db->rollBack();
+                return false;
+            }
+    
+            $this->db->commit();
+            return true;
+        } catch (\Exception $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            return false;
+        }
+    }
+    
+    public function checkAndUpdateDocumentStatus($documentId) {
+        try {
+            $this->db->beginTransaction();
+    
+            // Check if the document's requirement is overdue
+            $query = "SELECT d.status, r.due_date < NOW() as is_overdue
+                     FROM document d
+                     INNER JOIN requirement r 
+                        ON d.requirement_id = r.requirement_id 
+                        AND d.event_id = r.event_id
+                     WHERE d.document_id = :document_id
+                     AND d.status = 'draft'";
+    
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':document_id', $documentId);
+            $stmt->execute();
+            
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+            if ($result && $result['is_overdue']) {
+                // Update document status to missing
+                $updateQuery = "UPDATE document 
+                              SET status = 'missing'
+                              WHERE document_id = :document_id";
+                
+                $stmt = $this->db->prepare($updateQuery);
+                $stmt->bindParam(':document_id', $documentId);
+                
+                if (!$stmt->execute()) {
+                    $this->db->rollBack();
+                    return false;
+                }
+            }
+    
+            $this->db->commit();
+            return true;
+        } catch (\Exception $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            return false;
+        }
+    }
+
     public function getDocumentById($documentId) {
         try {
             $query = "SELECT * FROM document WHERE document_id = :document_id";
@@ -351,7 +677,7 @@ class Document {
                      WHERE event_id = :event_id 
                      AND requirement_id = :requirement_id 
                      AND student_id = :student_id
-                     AND status != 'rejected'";
+                     AND status IN ('pending', 'approved')";  // Only check for pending or approved
             
             $stmt = $this->db->prepare($query);
             $stmt->bindParam(':event_id', $eventId);
