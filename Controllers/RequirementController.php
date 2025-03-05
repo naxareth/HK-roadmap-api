@@ -153,5 +153,32 @@ class RequirementController {
             echo json_encode(["message" => "Failed to create requirement."]);
         }
     }
+
+    public function deleteRequirement() {
+        $headers = apache_request_headers(); 
+        if (!isset($headers['Authorization'])) {
+            echo json_encode(["message" => "Token is required."]);
+            return;
+        }
+
+        $token = str_replace('Bearer ', '', $headers['Authorization']);
+        if (!$this->adminController->validateToken($token)) {
+            echo json_encode(["message" => "Invalid token."]);
+            return;
+        }
+
+        if (!isset($_GET['requirement_id'])) {
+            echo json_encode(["message" => "Requirement ID is required."]);
+            return;
+        }
+
+        $requirementId = $_GET['requirement_id'];
+
+        if ($this->requirementModel->deleteRequirement($requirementId)) {
+            echo json_encode(["message" => "Requirement deleted successfully."]);
+        } else {
+            echo json_encode(["message" => "Failed to delete requirement or requirement not found."]);
+        }
+    }
 }
 ?>

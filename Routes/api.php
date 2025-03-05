@@ -148,7 +148,22 @@ class Api {
                 if ($method === 'POST') {
                     return $this->requirementController->createRequirement();
                 } elseif ($method === 'GET') {
-                    return $this->requirementController->getRequirements();
+                    return $this->requirementController->getRequirementsByEventId();
+                }
+                break;
+
+            case 'requirements/delete':
+                if ($method === 'DELETE') {
+                    return $this->requirementController->deleteRequirement();
+                }
+                break;
+            
+            case 'requirements/edit':
+                if ($method === 'GET') {
+                    return $this->requirementController->getRequirementById();
+                }
+                elseif ($method === 'PUT'){
+                    return $this->requirementController->editRequirement();
                 }
                 break;
 
@@ -170,6 +185,12 @@ class Api {
                     return $this->eventController->editEvent();
                 } elseif ($method === 'GET') {
                     return $this->eventController->getEventById();
+                }
+                break;
+
+            case 'event/delete':
+                if ($method === 'DELETE') {
+                    return $this->eventController->deleteEvent();
                 }
                 break;
 

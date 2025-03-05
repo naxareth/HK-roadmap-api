@@ -126,5 +126,32 @@ class EventController {
             echo json_encode(["message" => "Failed to create event."]);
         }
     }
+
+    public function deleteEvent() {
+        $headers = apache_request_headers(); 
+        if (!isset($headers['Authorization'])) {
+            echo json_encode(["message" => "Token is required."]);
+            return;
+        }
+
+        $token = str_replace('Bearer ', '', $headers['Authorization']);
+        if (!$this->adminController->validateToken($token)) {
+            echo json_encode(["message" => "Invalid token."]);
+            return;
+        }
+
+        if (!isset($_GET['event_id'])) {
+            echo json_encode(["message" => "Event ID is required."]);
+            return;
+        }
+
+        $eventId = $_GET['event_id'];
+
+        if ($this->eventModel->deleteEvent($eventId)) {
+            echo json_encode(["message" => "Event deleted successfully."]);
+        } else {
+            echo json_encode(["message" => "Failed to delete event or event not found."]);
+        }
+    }
 }
 ?>

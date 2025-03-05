@@ -60,6 +60,30 @@ class Event {
 
             $this->db->commit();
             return true; 
+
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log($e->getMessage());
+            return false;
+        }
+    }
+
+    public function deleteEvent($eventId) {
+        $this->db->beginTransaction();
+    
+        try {
+            $requirementQuery = "DELETE FROM requirement WHERE event_id = :event_id";
+            $requirementStmt = $this->db->prepare($requirementQuery);
+            $requirementStmt->bindParam(':event_id', $eventId);
+            $requirementStmt->execute();
+
+            $query = "DELETE FROM event WHERE event_id = :event_id";
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':event_id', $eventId);
+            $stmt->execute();
+
+            $this->db->commit();
+            return true; 
         } catch (Exception $e) {
             $this->db->rollBack();
             error_log($e->getMessage());

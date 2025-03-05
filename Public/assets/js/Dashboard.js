@@ -1,5 +1,4 @@
 // All Popups
-
 function toggleAccountPopup() {
     const popup = document.getElementById('accountPopup');
     if (popup) {
@@ -22,7 +21,6 @@ function toggleRequirementPopup() {
 }
 
 // Tabs for the tables and tabs
-
 function showTab(tabId) {
     const tabContents = document.querySelectorAll('.tab-content');
     tabContents.forEach(content => content.style.display = 'none');
@@ -62,8 +60,6 @@ function showSection(section) {
 }
 
 // admin logout, start of fetching functions for database interaction and modifications
-
-
 async function adminLogout() {
     const authToken = localStorage.getItem('authToken'); 
 
@@ -129,14 +125,24 @@ function fetchAdmin() {
         .catch(error => console.error('Error fetching documents:', error));
 }
 
-function fetchDocuments() {
-    fetch('/hk-roadmap/documents/upload')
-        .then(response => response.json())
-        .then(data => {
-            const tableBody = document.querySelector('#documentsTable tbody');
-            tableBody.innerHTML = ''; 
+async function fetchDocuments() {
+    const authToken = localStorage.getItem('authToken');
+    try {
+        const response = await fetch('/hk-roadmap/documents/admin', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        const data = await response.json();
+        const tableBody = document.querySelector('#documentsTable tbody');
+        tableBody.innerHTML = ''; 
+        if (Array.isArray(data)) {
             data.forEach(doc => {
-                const row = `<tr>
+            const row = `
+                <tr>
                     <td>${doc.document_id}</td>
                     <td>${doc.event_id}</td>
                     <td>${doc.requirement_id}</td>
@@ -144,11 +150,15 @@ function fetchDocuments() {
                     <td>${doc.file_path}</td>
                     <td>${doc.upload_at}</td>
                     <td>${doc.status}</td>
+                    <td>${doc.is_submitted}</td>
+                    <td>${doc.submitted_at}</td>
                 </tr>`;
-                tableBody.innerHTML += row;
+            tableBody.innerHTML += row;
             });
-        })
-        .catch(error => console.error('Error fetching documents:', error));
+        }
+    } catch (error) {
+        console.error('Error fetching documents:', error);
+    }   alert('Error loading documents');
 }
 
 function fetchSubmissions() {
@@ -175,7 +185,6 @@ function fetchSubmissions() {
 }
 
 // others, misc, etc
-
 function groupEventsByMonth(events) {
     const groupedEvents = {};
 
@@ -244,12 +253,10 @@ async function initializeYearDropdown() {
 }
 
 // cards
-
 async function fetchCardEvents(selectedYear) {
     const authToken = localStorage.getItem('authToken');
     const eventSection = document.getElementById('event-section');
     const createEvent = document.getElementById('event-create');
-    const yearSelect = document.getElementById('yearSelect');
 
     try {
         const response = await fetch('/hk-roadmap/event/get', {
@@ -295,6 +302,7 @@ async function fetchCardEvents(selectedYear) {
                             <div class="button-content">
                                 <button class="show-requirements" aria-label="Show requirements for event ${doc.event_id}">Show Requirements</button>
                                 <button class="edit-event" data-event-id="${doc.event_id}" aria-label="Edit event ${doc.event_id}">Edit</button>
+                                <button class="delete-event" data-event-id="${doc.event_id}" aria-label="Delete event ${doc.event_id}">Delete</button>
                             </div>
                         </div>
                     `;
@@ -311,30 +319,12 @@ async function fetchCardEvents(selectedYear) {
     }
 }
 
-// Function to group events by month
-function groupEventsByMonth(events) {
-    const groupedEvents = {};
-
-    events.forEach(event => {
-        const eventDate = new Date(event.date);
-        const monthYear = eventDate.toLocaleString('default', { month: 'long', year: 'numeric' }); // e.g., "January 2023"
-
-        if (!groupedEvents[monthYear]) {
-            groupedEvents[monthYear] = [];
-        }
-        groupedEvents[monthYear].push(event);
-    });
-
-    return groupedEvents;
-}
-
-
 async function showRequirements(eventId) {
     const authToken = localStorage.getItem('authToken');
     document.getElementById('eventId').value = eventId;
     
     try {
-        const response = await fetch(`/hk-roadmap/requirements/get?event_id=${eventId}`, {
+        const response = await fetch(`/hk-roadmap/requirements/add?event_id=${eventId}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -357,10 +347,15 @@ async function showRequirements(eventId) {
                 console.log('Identifications:', req.requirement_id, req.event_id); 
                 const requirement = `
                     <div class="card" data-requirement-id="${req.requirement_id}" data-event-id="${req.event_id}">
-                        <h2>Requirement: ${req.requirement_name}</h2>
-                        <br>
-                        <p><strong>Due:</strong> ${req.due_date}</p>
-                        <button class="edit-requirement" data-requirement-id="${req.requirement_id}">Edit</button>
+                        <div class="text-content">
+                            <h2>Requirement: ${req.requirement_name}</h2>
+                            <br>
+                            <p><strong>Due:</strong> ${req.due_date}</p>
+                        </div>
+                        <div class="button-content">
+                            <button class="edit-requirement" data-requirement-id="${req.requirement_id}">Edit</button>
+                            <button class="delete-requirement" data-requirement-id="${req.requirement_id}" aria-label="Delete requirement ${req.requirement_id}">Delete</button>
+                        </div>
                     </div>`;
                 requirementsSection.insertAdjacentHTML('beforeend', requirement); 
             });
@@ -382,8 +377,24 @@ async function showRequirements(eventId) {
     }
 }
 
-// Event CRUD functions
+// Function to group events by month
+function groupEventsByMonth(events) {
+    const groupedEvents = {};
 
+    events.forEach(event => {
+        const eventDate = new Date(event.date);
+        const monthYear = eventDate.toLocaleString('default', { month: 'long', year: 'numeric' }); // e.g., "January 2023"
+
+        if (!groupedEvents[monthYear]) {
+            groupedEvents[monthYear] = [];
+        }
+        groupedEvents[monthYear].push(event);
+    });
+
+    return groupedEvents;
+}
+
+// Event CRUD functions
 async function updateEvent(eventId, eventData) {
     const authToken = localStorage.getItem('authToken');
 
@@ -404,7 +415,7 @@ async function updateEvent(eventId, eventData) {
         console.log(data)
         if (response.ok) {
             alert('Event updated successfully!');
-            fetchCardEvents();
+            fetchCardEvents(eventData.year);
             return true;
         } else {
             throw new Error(data.message || 'Failed to update event');
@@ -421,7 +432,7 @@ async function createEvent(eventData) {
 
     console.log(eventId, eventData);
     try {
-        const response = await fetch(`/hk-roadmap/event/get`, {
+        const response = await fetch(`/hk-roadmap/event/add`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -436,7 +447,7 @@ async function createEvent(eventData) {
         console.log(data)
         if (response.ok) {
             alert('Event created successfully!');
-            fetchCardEvents();
+            fetchCardEvents(eventData.year);
             return true;
         } else {
             throw new Error(data.message || 'Failed to create event');
@@ -452,6 +463,7 @@ async function createEvent(eventData) {
 async function saveEvent() {
     const eventId = document.getElementById('eventId').value;
     const eventDate = document.getElementById('eventDate').value;
+    const selectedYear = document.getElementById('yearSelect').value;
     const selectedDate = new Date(eventDate);
     const currentDate = new Date();
 
@@ -461,20 +473,15 @@ async function saveEvent() {
         alert("The event date cannot be in the past. Please select a valid date.");
         return; 
     }
-
-    const eventDataId = {
-        event_id: eventId,
-        event_name: document.getElementById('eventName').value,
-        date: document.getElementById('eventDate').value
-    };
     const eventData = {
         event_id: eventId,
         event_name: document.getElementById('eventName').value,
-        date: document.getElementById('eventDate').value
+        date: document.getElementById('eventDate').value,
+        year: selectedYear
     };
 
     if (eventId) {
-        await updateEvent(eventId, eventDataId);
+        await updateEvent(eventId, eventData);
     } else {
         await createEvent(eventData);
     }
@@ -528,8 +535,34 @@ async function loadEventForEdit(eventId) {
     }
 }
 
-// Requirement CRUD functions
+async function deleteEvent(eventId) {
+    const authToken = localStorage.getItem('authToken');
+    const selectedYear = document.getElementById('yearSelect').value;
 
+    try {
+        const response = await fetch(`/hk-roadmap/event/delete?event_id=${eventId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            alert('Event deleted successfully!');
+            fetchCardEvents(selectedYear);
+        } else {
+            throw new Error(data.message || 'Failed to delete event');
+        }
+    } catch (error) {
+        console.error('Error deleting event:', error);
+        alert(error.message);
+    }
+}
+
+// Requirement CRUD functions
 async function updateRequirement(requirementId, requirementData) {
     console.log('Creating requirement with data:', requirementId, requirementData);
     const eventId = document.getElementById('eventId').value;
@@ -684,7 +717,35 @@ async function loadRequirementForEdit(requirementId) {
     }
 }
 
-// frontend listener
+async function deleteRequirement(requirementId) {
+    const authToken = localStorage.getItem('authToken');
+    document.getElementById('eventId').value = eventId;
+
+    try {
+        const response = await fetch(`/hk-roadmap/requirements/delete?requirement_id=${requirementId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            }
+        })
+
+        const data = await response.json(); 
+        console.log('Requirement data:', data);
+
+        if (response.ok) {
+            alert('Requirement deleted successfully!');
+            showRequirements(eventId);
+        } else {
+            throw new Error(data.message || 'Failed to delete event');
+        }
+    } catch (error) {
+        console.error('Error deleting event:', error);
+        alert(error.message);
+    }
+}
+
+// frontend listeners
 document.addEventListener('DOMContentLoaded', initializeYearDropdown);
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -704,6 +765,11 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (event.target.classList.contains('edit-event')) {
             const eventId = event.target.closest('.card').dataset.eventId;
             console.log(`Edit event ID: ${eventId}`);
+        } else if (event.target.classList.contains('delete-event')) {
+            const eventId = event.target.closest('.card').dataset.eventId;
+            if (confirm(`Are you sure you want to delete event ID: ${eventId}?`)) {
+                deleteEvent(eventId);
+            }
         }
     });
 
@@ -711,6 +777,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (event.target.classList.contains('edit-requirement')) {
             const requirementId = event.target.closest('.card').dataset.requirementId;
             console.log(`Edit requirement ID: ${requirementId}`);
+        } else if (event.target.classList.contains('delete-requirement')) {
+            const requirementId = event.target.closest('.card').dataset.requirementId;
+            if (confirm(`Are you sure you want to delete requirement ID: ${requirementId}?`)) {
+                deleteRequirement(requirementId);
+            }
         }
     });
 

@@ -124,14 +124,17 @@ if (empty($path[0])) {
             "requirements" => [
                 "get" => "GET /requirements/get",
                 "add" => "POST /requirements/add",
-                "get_by_id" => "GET /requirements/add"
+                "get_by_id" => "GET /requirements/add", 
+                "update" => "PUT /requirements/edit",
+                "delete" => "DELETE /requirements/delete"
             ],
             // Event endpoints
             "events" => [
                 "add" => "POST /event/add",
                 "get" => "GET /event/get",
                 "get_by_id" => "GET /event/edit",
-                "update" => "PUT /event/edit"
+                "update" => "PUT /event/edit",
+                "delete" => "DELETE /event/delete"
             ],
             // Submission endpoints
             "submissions" => [

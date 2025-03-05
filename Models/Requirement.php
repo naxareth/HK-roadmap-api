@@ -51,5 +51,12 @@ class Requirement {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function deleteRequirement($requirementId) {
+        $query = "DELETE FROM requirement WHERE requirement_id = :requirement_id";
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':requirement_id', $requirementId);
+        return $stmt->execute();
+    }
 }
 ?>
