@@ -72,17 +72,24 @@ class DocumentController {
             return;
         }
     
-        // Update overdue documents before getting the list
+        // Check and create missing documents
+        $this->documentModel->checkAndCreateMissingDocuments($studentData['student_id']);
+    
+        // Update overdue documents
         $this->documentModel->updateOverdueDocuments();
     
+        // Get all documents
         $documents = $this->documentModel->getDocumentsByStudentId($studentData['student_id']);
+    
         if ($documents) {
             echo json_encode([
                 "documents" => $documents
             ]);
         } else {
             http_response_code(404);
-            echo json_encode(["message" => "No documents found"]);
+            echo json_encode([
+                "message" => "No documents found"
+            ]);
         }
     }
 
@@ -463,6 +470,29 @@ class DocumentController {
         } else {
             http_response_code(500);
             echo json_encode(["message" => "Error retrieving document status"]);
+        }
+    }
+
+    public function checkMissingDocuments() {
+        $token = $this->validateAuthHeader();
+        if (!$token) return;
+    
+        $studentData = $this->studentModel->validateToken($token);
+        if ($studentData === false) {
+            http_response_code(401);
+            echo json_encode(["message" => "Invalid token or student ID not found"]);
+            return;
+        }
+    
+        if ($this->documentModel->checkAndCreateMissingDocuments($studentData['student_id'])) {
+            echo json_encode([
+                "message" => "Missing documents check completed successfully"
+            ]);
+        } else {
+            http_response_code(500);
+            echo json_encode([
+                "message" => "Failed to check for missing documents"
+            ]);
         }
     }
 

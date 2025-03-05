@@ -520,6 +520,55 @@ class Document {
         }
     }
 
+    public function checkAndCreateMissingDocuments($studentId) {
+        try {
+            $this->db->beginTransaction();
+    
+            $insertQuery = "INSERT INTO document (
+                event_id,
+                requirement_id,
+                student_id,
+                file_path,
+                document_type,
+                link_url,
+                upload_at,
+                status,
+                is_submitted,
+                submitted_at
+            )
+            SELECT 
+                r.event_id,
+                r.requirement_id,
+                :student_id,
+                NULL,
+                NULL,
+                NULL,
+                NOW(),
+                'missing',
+                0,
+                NULL
+            FROM requirement r
+            WHERE NOT EXISTS (
+                SELECT 1 
+                FROM document d 
+                WHERE d.requirement_id = r.requirement_id 
+                AND d.student_id = :student_id
+            )";
+    
+            $stmt = $this->db->prepare($insertQuery);
+            $stmt->bindParam(':student_id', $studentId);
+            $result = $stmt->execute();
+    
+            $this->db->commit();
+            return true;
+    
+        } catch (\Exception $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            return false;
+        }
+    }
     public function isRequirementOverdue($eventId, $requirementId) {
         try {
             $query = "SELECT due_date < NOW() as is_overdue
