@@ -139,26 +139,30 @@ async function fetchDocuments() {
         const data = await response.json();
         const tableBody = document.querySelector('#documentsTable tbody');
         tableBody.innerHTML = ''; 
-        if (Array.isArray(data)) {
-            data.forEach(doc => {
-            const row = `
-                <tr>
-                    <td>${doc.document_id}</td>
-                    <td>${doc.event_id}</td>
-                    <td>${doc.requirement_id}</td>
-                    <td>${doc.student_id}</td>
-                    <td>${doc.file_path}</td>
-                    <td>${doc.upload_at}</td>
-                    <td>${doc.status}</td>
-                    <td>${doc.is_submitted}</td>
-                    <td>${doc.submitted_at}</td>
-                </tr>`;
-            tableBody.innerHTML += row;
+        if (Array.isArray(data.documents)) {
+            data.documents.forEach(doc => {
+                const row = `
+                    <tr>
+                        <td>${doc.document_id}</td>
+                        <td>${doc.event_id}</td>
+                        <td>${doc.requirement_id}</td>
+                        <td>${doc.student_id}</td>
+                        <td>${doc.file_path}</td>
+                        <td>${doc.upload_at}</td>
+                        <td>${doc.status}</td>
+                        <td>${doc.is_submitted}</td>
+                        <td>${doc.submitted_at}</td>
+                    </tr>`;
+                tableBody.innerHTML += row;
             });
+        } else {
+            console.warn('No documents found in the response');
+            tableBody.innerHTML = '<tr><td colspan="12">No documents found.</td></tr>';
         }
     } catch (error) {
         console.error('Error fetching documents:', error);
-    }   alert('Error loading documents');
+        alert('Error loading documents');
+    }
 }
 
 function fetchSubmissions() {
@@ -349,6 +353,7 @@ async function showRequirements(eventId) {
                     <div class="card" data-requirement-id="${req.requirement_id}" data-event-id="${req.event_id}">
                         <div class="text-content">
                             <h2>Requirement: ${req.requirement_name}</h2>
+                            <p><strong>Description:</strong> ${req.requirement_desc}</p>
                             <br>
                             <p><strong>Due:</strong> ${req.due_date}</p>
                         </div>
@@ -566,7 +571,6 @@ async function deleteEvent(eventId) {
 async function updateRequirement(requirementId, requirementData) {
     console.log('Creating requirement with data:', requirementId, requirementData);
     const eventId = document.getElementById('eventId').value;
-
     requirementData.event_id = eventId;
 
     try {
@@ -579,13 +583,19 @@ async function updateRequirement(requirementId, requirementData) {
             body: JSON.stringify(requirementData)
         });
 
+        // Check if the response is OK
+        if (!response.ok) {
+            const errorText = await response.text(); // Get the response text for debugging
+            console.error('Error response:', errorText);
+            throw new Error(`Failed to update requirement: ${response.status} ${response.statusText}`);
+        }
+
         const data = await response.json();
-        if (response.ok) {
+        console.log('Updated requirement:', data);
+        if (data) {
             alert('Requirement updated successfully!');
             showRequirements(eventId);
             return true;
-        } else {
-            throw new Error(data.message || 'Failed to update requirement');
         }
     } catch (error) {
         console.error('Error updating requirement:', error);
@@ -642,21 +652,16 @@ async function saveRequirement() {
         return; 
     }
 
-    const requirementDataId = {
-        requirement_name: document.getElementById('requirementName').value,
-        due_date: document.getElementById('dueDate').value,
-        requirement_id: requirementId,
-    };
-
     const requirementData = {
         event_id: eventId,
         requirement_id: requirementId,
         requirement_name: document.getElementById('requirementName').value,
+        requirement_desc: document.getElementById('requirementDescription').value,
         due_date: document.getElementById('dueDate').value,
     };
 
     if (requirementId) {
-        await updateRequirement(requirementId, requirementDataId);
+        await updateRequirement(requirementId, requirementData);
     } else {
         await createRequirement(requirementData);
     }
@@ -678,7 +683,7 @@ async function loadRequirementForEdit(requirementId) {
         console.log('Requirement data:', data); 
 
         if (!response.ok) {
-            const errorText = await response.text(); // Get the response text for debugging
+            const errorText = await response.text();
             console.error('Error response:', errorText);
             throw new Error(`Failed to load requirement data: ${response.status} ${response.statusText}`);
         }
@@ -695,6 +700,12 @@ async function loadRequirementForEdit(requirementId) {
                 document.getElementById('requirementName').value = requirementData.requirement_name;
             } else {
                 console.warn('Requirement name is undefined');
+            }
+
+            if (requirementData.requirement_desc !== undefined) {
+                document.getElementById('requirementDescription').value = requirementData.requirement_desc;
+            } else {
+                console.warn('Requirement Description is undefined');
             }
 
             if (requirementData.due_date) {
@@ -719,23 +730,38 @@ async function loadRequirementForEdit(requirementId) {
 
 async function deleteRequirement(requirementId) {
     const authToken = localStorage.getItem('authToken');
-    document.getElementById('eventId').value = eventId;
+    const eventID = document.getElementById('eventId').value;
 
-    try {
-        const response = await fetch(`/hk-roadmap/requirements/delete?requirement_id=${requirementId}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
+        try {
+            // First check how many requirements exist for this event
+            const requirementsResponse = await fetch(`/hk-roadmap/requirements/add?event_id=${eventId}`, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+            
+            const requirements = await requirementsResponse.json();
+            
+            if (requirements.length <= 1) {
+                alert("Cannot delete the last requirement in an event. Events must have at least one requirement.");
+                return;
             }
-        })
+    
+            // Proceed with deletion if not the last requirement
+            const deleteResponse = await fetch(`/hk-roadmap/requirements/delete?requirement_id=${requirementId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
 
-        const data = await response.json(); 
+        const data = await deleteResponse.json(); 
         console.log('Requirement data:', data);
 
-        if (response.ok) {
+        if (deleteResponse.ok) {
             alert('Requirement deleted successfully!');
-            showRequirements(eventId);
+            showRequirements(eventID);
         } else {
             throw new Error(data.message || 'Failed to delete event');
         }

@@ -39,8 +39,7 @@ class StudentController {
 
     public function getStudent() {
         $students = $this->studentModel->getAllStudents();
-        echo json_encode($students);
-        return $students;
+        return $students; 
     }
 
     public function sendOTP() {

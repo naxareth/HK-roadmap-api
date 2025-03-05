@@ -17,11 +17,12 @@ class Requirement {
         return $result->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function createRequirement($eventId, $requirementName, $dueDate) {
-        $query = "INSERT INTO requirement (event_id, requirement_name, due_date) VALUES (:event_id, :requirement_name, :due_date)";
+    public function createRequirement($eventId, $requirementName, $requirementDescription, $dueDate) {
+        $query = "INSERT INTO requirement (event_id, requirement_name, requirement_desc, due_date) VALUES (:event_id, :requirement_name, :requirement_desc, :due_date)";
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(':event_id', $eventId);
         $stmt->bindParam(':requirement_name', $requirementName);
+        $stmt->bindParam(':requirement_desc', $requirementDescription);
         $stmt->bindParam(':due_date', $dueDate);
         return $stmt->execute();
     }
@@ -34,11 +35,12 @@ class Requirement {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function updateRequirement($requirementId, $requirementName, $dueDate) {
-        $query = "UPDATE requirement SET requirement_name = :requirement_name, due_date = :due_date 
+    public function updateRequirement($requirementId, $requirementName, $requirementDescription, $dueDate) {
+        $query = "UPDATE requirement SET requirement_name = :requirement_name, requirement_desc = :requirement_desc, due_date = :due_date 
                   WHERE requirement_id = :requirement_id";
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(':requirement_name', $requirementName);
+        $stmt->bindParam(':requirement_desc', $requirementDescription);
         $stmt->bindParam(':due_date', $dueDate);
         $stmt->bindParam(':requirement_id', $requirementId);
         return $stmt->execute();

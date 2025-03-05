@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 16, 2025 at 08:49 AM
+-- Generation Time: Mar 04, 2025 at 05:54 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -31,22 +31,16 @@ CREATE TABLE `admin` (
   `admin_id` int(20) NOT NULL,
   `name` varchar(50) NOT NULL,
   `email` varchar(50) NOT NULL,
-  `password` varchar(255) DEFAULT NULL,
-  `token` varchar(255) DEFAULT NULL
+  `password` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `admin`
 --
 
-INSERT INTO `admin` (`admin_id`, `name`, `email`, `password`, `token`) VALUES
-(3, 'admin', 'admin@gmail.com', '$2y$10$.7BbQ8AJAEd1bPUofpkm/ubrNSDYQBl61JZVDR3SdVu00/KNeYdKy', '9b543989658bf73af9b090e11e6a250b6e6858f81c3d511df45ebb482b1dc848'),
-(4, 'admin2', 'admin2@gmail.com', '$2y$10$KI8e5Gm5jesnAs64bB5jPOXSoSbjiN/HEHCmeVnlfXDVs9VIH.kLm', '49071fe79de5cdabb91559fc021aa09069da28eb22641ac44d483cb218f166a9'),
-(5, 'justin', 'blueblade906@gmail.com', '$2y$10$0trEY4nrT6DXXbKPlY/rLOPiYAqjp/VT.3pbEteuUvZlcHQTezzU2', '8ec2f314faa991a46dced530046118851adbc5fb86212faa9315959e00dcb486'),
-(7, 'token', 'token@gmail.com', '$2y$10$VArn0TWX07WxiSX8aCjhCukD9k59MCS9CROP5YvkNjil69RVTFYpW', '5e1d1815d808d9781b725b356a69e13f10d87838726ab45762e69c5e1faaa48b'),
-(8, 'token2', 'token2@gmail.com', '$2y$10$A9O6KJLIEt4G7Jd9v.aqfeu3sMEhubk.h3HRT48errzIu3dO8Z9Lu', '5524a414589258b13a395124db027186ce3a479e87bd035957667826cd30df97'),
-(9, 'token3', 'token3@gmail.com', '$2y$10$Wpm5gKq/9MB9X9/xfO/EtO2EaK3plSbQDNftQx.eRTxi6vZ3TNJ9m', 'f604eaa7c227dbe498431f35d1e4b3fefe7f5ed202387844f846a7f8bec8a4a2'),
-(11, 'ace philip', 'acephilipdenulan12@gmail.com', '$2y$10$DQTpjvIFCJ2zHl9vVlVrMezrwgUldv7HOb6iLLv7W6Cpd9bfdweD2', 'b093a7338f348f547d0e9655a0d82acf2d2de36622ba34db4039f98e06c13c9a');
+INSERT INTO `admin` (`admin_id`, `name`, `email`, `password`) VALUES
+(1, 'Justin', 'blueblade906@gmail.com', '$2y$12$TYKXMjM6SF4aLrrjuXvRZOtzxp0UH.wpcRPL5hpnq6n544jq/KGp6'),
+(2, 'Ace', 'acephilipdenulan12@gmail.com', '$2y$10$ZRJoZydh7H6sKztSVwsnyOBC9wET6S7vMfZ2KBVCv6KPfUN.vO6AC');
 
 -- --------------------------------------------------------
 
@@ -61,6 +55,14 @@ CREATE TABLE `admin_tokens` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `admin_tokens`
+--
+
+INSERT INTO `admin_tokens` (`token_id`, `admin_id`, `token`, `created_at`) VALUES
+(1, 1, '126de8cb0dcfcff8a8085379ac37a96a09baef7a9d51fe681e6e7892337d52e6', '2025-02-23 16:11:02'),
+(2, 2, 'dcb42052f3855f003f52a5b081a4147faa88eab824eb124943f45e0b4ef5b9cd', '2025-02-24 18:51:26');
+
 -- --------------------------------------------------------
 
 --
@@ -68,41 +70,72 @@ CREATE TABLE `admin_tokens` (
 --
 
 CREATE TABLE `document` (
-  `student_id` varchar(50) NOT NULL,
-  `file_path` varchar(50) NOT NULL,
-  `created_at` datetime NOT NULL
+  `student_id` varchar(255) NOT NULL,
+  `document_id` int(11) NOT NULL,
+  `event_id` int(11) NOT NULL,
+  `requirement_id` int(11) NOT NULL,
+  `file_path` varchar(255) NOT NULL,
+  `document_type` enum('file','link') NOT NULL DEFAULT 'file',
+  `link_url` varchar(2048) DEFAULT NULL,
+  `upload_at` varchar(255) NOT NULL,
+  `status` enum('draft','pending','approved','rejected','missing') DEFAULT 'draft',
+  `is_submitted` tinyint(1) DEFAULT 0,
+  `submitted_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `document`
 --
 
-INSERT INTO `document` (`student_id`, `file_path`, `created_at`) VALUES
-('03-2122-030303', 'uploads/asus.jpg', '2025-01-27 05:49:05'),
-('03-2324-031284', 'uploads/download.png', '2025-02-01 05:30:15');
+INSERT INTO `document` (`student_id`, `document_id`, `event_id`, `requirement_id`, `file_path`, `document_type`, `link_url`, `upload_at`, `status`, `is_submitted`, `submitted_at`) VALUES
+('1', 21, 1, 2, 'uploads/126791505_p1.jpg', 'file', NULL, '2025-03-03 02:15:32', 'draft', 0, NULL),
+('1', 44, 3, 4, 'uploads/67c72205e43f2_1741103621.png', 'file', NULL, '2025-03-04 23:53:41', 'draft', 0, NULL),
+('1', 46, 3, 4, '', 'link', 'https://docs.google.com/document/d/1PlcQxBTmRV9x_ZO5IkeohykvQBYnkj-lcY9G88YalCw/edit?usp=drive_link', '2025-03-05 00:15:42', 'draft', 0, NULL);
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `requirements`
+-- Table structure for table `event`
 --
 
-CREATE TABLE `requirements` (
-  `id` int(11) NOT NULL,
-  `student_id` varchar(255) NOT NULL,
+CREATE TABLE `event` (
+  `event_id` int(11) NOT NULL,
   `event_name` varchar(255) NOT NULL,
-  `due_date` date NOT NULL,
-  `shared` tinyint(1) NOT NULL DEFAULT 0,
-  `submission` datetime NOT NULL
+  `date` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `requirements`
+-- Dumping data for table `event`
 --
 
-INSERT INTO `requirements` (`id`, `student_id`, `event_name`, `due_date`, `shared`, `submission`) VALUES
-(15, '03-2122-030303', 'FDC', '2025-02-25', 1, '0000-00-00 00:00:00'),
-(16, '03-2122-030303', 'FDC', '2025-02-25', 1, '0000-00-00 00:00:00');
+INSERT INTO `event` (`event_id`, `event_name`, `date`) VALUES
+(1, 'FDC', '2025-02-22 00:00:00'),
+(2, 'Sample Event', '2025-02-21 00:00:00'),
+(3, 'Another Event', '2025-02-22 00:00:00'),
+(4, 'The Event', '2025-02-28 00:00:00');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `requirement`
+--
+
+CREATE TABLE `requirement` (
+  `requirement_id` int(11) NOT NULL,
+  `event_id` int(11) NOT NULL,
+  `requirement_name` varchar(255) NOT NULL,
+  `due_date` datetime NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `requirement`
+--
+
+INSERT INTO `requirement` (`requirement_id`, `event_id`, `requirement_name`, `due_date`) VALUES
+(1, 1, 'picture', '2025-02-23 00:00:00'),
+(2, 1, 'New Requirement', '2025-12-31 00:00:00'),
+(4, 3, 'fgdsgfd', '2025-11-12 00:00:00'),
+(5, 2, 'pwet ni justin', '2025-04-12 00:00:00');
 
 -- --------------------------------------------------------
 
@@ -114,19 +147,16 @@ CREATE TABLE `student` (
   `student_id` int(20) NOT NULL,
   `name` varchar(50) NOT NULL,
   `email` varchar(50) NOT NULL,
-  `password` varchar(255) NOT NULL,
-  `token` varchar(255) DEFAULT NULL
+  `password` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `student`
 --
 
-INSERT INTO `student` (`student_id`, `name`, `email`, `password`, `token`) VALUES
-(1, 'please', 'please@gmail.com', '$2y$10$YDY.8tuauagr7c9.jrdhLueeFrdW3iNmL1gDL08wtHVSNdqKtTtBu', '8249f60f025e3793182a0ea2c91b8b684d34e014c080d2abc2d2382ca21600e5'),
-(2, 'ace', 'ace@gmail.com', '$2y$10$nuo1JyldbwZ/1eH4JIYZgeF.AwphGXimsAzVYc/Y7L/TQ/JLjA0LG', 'a683fa6418ddbf58acbc7aed8744aadad186dd8d417ad455dd9015467c7580e9'),
-(3, 'admin1', 'student1@gmail.com', '$2y$10$HjxuaktQJKohF/mQxrlcouyFn.ylkeT3PkJUT8XbNAMTkbP6FGoAa', 'fc3c2aefa45d05ddd391840c17ebc129d1a0750b65ad2bb161479ae72f49339a'),
-(4, 'ace philip', 'acephilipdenulan12@gmail.com', '$2y$10$fQSppxjDYnrbshuecKiYvOCljJFUy4/N0D0AqcnIwGaMG/uGdUM4O', 'd27e83bb5463b48c53aac80ac64499589ab65525bb0c4058a7378473c327f0d8');
+INSERT INTO `student` (`student_id`, `name`, `email`, `password`) VALUES
+(1, 'Ace', 'acephilipdenulan12@gmail.com', '$2y$10$bpxiCciyUvA2tejHj2dvueFVP/gCuHUfLTVIk33pM4UoTBLSM2QXS'),
+(2, 'Philip', 'acephilipdenulan11@gmail.com', '$2y$10$RH5rrDGecooB8KxiMdn/ourIk/J5EugJ64HLyX5KYJFGcsebAZT3C');
 
 -- --------------------------------------------------------
 
@@ -140,6 +170,42 @@ CREATE TABLE `student_tokens` (
   `token` varchar(255) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `student_tokens`
+--
+
+INSERT INTO `student_tokens` (`token_id`, `student_id`, `token`, `created_at`) VALUES
+(2, 2, '085426adef3790189a6099d5f0332d040d732a8968904e677e3620a316b239ec', '2025-02-25 09:36:39'),
+(3, 1, '0e6b11ff79e0e966e858f1e5665261023482c279c9b5d5077f39f8ae8ac1b7c4', '2025-02-25 09:46:27'),
+(8, 1, '12e57f35d02c1e0ddf7bd5039a60a8cecbc4a4b66a017ead615249dac66c822f', '2025-02-26 17:32:53');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `submission`
+--
+
+CREATE TABLE `submission` (
+  `student_id` varchar(255) NOT NULL,
+  `submission_id` int(11) NOT NULL,
+  `event_id` int(11) NOT NULL,
+  `requirement_id` int(11) NOT NULL,
+  `file_path` varchar(255) DEFAULT NULL,
+  `document_type` enum('file','link') NOT NULL DEFAULT 'file',
+  `link_url` varchar(2048) DEFAULT NULL,
+  `submission_date` datetime NOT NULL,
+  `status` varchar(255) NOT NULL,
+  `approved_by` varchar(255) NOT NULL,
+  `document_id` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `submission`
+--
+
+INSERT INTO `submission` (`student_id`, `submission_id`, `event_id`, `requirement_id`, `file_path`, `document_type`, `link_url`, `submission_date`, `status`, `approved_by`, `document_id`) VALUES
+('03-2122-032648', 2, 1, 1, 'uploads/6789.jpg', 'file', NULL, '2025-02-24 00:30:53', 'approved', 'Justin', NULL);
 
 --
 -- Indexes for dumped tables
@@ -161,13 +227,19 @@ ALTER TABLE `admin_tokens`
 -- Indexes for table `document`
 --
 ALTER TABLE `document`
-  ADD PRIMARY KEY (`student_id`);
+  ADD PRIMARY KEY (`document_id`);
 
 --
--- Indexes for table `requirements`
+-- Indexes for table `event`
 --
-ALTER TABLE `requirements`
-  ADD PRIMARY KEY (`id`);
+ALTER TABLE `event`
+  ADD PRIMARY KEY (`event_id`);
+
+--
+-- Indexes for table `requirement`
+--
+ALTER TABLE `requirement`
+  ADD PRIMARY KEY (`requirement_id`);
 
 --
 -- Indexes for table `student`
@@ -182,6 +254,13 @@ ALTER TABLE `student_tokens`
   ADD PRIMARY KEY (`token_id`);
 
 --
+-- Indexes for table `submission`
+--
+ALTER TABLE `submission`
+  ADD PRIMARY KEY (`submission_id`),
+  ADD KEY `document_id` (`document_id`);
+
+--
 -- AUTO_INCREMENT for dumped tables
 --
 
@@ -189,31 +268,59 @@ ALTER TABLE `student_tokens`
 -- AUTO_INCREMENT for table `admin`
 --
 ALTER TABLE `admin`
-  MODIFY `admin_id` int(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `admin_id` int(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `admin_tokens`
 --
 ALTER TABLE `admin_tokens`
-  MODIFY `token_id` int(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=50;
+  MODIFY `token_id` int(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
--- AUTO_INCREMENT for table `requirements`
+-- AUTO_INCREMENT for table `document`
 --
-ALTER TABLE `requirements`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+ALTER TABLE `document`
+  MODIFY `document_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=47;
+
+--
+-- AUTO_INCREMENT for table `event`
+--
+ALTER TABLE `event`
+  MODIFY `event_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `requirement`
+--
+ALTER TABLE `requirement`
+  MODIFY `requirement_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `student`
 --
 ALTER TABLE `student`
-  MODIFY `student_id` int(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `student_id` int(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `student_tokens`
 --
 ALTER TABLE `student_tokens`
-  MODIFY `token_id` int(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
+  MODIFY `token_id` int(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- AUTO_INCREMENT for table `submission`
+--
+ALTER TABLE `submission`
+  MODIFY `submission_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
+
+--
+-- Constraints for dumped tables
+--
+
+--
+-- Constraints for table `submission`
+--
+ALTER TABLE `submission`
+  ADD CONSTRAINT `submission_ibfk_1` FOREIGN KEY (`document_id`) REFERENCES `document` (`document_id`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

@@ -110,9 +110,37 @@ if (empty($path[0])) {
                 "verify_otp" => "POST /student/verify-otp",
                 "change_password" => "POST /student/change-password"
             ],
-            // Document endpoints
+           // Document endpoints
             "documents" => [
-                "upload" => "POST /documents/upload",
+                "upload" => [
+                    "method" => "POST",
+                    "url" => "/documents/upload",
+                    "description" => "Upload file or link document",
+                    "params" => [
+                        "event_id" => "integer (required)",
+                        "requirement_id" => "integer (required)",
+                        "documents" => "file[] (optional)",
+                        "link_url" => "string (optional)"
+                    ]
+                ],
+                "submit_multiple" => [
+                    "method" => "POST",
+                    "url" => "/documents/submit-multiple",
+                    "description" => "Submit multiple documents at once",
+                    "body" => [
+                        "document_ids" => "array of integers (required)"
+                    ]
+                ],
+
+                "unsubmit_multiple" => [
+                    "method" => "POST",
+                    "url" => "/documents/unsubmit-multiple",
+                    "description" => "Unsubmit multiple documents at once",
+                    "body" => [
+                        "document_ids" => "array of integers (required)"
+                   ]
+                ],
+                
                 "submit" => "POST /documents/submit",
                 "unsubmit" => "POST /documents/unsubmit",
                 "delete" => "DELETE /documents/delete",

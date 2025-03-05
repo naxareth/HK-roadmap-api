@@ -63,6 +63,8 @@
                                 <th>File Path</th>
                                 <th>Upload Date</th>
                                 <th>Status</th>
+                                <th>Is Submitted</th>
+                                <th>Submitted At</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -153,6 +155,8 @@
                 <input type="hidden" id="requirementId">
                 <label for="requirementName">Requirement Name:</label>
                 <input type="text" id="requirementName" required>
+                <label for="requirementDescription">Requirement Description:</label>
+                <input type="text" id="requirementDescription" required>
                 <label for="dueDate">Due Date:</label>
                 <input type="date" id="dueDate" required>
                 <button class="popup-button" onclick="saveRequirement()">Save Requirement</button>

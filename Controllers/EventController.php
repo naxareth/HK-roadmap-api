@@ -4,19 +4,25 @@ namespace Controllers;
 
 use Models\Event;
 use Controllers\AdminController;
+use PhpMailer\MailService;
 
 require_once '../models/Event.php';
 require_once 'AdminController.php';
+require_once '../PhpMailer/MailService.php';
 
 class EventController {
+
+    
     private $eventModel;
     private $adminController;
     private $studentController;
+    private $mailService;
 
     public function __construct($db) {
         $this->eventModel = new Event($db);
         $this->adminController = new AdminController($db);
         $this->studentController = new StudentController($db);
+        $this->mailService = new MailService();
     }
 
     public function getEventById() {
@@ -97,6 +103,7 @@ class EventController {
     }
 
     public function createEvent() {
+
         $headers = apache_request_headers(); 
         if (!isset($headers['Authorization'])) {
             echo json_encode(["message" => "Token is required."]);
@@ -119,10 +126,18 @@ class EventController {
         $date = $_POST['date'];
 
         if ($this->eventModel->createEvent($eventName, $date)) {
+
+            $students = $this->studentController->getStudent(); 
+            $subject = "New Event Created";
+            $body = "A new event has been created: $eventName. Date: $date.";
+
+            foreach ($students as $student) {
+                $this->mailService->sendEmail($student['email'], $subject, $body); 
+            }
+
             header('Content-Type: application/json');
             echo json_encode(["message" => "Event created successfully."]);
         } else {
-            header('Content-Type: application/json');
             echo json_encode(["message" => "Failed to create event."]);
         }
     }
