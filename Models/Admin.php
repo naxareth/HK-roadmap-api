@@ -26,6 +26,24 @@ class Admin {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function validateSubmissionToken($token) {
+        try {
+            $query = "SELECT a.admin_id, a.name 
+                      FROM admin_tokens at
+                      JOIN admin a ON at.admin_id = a.admin_id
+                      WHERE at.token = :token";
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':token', $token);
+            $stmt->execute();
+            
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Token validation error: " . $e->getMessage());
+            return false;
+        }
+    }
+
     public function updateToken($admin_id, $token) {
         $query = "INSERT INTO admin_tokens (admin_id, token) VALUES (:admin_id, :token)";
 

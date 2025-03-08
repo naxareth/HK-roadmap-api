@@ -11,6 +11,7 @@ require_once '../models/Requirement.php';
 require_once 'AdminController.php';
 require_once 'StudentController.php';
 require_once '../PhpMailer/MailService.php';
+require_once '../Controllers/MailController.php';
 
 class RequirementController {
     private $requirementModel;
@@ -154,14 +155,6 @@ class RequirementController {
         $dueDate = $_POST['due_date'];
 
         if ($this->requirementModel->createRequirement($eventId, $requirementName, $requirementDescription, $dueDate)) {
-            $students = $this->studentController->getStudent();
-            $subject = "New Requirement Created";
-            $body = "A new requirement has been created: $requirementName. Due date: $dueDate.";
-
-            foreach ($students as $student) {
-                $this->mailService->sendEmail($student['email'], $subject, $body); // Send email to each student
-            }
-            
             echo json_encode(["message" => "Requirement created successfully."]);
         } else {
             echo json_encode(["message" => "Failed to create requirement."]);
@@ -188,7 +181,6 @@ class RequirementController {
         
         $requirementId = $_GET['requirement_id'];
 
-        // Get the requirement first to find its event
         $requirement = $this->requirementModel->getRequirementById($requirementId);
         if (!$requirement) {
             echo json_encode(["message" => "Requirement not found."]);
@@ -196,14 +188,6 @@ class RequirementController {
         }
 
         $eventId = $requirement['event_id'];
-        
-        // Check how many requirements remain for this event
-        $requirements = $this->requirementModel->getRequirementsByEventId($eventId);
-        if (count($requirements) <= 1) {
-            echo json_encode(["message" => "Cannot delete the last requirement in an event. Events must have at least one requirement."]);
-            http_response_code(400); // Bad request
-            return;
-        }
 
         if ($this->requirementModel->deleteRequirement($requirementId)) {
             echo json_encode(["message" => "Requirement deleted successfully."]);

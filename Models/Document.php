@@ -183,7 +183,7 @@ class Document {
                     :link_url,
                     NOW(),
                     'pending',
-                    'not yet approved'
+                    'not_yet_approved'
                 )";
     
                 $stmt = $this->db->prepare($submissionQuery);
@@ -203,10 +203,13 @@ class Document {
                 $stmt->bindParam(':document_type', $document['document_type']);
                 $stmt->bindParam(':link_url', $document['link_url']);
                 
+                
                 if (!$stmt->execute()) {
                     $this->db->rollBack();
                     return false;
                 }
+                //new function for notif
+                $this->createNotification($studentId, $document['event_id'], $document['requirement_id']);
             }
     
             $this->db->commit();
@@ -222,6 +225,9 @@ class Document {
     public function submitDocument($documentId, $studentId) {
         try {
             $this->db->beginTransaction();
+            
+            // Convert student ID to string
+            $studentId = (string)$studentId;
     
             // Get document details
             $query = "SELECT event_id, requirement_id, file_path, link_url, document_type, status 
@@ -237,8 +243,7 @@ class Document {
             $document = $stmt->fetch(PDO::FETCH_ASSOC);
             
             if (!$document || $document['status'] !== 'draft') {
-                $this->db->rollBack();
-                return false;
+                throw new Exception("Invalid document or status");
             }
     
             // Update document status
@@ -255,11 +260,10 @@ class Document {
             $stmt->bindParam(':student_id', $studentId);
             
             if (!$stmt->execute() || $stmt->rowCount() === 0) {
-                $this->db->rollBack();
-                return false;
+                throw new Exception("Status update failed");
             }
     
-            // Create submission record with appropriate handling for file_path
+            // Create submission record
             $submissionQuery = "INSERT INTO submission (
                 document_id,
                 student_id,
@@ -281,7 +285,7 @@ class Document {
                 :link_url,
                 NOW(),
                 'pending',
-                'not yet approved'
+                'not_yet_approved'
             )";
     
             $stmt = $this->db->prepare($submissionQuery);
@@ -290,25 +294,25 @@ class Document {
             $stmt->bindParam(':event_id', $document['event_id']);
             $stmt->bindParam(':requirement_id', $document['requirement_id']);
             
-            // Handle file_path based on document_type
-            if ($document['document_type'] === 'link') {
-                $filePath = ''; // Empty string for links since file_path can't be NULL
-            } else {
-                $filePath = $document['file_path'];
-            }
+            // Handle file_path
+            $filePath = ($document['document_type'] === 'link') ? '' : $document['file_path'];
             $stmt->bindParam(':file_path', $filePath);
             
             $stmt->bindParam(':document_type', $document['document_type']);
             $stmt->bindParam(':link_url', $document['link_url']);
             
             if (!$stmt->execute()) {
-                $this->db->rollBack();
-                return false;
+                throw new Exception("Submission insert failed");
             }
+    
+            // Create notification
+            $this->createNotification($studentId, $document['event_id'], $document['requirement_id']);
     
             $this->db->commit();
             return true;
+    
         } catch (\Exception $e) {
+            error_log("Submit Error [Doc $documentId]: " . $e->getMessage());
             if ($this->db->inTransaction()) {
                 $this->db->rollBack();
             }
@@ -689,6 +693,48 @@ class Document {
         } catch (\Exception $e) {
             return false;
         }
+    }
+
+    private function createNotification($studentId, $eventId, $requirementId) {
+        $studentName = $this->getStudentName($studentId);
+        $eventName = $this->getEventName($eventId);
+        $requirementName = $this->getRequirementName($requirementId);
+    
+        // Create notification body
+        $notificationBody = "{$studentName} has submitted a document for {$eventName} in regards to {$requirementName}";
+    
+        // Insert into notification table
+        $query = "INSERT INTO notification (notification_body, read_notif) VALUES (:notification_body, false)";
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':notification_body', $notificationBody);
+        $stmt->execute();
+    }
+
+    private function getStudentName($studentId) {
+        $query = "SELECT name FROM student WHERE student_id = :student_id"; 
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':student_id', $studentId);
+        $stmt->execute();
+        $student = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $student ? $student['name'] : 'Unknown Student';
+    }
+    
+    private function getEventName($eventId) {
+        $query = "SELECT event_name FROM event WHERE event_id = :event_id"; 
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':event_id', $eventId);
+        $stmt->execute();
+        $event = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $event ? $event['event_name'] : 'Unknown Event';
+    }
+    
+    private function getRequirementName($requirementId) {
+        $query = "SELECT requirement_name FROM requirement WHERE requirement_id = :requirement_id"; 
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':requirement_id', $requirementId);
+        $stmt->execute();
+        $requirement = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $requirement ? $requirement['requirement_name'] : 'Unknown Requirement';
     }
 }
 ?>

@@ -39,19 +39,18 @@ class MailService {
         }
     }
 
-    public function sendEmail($to, $subject, $body) {
+    public function sendEmail($recipient, $subject, $body) {
         try {
-            $this->mail->addAddress($to);
+            $this->mail->setFrom('noreply@yourdomain.com', 'Your System Name');
+            $this->mail->addAddress($recipient);
             $this->mail->isHTML(true);
             $this->mail->Subject = $subject;
             $this->mail->Body = $body;
-            $this->mail->AltBody = strip_tags($body); 
-
+            
             $this->mail->send();
             return true;
         } catch (Exception $e) {
-            error_log("Mailer Error: {$this->mail->ErrorInfo}");
-            return false;
+            throw new Exception("Message could not be sent. Mailer Error: {$this->mail->ErrorInfo}");
         }
     }
 }

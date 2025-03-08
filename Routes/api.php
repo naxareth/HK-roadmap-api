@@ -2,12 +2,15 @@
 namespace Routes;
 
 require_once '../config/database.php';
+
 use Controllers\AdminController;
 use Controllers\DocumentController;
 use Controllers\EventController;
 use Controllers\RequirementController;
 use Controllers\StudentController;
 use Controllers\SubmissionController;
+use Controllers\NotificationController;
+use Controllers\MailController;
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
@@ -18,6 +21,8 @@ class Api {
     private $studentController;
     private $eventController;
     private $submissionController;
+    private $notificationController;
+    private $mailController;
     private $middleware = [];
 
     public function __construct($db) {
@@ -27,6 +32,8 @@ class Api {
         $this->studentController = new StudentController($db);
         $this->eventController = new EventController($db);
         $this->submissionController = new SubmissionController($db);
+        $this->notificationController = new NotificationController($db);
+        $this->mailController = new MailController($db);
     }
 
     public function use($middleware) {
@@ -78,6 +85,8 @@ class Api {
                 return $this->adminController->changePassword();
 
             // Student Routes
+            case 'student/emails':
+                return $this->studentController->getStudentEmails();
             case 'student/register':
                 return $this->studentController->register();
             case 'student/profile':
@@ -209,13 +218,30 @@ class Api {
 
             // Submission Routes
             case 'submission/update':
-                if ($method === 'PATCH') {
+                if ($method === 'PUT') {
                     return $this->submissionController->updateSubmissionStatus();
                 } elseif ($method === 'GET') {
                     return $this->submissionController->getAllSubmissions();
                 }
                 break;
 
+            case 'notification/get':
+                if ($method === 'GET') {
+                    return $this->notificationController->getNotifications();
+                }
+                break;
+
+            case (preg_match('/^notification\/edit$/', $endpoint) ? $endpoint : !$endpoint):
+                if ($method === 'PUT') {
+                    return $this->notificationController->markNotif();
+                }
+                break;
+            //mail send
+            case 'mail/send':
+                if ($method === 'POST') {
+                    return $this->mailController->sendEmail();
+                }
+                
             default:
                 http_response_code(404);
                 return json_encode([

@@ -38,34 +38,11 @@ class Event {
     }
 
     public function createEvent($eventName, $date) {
-    
-        $this->db->beginTransaction();
-    
-        try {
-            $query = "INSERT INTO event (event_name, date) VALUES (:event_name, :date)";
-            $stmt = $this->db->prepare($query);
-            $stmt->bindParam(':event_name', $eventName);
-            $stmt->bindParam(':date', $date);
-            $stmt->execute();
-
-            $eventId = $this->db->lastInsertId();
-
-            $requirementName = 'First Requirement'; 
-            $requirementQuery = "INSERT INTO requirement (event_id, requirement_name, due_date) VALUES (:event_id, :requirement_name, :due_date)";
-            $requirementStmt = $this->db->prepare($requirementQuery);
-            $requirementStmt->bindParam(':event_id', $eventId);
-            $requirementStmt->bindParam(':requirement_name', $requirementName);
-            $requirementStmt->bindParam(':due_date', $date); 
-            $requirementStmt->execute();
-
-            $this->db->commit();
-            return true; 
-
-        } catch (Exception $e) {
-            $this->db->rollBack();
-            error_log($e->getMessage());
-            return false;
-        }
+        $query = "INSERT INTO event (event_name, date) VALUES (:event_name, :date)";
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':event_name', $eventName);
+        $stmt->bindParam(':date', $date);
+        return $stmt->execute(); // Remove duplicate return
     }
 
     public function deleteEvent($eventId) {

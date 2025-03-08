@@ -102,6 +102,7 @@ if (empty($path[0])) {
             ],
             // Student endpoints
             "student" => [
+                "email" => "GET /student/emails",
                 "register" => "POST /student/register",
                 "login" => "POST /student/login",
                 "profile" => "GET /student/profile",
@@ -166,8 +167,17 @@ if (empty($path[0])) {
             ],
             // Submission endpoints
             "submissions" => [
-                "update_status" => "PATCH /submission/update",
+                "update_status" => "PUT /submission/update",
                 "get_all" => "GET /submission/update"
+            ],
+            // Notifs endpoints
+            "notifications" => [
+                "get" => "GET /notification/get",
+                "update" => "PUT /notification/edit"
+            ],
+            // Email endpoint
+            "mails" => [
+                "send" => "POST /mail/send"
             ]
         ],
         "documentation" => [

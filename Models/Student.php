@@ -16,6 +16,15 @@ class Student {
         $this->conn = $db;
     }
 
+    private function getStudentName($studentId) {
+        $query = "SELECT name FROM student WHERE student_id = :student_id";
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':student_id', $studentId);
+        $stmt->execute();
+        $student = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $student ? $student['name'] : 'Unknown Student';
+    }
+
     public function getAllStudents() {
         $query = "SELECT * FROM student";
         $stmt = $this->conn->query($query);

@@ -18,6 +18,8 @@
         <aside class="sidebar">
             <ul>
                 <li><a href="#" onclick="showSection('home')" id="showHomeButton">Home</a></li>
+                <li><a href="#" onclick="showSection('announce')" id="showAnnounceButton">Announcement</a></li>
+                <li><a href="#" onclick="showSection('notif')" id="showNotifButton">Notifications</a></li>
                 <li><a href="#" onclick="showSection('admin')" id="showAdminButton">Admin</a></li>
             </ul>
         </aside>
@@ -26,11 +28,12 @@
                 <header>
                     <h1> Events and Requirements </h1>
                 </header>
-                <label for="yearSelect" id="yearSelected">Select Year:</label>
-                <select id="yearSelect">
-                    <option value="">All Years</option>
-                    <!--- See Javascript -->
-                </select>
+                <div id="yearSelectorContainer" style="display: none;">
+                    <label for="yearSelect" id="yearSelected">Select Year:</label>
+                    <select id="yearSelect">
+                        <option value="">All Years</option>
+                    </select>
+                </div>
                 <section class="cards" id="event-section" style="display: none;">
                     <button id="event-create" style="display: none;">Create Event</button>
                     <!-- See Javascript -->
@@ -87,6 +90,7 @@
                                 <th>Submission Date</th>
                                 <th>Status</th>
                                 <th>Approved By</th>
+                                <th>Update</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -129,6 +133,25 @@
                         </tbody>
                     </table>
                 </div>                            
+            </section>
+
+            <section id="notif-section" class="notif-container" style="display: none;">
+                <div class="notification-header">
+                    <h2>Notifications</h2>
+                </div>
+                <div id="notificationContainer" class="cards">
+                    <!-- Notifications will be inserted here -->
+                </div>
+            </section>
+
+            <section id="announce-section" class="admin-container" style="display: none;">
+                <div class="announcement-header">
+                    <h2>Announcements</h2>
+                    <button id="create-announcement">Create Announcement</button>
+                </div>
+                <div id="announcementContainer" class="announcement-cards">
+                    <!-- Announcements will be inserted here -->
+                </div>
             </section>
 
             <div id="accountPopup" class="popup" style="display: none;">
