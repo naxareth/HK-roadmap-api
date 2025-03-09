@@ -4,6 +4,8 @@ namespace Controllers;
 
 use Models\Submission;
 use Controllers\AdminController;
+use PDOException;
+use Exception;
 
 require_once '../models/Submission.php';
 require_once 'AdminController.php';
@@ -28,43 +30,61 @@ class SubmissionController {
     }
 
     public function updateSubmissionStatus() {
-        $headers = getallheaders();
-        $contentType = $headers['Content-Type'] ?? '';
+        header('Content-Type: application/json'); // Force JSON response
+        
+        try {
+            $adminData = $this->validateSubmissionToken(getallheaders()['Authorization'] ?? '');
+            
+            if (!$adminData || !isset($adminData['admin_id'])) {
+                http_response_code(401);
+                echo json_encode(["success" => false, "message" => "Invalid token"]);
+                return;
+            }
 
-        if (strpos($contentType, 'multipart/form-data') !== false) {
-            $rawInput = file_get_contents('php://input');
-            $input = $this->parseMultipartFormData($rawInput);
-        } else {
             $input = json_decode(file_get_contents('php://input'), true);
-        }
-
-        error_log("Processed input data: " . print_r($input, true));
-
-        if (!isset($input['submission_id'], $input['status'], $input['approved_by'])) {
+            
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                http_response_code(400);
+                echo json_encode(["success" => false, "message" => "Invalid JSON"]);
+                return;
+            }
+    
+            if (!isset($input['submission_id'], $input['status'])) {
+                http_response_code(400);
+                echo json_encode(["success" => false, "message" => "Missing fields"]);
+                return;
+            }
+    
+            // Update submission
+            $success = $this->submissionModel->updateSubmissionStatus(
+                $input['submission_id'],
+                $input['status'],
+                $adminData['name']
+            );
+    
             echo json_encode([
-                "success" => false, 
-                "message" => "Missing required fields: submission_id, status, approved_by."
+                "success" => $success,
+                "message" => $success ? "Status updated" : "Update failed"
             ]);
-            return;
+    
+        } catch (PDOException $e) {
+            http_response_code(500);
+            error_log("Database error: " . $e->getMessage());
+            echo json_encode(["success" => false, "message" => "Database error"]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            error_log("Server error: " . $e->getMessage());
+            echo json_encode(["success" => false, "message" => "Server error"]);
         }
+    }
 
-        $submissionId = $input['submission_id'];
-        $status = $input['status'];
-        $approvedBy = $input['approved_by'];
-
-        error_log("Processing submission update - ID: $submissionId, Status: $status, Approved By: $approvedBy");
-
-        if ($this->submissionModel->updateSubmissionStatus($submissionId, $status, $approvedBy)) {
-            echo json_encode([
-                "success" => true, 
-                "message" => "Submission status updated successfully."
-            ]);
-        } else {
-            echo json_encode([
-                "success" => false, 
-                "message" => "Failed to update submission status."
-            ]);
+    private function validateSubmissionToken($authHeader) {
+        if (!$authHeader || strpos($authHeader, 'Bearer ') !== 0) {
+            return false;
         }
+    
+        $token = substr($authHeader, 7);
+        return $this->adminController->validateSubmissionToken($token);
     }
 
     private function parseMultipartFormData($rawInput) {

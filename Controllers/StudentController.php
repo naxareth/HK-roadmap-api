@@ -36,11 +36,17 @@ class StudentController {
 
     }
 
-
     public function getStudent() {
         $students = $this->studentModel->getAllStudents();
         return $students; 
     }
+
+    public function getStudentEmails() {
+        $students = $this->studentModel->getAllStudents();
+        $emails = array_column($students, 'email');
+        echo json_encode($emails);
+    }
+    
 
     public function sendOTP() {
         if (!isset($_POST['email'])) {

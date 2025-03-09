@@ -3,6 +3,7 @@
 namespace Models;
 
 use PDO;
+use PDOException;
 
 class Submission {
     private $db;
@@ -28,27 +29,23 @@ class Submission {
     public function updateSubmissionStatus($submissionId, $status, $approvedBy) {
         try {
             $this->db->beginTransaction();
-            
-            error_log("Updating submission with ID: $submissionId, Status: $status, Approved By: $approvedBy");
 
-            // Update submission status
             $query = "UPDATE submission 
-                     SET status = :status, 
-                         approved_by = :approved_by 
-                     WHERE submission_id = :submission_id";
+                      SET status = :status, 
+                          approved_by = :approved_by 
+                      WHERE submission_id = :submission_id";
             
             $stmt = $this->db->prepare($query);
             $stmt->bindParam(':status', $status);
             $stmt->bindParam(':approved_by', $approvedBy);
             $stmt->bindParam(':submission_id', $submissionId);
             $stmt->execute();
-            
+
             error_log("Rows affected in submission table: " . $stmt->rowCount());
 
-            // Retrieve submission data
             $query = "SELECT s.student_id, s.requirement_id, s.event_id, s.document_id 
-                     FROM submission s 
-                     WHERE s.submission_id = :submission_id";
+                      FROM submission s 
+                      WHERE s.submission_id = :submission_id";
             
             $stmt = $this->db->prepare($query);
             $stmt->bindParam(':submission_id', $submissionId);
@@ -58,11 +55,11 @@ class Submission {
             if ($submissionData) {
                 // Update corresponding document status
                 $query = "UPDATE document 
-                         SET status = :status 
-                         WHERE document_id = :document_id 
-                         AND student_id = :student_id 
-                         AND requirement_id = :requirement_id 
-                         AND event_id = :event_id";
+                          SET status = :status 
+                          WHERE document_id = :document_id 
+                          AND student_id = :student_id 
+                          AND requirement_id = :requirement_id 
+                          AND event_id = :event_id";
                 
                 $stmt = $this->db->prepare($query);
                 $stmt->bindParam(':status', $status);
@@ -72,17 +69,22 @@ class Submission {
                 $stmt->bindParam(':event_id', $submissionData['event_id']);
                 $stmt->execute();
                 
+                // Log the number of affected rows in the document table
                 error_log("Rows affected in document table: " . $stmt->rowCount());
             }
 
+            // Commit the transaction
             $this->db->commit();
             return true;
-        } catch (\Exception $e) {
+        } catch (PDOException $e) {
+            // Rollback the transaction on error
             $this->db->rollBack();
             error_log("Failed to update submission and document status: " . $e->getMessage());
             return false;
         }
     }
+
+
 
     public function createSubmission($documentId, $studentId, $eventId, $requirementId, $filePath = null, $linkUrl = null) {
         try {
@@ -121,7 +123,6 @@ class Submission {
             $stmt->bindParam(':link_url', $linkUrl);
             $stmt->bindParam(':document_id', $documentId);
             
-            return $stmt->execute();
         } catch (\Exception $e) {
             error_log("Failed to create submission: " . $e->getMessage());
             return false;

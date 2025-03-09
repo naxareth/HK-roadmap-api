@@ -1,3 +1,21 @@
+//Checking token
+function checkTokenAndRedirect() {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+        window.location.href = "./login.html"
+    }
+}
+
+function getAuthHeaders() {
+    checkTokenAndRedirect();
+    const token = localStorage.getItem('authToken');
+    return {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`
+    };
+}
+
 // All Popups
 function toggleAccountPopup() {
     const popup = document.getElementById('accountPopup');
@@ -40,8 +58,7 @@ function showTab(tabId) {
 
 function showSection(section) {
     const sectionToShow = document.getElementById(section + '-section');
-    console.log(`Trying to show section: ${sectionToShow ? sectionToShow.id : 'not found'}`);
-    const sectionsToHide = ['home-section', 'admin-section'];
+    const sectionsToHide = ['home-section', 'admin-section', 'notif-section', 'announce-section'];
 
     sectionsToHide.forEach(sec => {
         const element = document.getElementById(sec);
@@ -161,7 +178,6 @@ async function fetchDocuments() {
         }
     } catch (error) {
         console.error('Error fetching documents:', error);
-        alert('Error loading documents');
     }
 }
 
@@ -181,48 +197,26 @@ function fetchSubmissions() {
                     <td>${sub.submission_date}</td>
                     <td>${sub.status}</td>
                     <td>${sub.approved_by}</td>
+                    <td>
+                        <button class="approve-button" data-id="${sub.submission_id}">Approve</button>
+                        <button class="reject-button" data-id="${sub.submission_id}">Reject</button>
+                    </td>
                 </tr>`;
                 tableBody.innerHTML += row;
+            });
+
+            // Add event listeners for the new buttons
+            document.querySelectorAll('.approve-button').forEach(button => {
+                button.addEventListener('click', handleStatusUpdate);
+            });
+            document.querySelectorAll('.reject-button').forEach(button => {
+                button.addEventListener('click', handleStatusUpdate);
             });
         })
         .catch(error => console.error('Error fetching submissions:', error));
 }
 
 // others, misc, etc
-function groupEventsByMonth(events) {
-    const groupedEvents = {};
-
-    events.forEach(event => {
-        const eventDate = new Date(event.date);
-        const monthYear = eventDate.toLocaleString('default', { month: 'long', year: 'numeric' }); // e.g., "January 2023"
-
-        if (!groupedEvents[monthYear]) {
-            groupedEvents[monthYear] = [];
-        }
-        groupedEvents[monthYear].push(event);
-    });
-
-    return groupedEvents;
-}
-
-function populateYearDropdown(data, yearSelect, selectedYear) {
-    const years = new Set();
-
-    // Extract unique years from the data
-    data.forEach(doc => {
-        const eventYear = new Date(doc.date).getFullYear();
-        years.add(eventYear);
-    });
-
-    // Clear existing options
-    yearSelect.innerHTML = '<option value="">All Years</option>'; // Reset dropdown to default
-
-    // Populate the dropdown with unique years
-    years.forEach(year => {
-        yearSelect.innerHTML += `<option value="${year}" ${year === selectedYear ? 'selected' : ''}>${year}</option>`;
-    });
-}
-
 async function initializeYearDropdown() {
     const authToken = localStorage.getItem('authToken');
     const yearSelect = document.getElementById('yearSelect');
@@ -239,28 +233,27 @@ async function initializeYearDropdown() {
         if (!response.ok) throw new Error('Failed to fetch events');
         const data = await response.json();
 
-        // Extract unique years
-        const years = new Set();
-        data.forEach(doc => {
-            const eventYear = new Date(doc.date).getFullYear();
-            years.add(eventYear);
-        });
+        // Clear and populate dropdown with sorting options
+        yearSelect.innerHTML = `
+            <option value="most_recent" selected>Most Recent</option>
+            <option value="oldest">Oldest</option>
+        `;
 
-        // Populate dropdown
-        yearSelect.innerHTML = '<option value="">All Years</option>';
-        years.forEach(year => {
-            yearSelect.innerHTML += `<option value="${year}">${year}</option>`;
-        });
+        // Initial load with most recent events
+        fetchCardEvents('most_recent');
+
     } catch (error) {
-        console.error('Error initializing year dropdown:', error);
+        console.error('Error initializing dropdown:', error);
     }
 }
 
-// cards
-async function fetchCardEvents(selectedYear) {
+//cards
+
+async function fetchCardEvents(selectedFilter) {
     const authToken = localStorage.getItem('authToken');
     const eventSection = document.getElementById('event-section');
     const createEvent = document.getElementById('event-create');
+    const yearSelector = document.getElementById('yearSelectorContainer');
 
     try {
         const response = await fetch('/hk-roadmap/event/get', {
@@ -272,54 +265,61 @@ async function fetchCardEvents(selectedYear) {
         });
 
         if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`);
-        const data = await response.json();
+        let data = await response.json();
 
-        const eventCards = eventSection.querySelectorAll('.card');
-        const monthLabels = eventSection.querySelectorAll('.month-label');
-        eventCards.forEach(card => card.remove());
-        monthLabels.forEach(label => label.remove());
-
-        if (Array.isArray(data)) {
-            data.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-            const filteredData = selectedYear
-                ? data.filter(doc => new Date(doc.date).getFullYear() === parseInt(selectedYear))
-                : data;
-
-            const groupedEvents = groupEventsByMonth(filteredData);
-            for (const [monthYear, events] of Object.entries(groupedEvents)) {
-                const monthLabel = document.createElement('h3');
-                monthLabel.classList.add('month-label');
-                monthLabel.textContent = monthYear;
-                eventSection.appendChild(monthLabel);
-
-                events.forEach(doc => {
-                    const card = `
-                        <div class="card" data-event-id="${doc.event_id}" data-date="${doc.date}">
-                            <div class="text-content">
-                                <h2>Event ID: ${doc.event_id}</h2>
-                                <br>
-                                <p><strong>Event:</strong> ${doc.event_name}</p>
-                                <p><strong>Date:</strong> ${doc.date}</p>
-                                <i class="far fa-file-alt"></i>
-                            </div>
-                            <div class="button-content">
-                                <button class="show-requirements" aria-label="Show requirements for event ${doc.event_id}">Show Requirements</button>
-                                <button class="edit-event" data-event-id="${doc.event_id}" aria-label="Edit event ${doc.event_id}">Edit</button>
-                                <button class="delete-event" data-event-id="${doc.event_id}" aria-label="Delete event ${doc.event_id}">Delete</button>
-                            </div>
-                        </div>
-                    `;
-                    eventSection.insertAdjacentHTML('beforeend', card);
-                });
-            }
-
-            eventSection.style.display = 'grid';
-            createEvent.style.display = 'block';
+        // Apply sorting
+        if (selectedFilter === 'most_recent') {
+            data = data.sort((a, b) => b.event_id - a.event_id);
+        } else if (selectedFilter === 'oldest') {
+            data = data.sort((a, b) => a.event_id - b.event_id);
         }
+
+        // Clear only the cards while preserving other elements
+        const existingCards = eventSection.querySelectorAll('.card');
+        existingCards.forEach(card => card.remove());
+
+        // Create temporary container
+        const tempContainer = document.createDocumentFragment();
+        
+        if (data.length > 0) {
+            data.forEach(doc => {
+                const formattedDate = new Date(doc.date).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                const card = `
+                    <div class="card" data-event-id="${doc.event_id}" data-date="${doc.date}">
+                        <div class="text-content">
+                            <h2>Event ID: ${doc.event_id}</h2>
+                            <br>
+                            <p><strong>Event:</strong> ${doc.event_name}</p>
+                            <p><strong>Date:</strong> ${formattedDate}</p>
+                            <i class="far fa-file-alt"></i>
+                        </div>
+                        <div class="button-content">
+                            <button class="show-requirements">Show Requirements</button>
+                            <button class="edit-event" data-event-id="${doc.event_id}">Edit</button>
+                            <button class="delete-event" data-event-id="${doc.event_id}">Delete</button>
+                        </div>
+                    </div>
+                `;
+                tempContainer.appendChild(document.createRange().createContextualFragment(card));
+            });
+
+            eventSection.appendChild(tempContainer);
+            eventSection.style.display = 'grid';
+        } else {
+            eventSection.innerHTML += '<p>No events found</p>';
+        }
+
+        // Keep these elements visible
+        createEvent.style.display = 'block';
+        yearSelector.style.display = 'block';
+
     } catch (error) {
         console.error('Error fetching events:', error);
-        alert('Failed to load events. Please try again later.');
     }
 }
 
@@ -339,13 +339,22 @@ async function showRequirements(eventId) {
         if (!response.ok) throw new Error('Network response was not ok');
 
         const data = await response.json();
+        const backButton = document.getElementById('backToEventsBtn');
+        const requirementsSection = document.getElementById('requirements-section');
 
         if (Array.isArray(data)) {
-            const requirementsSection = document.getElementById('requirements-section');
-            const backButton = document.getElementById('backToEventsBtn');
-            
             const requirementCards = requirementsSection.querySelectorAll('.card');
             requirementCards.forEach(card => card.remove());
+            const requirementMessage = requirementsSection.querySelectorAll('p');
+            requirementMessage.forEach(p => p.remove())
+
+            // Hide year selector container
+            document.getElementById('yearSelectorContainer').style.display = 'none'; // Add this line
+
+            // Hide individual elements
+            document.getElementById('yearSelect').style.display = 'none';
+            document.getElementById('yearSelected').style.display = 'none';
+
 
             data.forEach(req => {    
                 console.log('Identifications:', req.requirement_id, req.event_id); 
@@ -364,21 +373,34 @@ async function showRequirements(eventId) {
                     </div>`;
                 requirementsSection.insertAdjacentHTML('beforeend', requirement); 
             });
+        } else {
+            const requirementCards = requirementsSection.querySelectorAll('.card');
+            requirementCards.forEach(card => card.remove());
 
-            if (backButton) {
-                backButton.style.display = 'block';
-                backButton.parentElement.style.display = 'block'; 
-            }
-            document.getElementById('event-section').style.display = 'none';
-            document.getElementById('event-create').style.display = 'none';
-            document.getElementById('yearSelect').style.display = 'none';
-            document.getElementById('yearSelected').style.display = 'none';
-            requirementsSection.style.display = 'grid';
-            backButton.style.display = 'block'; 
+            const requirementMessage = requirementsSection.querySelectorAll('p');
+            requirementMessage.forEach(p => p.remove())
+
+
+            const noRequirementMessage = document.createElement('p');
+            noRequirementMessage.textContent = "No requirements as of now...";
+            noRequirementMessage.classList.add('no-requirements-message')
+            requirementsSection.appendChild(noRequirementMessage)
         }
+
+        if (backButton) {
+            backButton.style.display = 'block';
+            backButton.parentElement.style.display = 'block'; 
+        }
+
+        document.getElementById('event-section').style.display = 'none';
+        document.getElementById('event-create').style.display = 'none';
+        document.getElementById('yearSelect').style.display = 'none';
+        document.getElementById('yearSelected').style.display = 'none';
+        requirementsSection.style.display = 'grid';
+        backButton.style.display = 'block'; 
+
     } catch (error) {
         console.error('Error fetching requirements:', error);
-        alert('Error loading requirements');
     }
 }
 
@@ -427,7 +449,6 @@ async function updateEvent(eventId, eventData) {
         }
     } catch (error) {
         console.error('Error updating event:', error);
-        alert(error.message);
         return false;
     }
 }
@@ -453,6 +474,8 @@ async function createEvent(eventData) {
         if (response.ok) {
             alert('Event created successfully!');
             fetchCardEvents(eventData.year);
+
+            sendEventEmails(eventData.event_name, eventData.date);
             return true;
         } else {
             throw new Error(data.message || 'Failed to create event');
@@ -536,7 +559,6 @@ async function loadEventForEdit(eventId) {
         }
     } catch (error) {
         console.error('Error loading event:', error); // Log the error
-        alert('Failed to load event data'); // Show error message to the user
     }
 }
 
@@ -563,7 +585,86 @@ async function deleteEvent(eventId) {
         }
     } catch (error) {
         console.error('Error deleting event:', error);
-        alert(error.message);
+    }
+}
+
+//event and require notif students
+async function sendEventEmails(eventName, eventDate) {
+    try {
+        // 1. Get all student emails
+        const studentsResponse = await fetch('/hk-roadmap/student/emails', {
+            headers: getAuthHeaders()
+        });
+        
+        if (!studentsResponse.ok) {
+            console.error('Failed to fetch student emails');
+            return;
+        }
+
+        const emails = await studentsResponse.json(); // Changed variable name
+        
+        // 2. Send emails in background
+        emails.forEach(async (email) => { // Changed parameter name
+            try {
+                await fetch('/hk-roadmap/mail/send', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        recipient: email, // Use email directly
+                        subject: "New Event Created",
+                        body: `A new event has been created: ${eventName}. Date: ${eventDate}.`
+                    })
+                });
+            } catch (emailError) {
+                console.error('Failed to send email to', email, emailError);
+            }
+        });
+
+    } catch (error) {
+        console.error('Email sending failed:', error);
+    }
+}
+
+async function sendRequirementEmails(requirementName, dueDate) {
+    try {
+        // 1. Get all student emails
+        const studentsResponse = await fetch('/hk-roadmap/student/emails', {
+            headers: getAuthHeaders()
+        });
+        
+        if (!studentsResponse.ok) {
+            console.error('Failed to fetch student emails');
+            return;
+        }
+
+        const emails = await studentsResponse.json();
+        
+        // 2. Format due date
+        const formattedDueDate = new Date(dueDate).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+
+        // 3. Send emails in background
+        emails.forEach(async (email) => {
+            try {
+                await fetch('/hk-roadmap/mail/send', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        recipient: email,
+                        subject: "New Requirement Added",
+                        body: `A new requirement has been created: ${requirementName}. Due Date: ${formattedDueDate}.`
+                    })
+                });
+            } catch (emailError) {
+                console.error('Failed to send email to', email, emailError);
+            }
+        });
+
+    } catch (error) {
+        console.error('Requirement email sending failed:', error);
     }
 }
 
@@ -608,7 +709,6 @@ async function createRequirement(requirementData) {
     console.log('Creating requirement with data:', requirementData);
     const authToken = localStorage.getItem('authToken');
 
-    console.log(requirementData);
     try {
         const response = await fetch(`/hk-roadmap/requirements/add`, {
             method: 'POST',
@@ -619,20 +719,24 @@ async function createRequirement(requirementData) {
             body: JSON.stringify(requirementData)
         });
 
-        console.log(response)
-
         const data = await response.json();
-        console.log(data)
 
         if (response.ok) {
             alert('Requirement created successfully!');
             showRequirements(requirementData.event_id);
+            
+            // Send emails to students
+            sendRequirementEmails(
+                requirementData.requirement_name,
+                requirementData.due_date
+            );
+            
             return true;
         } else {
             throw new Error(data.message || 'Failed to create requirement');
         }
     } catch (error) {
-        console.error('Error create event:', error);
+        console.error('Error creating requirement:', error);
         alert(error.message);
         return false;
     }
@@ -733,21 +837,6 @@ async function deleteRequirement(requirementId) {
     const eventID = document.getElementById('eventId').value;
 
         try {
-            // First check how many requirements exist for this event
-            const requirementsResponse = await fetch(`/hk-roadmap/requirements/add?event_id=${eventId}`, {
-                headers: {
-                    'Authorization': `Bearer ${authToken}`
-                }
-            });
-            
-            const requirements = await requirementsResponse.json();
-            
-            if (requirements.length <= 1) {
-                alert("Cannot delete the last requirement in an event. Events must have at least one requirement.");
-                return;
-            }
-    
-            // Proceed with deletion if not the last requirement
             const deleteResponse = await fetch(`/hk-roadmap/requirements/delete?requirement_id=${requirementId}`, {
                 method: 'DELETE',
                 headers: {
@@ -771,13 +860,151 @@ async function deleteRequirement(requirementId) {
     }
 }
 
+//submissions
+
+async function handleStatusUpdate(event) {
+    const button = event.target;
+    const submissionId = button.getAttribute('data-id');
+    const action = button.classList.contains('approve-button') ? 'approved' : 'rejected';
+
+    try {
+        const response = await fetch(`/hk-roadmap/submission/update`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+            },
+            body: JSON.stringify({
+                submission_id: submissionId,
+                status: action
+            })
+        });
+
+        const text = await response.text();
+        const data = text ? JSON.parse(text) : {};
+
+        if (!response.ok) {
+            throw new Error(data.message || `HTTP error! Status: ${response.status}`);
+        }
+
+        alert(`Submission ${action}!`);
+        fetchSubmissions();
+    } catch (error) {
+        console.error('Status update error:', error);
+        alert(`Error: ${error.message}`);
+    }
+}
+
+//notifications
+
+function formatDateTime(timestamp) {
+    try {
+        const date = new Date(timestamp);
+        return isNaN(date) ? '--' : date.toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+    } catch (e) {
+        return '--';
+    }
+}
+
+async function fetchNotifications() {
+    try {
+        const authToken = localStorage.getItem('authToken');
+        const notificationContainer = document.getElementById('notificationContainer');
+
+        const response = await fetch('/hk-roadmap/notification/get', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+
+        if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`);
+        const notifications = await response.json();
+
+        // Clear existing content
+        notificationContainer.innerHTML = '';
+
+        if (Array.isArray(notifications)) {
+
+            // Create notification cards
+            notifications.forEach(notification => {
+                // Add temporary logging
+                console.log('Notification ID:', notification.notification_id);
+                console.log('Read status:', notification.read_notif, typeof notification.read_notif);
+                
+                const card = `
+                    <div class="card notification-card" data-notification-id="${notification.notification_id}">
+                        <div class="text-content">
+                            <p class="notification-body">${notification.notification_body}</p>
+                        </div>
+                        <div class="button-content">
+                            <small class="notification-meta">
+                                ${formatDateTime(notification.created_at)}
+                                ${notification.read_notif === 0 ? 
+                                    `<button class="acknowledge-btn" 
+                                        onclick="markAsRead(${notification.notification_id})">
+                                        Mark Read
+                                    </button>` : 
+                                    '<span class="read-badge">Read</span>'
+                                }
+                            </small>
+                        </div>
+                    </div>
+                `;
+                notificationContainer.insertAdjacentHTML('beforeend', card);
+            });
+        }
+    } catch (error) {
+        console.error('Error fetching notifications:', error);
+        alert('Failed to load notifications. Please try again later.');
+    }
+}
+
+async function markAsRead(notificationId) {
+    try {
+        const authHeader = 'Bearer ' + localStorage.getItem('authToken');
+        const response = await fetch(`/hk-roadmap/notification/edit?notification_id=${notificationId}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': authHeader,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            // Update UI immediately
+            const card = document.querySelector(`[data-notification-id="${notificationId}"]`);
+            if (card) {
+                card.querySelector('.acknowledge-btn')?.remove();
+                card.querySelector('.notification-meta').innerHTML += '<span class="read-badge">Read</span>';
+            }
+        }
+    } catch (error) {
+        console.error('Mark read error:', error);
+        alert('Error updating notification');
+    }
+}
+
+
 // frontend listeners
 document.addEventListener('DOMContentLoaded', initializeYearDropdown);
+
 
 document.addEventListener('DOMContentLoaded', () => {
     showSection('home');
     fetchCardEvents();
     showTab('documents');
+
+    getAuthHeaders();
+
     
     function logout() {
         alert('Logging out...');
@@ -829,6 +1056,7 @@ document.addEventListener('DOMContentLoaded', () => {
         requirementCreateButton.addEventListener('click', () => {
             document.getElementById('requirementId').value = ''; 
             document.getElementById('requirementName').value = '';
+            document.getElementById('requirementDescription').value = '';
             document.getElementById('dueDate').value = '';
             toggleRequirementPopup(); 
         });
@@ -883,6 +1111,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 backButtonContainer.style.display = 'none';
                 createEvent.style.display = 'block';
                 yearSelect.style.display = 'block';
+                document.getElementById('yearSelectorContainer').style.display = 'block';
             }
         });
     }
@@ -895,5 +1124,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const logoutButton = document.querySelector('.popup-button');
     if (logoutButton) {
         logoutButton.addEventListener('click', logout);
+    }
+
+    if (document.getElementById('notif-section')) {
+        fetchNotifications();
+    }
+    if (document.getElementById('announce-section')) {
+        fetchAnnouncements();
     }
 });

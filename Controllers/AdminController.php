@@ -25,6 +25,10 @@ class AdminController {
         return $admins;
     }
 
+    public function validateSubmissionToken($token) {
+        return $this->adminModel->validateSubmissionToken($token);
+    }
+
     public function register() {
         if (!isset($_POST['name'], $_POST['email'], $_POST['password'], $_POST['confirm_password'])) {
             echo json_encode(["message" => "Missing required fields."]);

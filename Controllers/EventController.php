@@ -103,40 +103,30 @@ class EventController {
     }
 
     public function createEvent() {
-
         $headers = apache_request_headers(); 
         if (!isset($headers['Authorization'])) {
             echo json_encode(["message" => "Token is required."]);
             return;
         }
-
+    
         $token = str_replace('Bearer ', '', $headers['Authorization']);
         if (!$this->adminController->validateToken($token)) {
             echo json_encode(["message" => "Invalid token."]);
             return;
         }
-
-
+    
         if (!isset($_POST['event_name'], $_POST['date'])) {
             echo json_encode(["message" => "Missing required fields."]);
             return;
         }
-
+    
         $eventName = $_POST['event_name'];
         $date = $_POST['date'];
-
+    
         if ($this->eventModel->createEvent($eventName, $date)) {
-
-            $students = $this->studentController->getStudent(); 
-            $subject = "New Event Created";
-            $body = "A new event has been created: $eventName. Date: $date.";
-
-            foreach ($students as $student) {
-                $this->mailService->sendEmail($student['email'], $subject, $body); 
-            }
-
             header('Content-Type: application/json');
             echo json_encode(["message" => "Event created successfully."]);
+            
         } else {
             echo json_encode(["message" => "Failed to create event."]);
         }
