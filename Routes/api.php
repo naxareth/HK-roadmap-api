@@ -9,6 +9,7 @@ use Controllers\EventController;
 use Controllers\RequirementController;
 use Controllers\StudentController;
 use Controllers\SubmissionController;
+use Controllers\CommentController;
 use Controllers\NotificationController;
 use Controllers\MailController;
 
@@ -21,6 +22,7 @@ class Api {
     private $studentController;
     private $eventController;
     private $submissionController;
+    private $commentController;
     private $notificationController;
     private $mailController;
     private $middleware = [];
@@ -32,6 +34,7 @@ class Api {
         $this->studentController = new StudentController($db);
         $this->eventController = new EventController($db);
         $this->submissionController = new SubmissionController($db);
+        $this->commentController = new CommentController($db);
         $this->notificationController = new NotificationController($db);
         $this->mailController = new MailController($db);
     }
@@ -156,6 +159,41 @@ class Api {
             case (preg_match('/^documents\/status\/(\d+)$/', $endpoint, $matches) ? $endpoint : !$endpoint):
                 if ($method === 'GET') {
                     return $this->documentController->getDocumentStatus($matches[1]);
+                }
+                break;
+
+            // Comment Routes
+            case 'comments/add':
+                if ($method === 'POST') {
+                    echo $this->commentController->addComment();
+                    return;
+                }
+                break;
+
+                case 'comments/get':
+                    if ($method === 'GET') {
+                        $document_id = isset($_GET['document_id']) ? $_GET['document_id'] : null;
+                        if (!$document_id) {
+                            http_response_code(400);
+                            echo json_encode(['message' => 'Missing document_id parameter']);
+                            return;
+                        }
+                        $this->commentController->getComments();
+                        return;
+                    }
+                    break;
+
+            case 'comments/update':
+                if ($method === 'PUT') {
+                    echo $this->commentController->updateComment();
+                    return;
+                }
+                break;
+
+            case 'comments/delete':
+                if ($method === 'DELETE') {
+                    echo $this->commentController->deleteComment();
+                    return;
                 }
                 break;
 
