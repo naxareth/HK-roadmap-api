@@ -483,21 +483,32 @@ class Document {
 
     public function checkMissingStatus($eventId, $requirementId, $studentId) {
         try {
-            // First check if requirement is overdue
-            $query = "SELECT r.due_date < NOW() as is_overdue
-                     FROM requirement r
-                     WHERE r.requirement_id = :requirement_id
-                     AND r.event_id = :event_id";
+            // First check if requirement is overdue AND no document exists
+            $query = "SELECT 
+                r.due_date < NOW() as is_overdue,
+                r.due_date,
+                COALESCE(d.document_id, 0) as has_document
+            FROM requirement r
+            LEFT JOIN document d ON 
+                d.requirement_id = r.requirement_id 
+                AND d.student_id = :student_id
+                AND d.event_id = :event_id
+            WHERE r.requirement_id = :requirement_id
+            AND r.event_id = :event_id";
     
             $stmt = $this->db->prepare($query);
             $stmt->bindParam(':requirement_id', $requirementId);
             $stmt->bindParam(':event_id', $eventId);
+            $stmt->bindParam(':student_id', $studentId);
             $stmt->execute();
             
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
             
-            if ($result && $result['is_overdue']) {
-                // If requirement is overdue, mark as missing
+            // Only mark as missing if:
+            // 1. The requirement exists
+            // 2. The due date has passed
+            // 3. No document exists for this requirement
+            if ($result && $result['is_overdue'] && !$result['has_document']) {
                 $insertQuery = "INSERT INTO document (
                     event_id,
                     requirement_id,
@@ -511,15 +522,17 @@ class Document {
                     'missing',
                     NOW()
                 )";
-    
+                
                 $insertStmt = $this->db->prepare($insertQuery);
                 $insertStmt->bindParam(':event_id', $eventId);
                 $insertStmt->bindParam(':requirement_id', $requirementId);
                 $insertStmt->bindParam(':student_id', $studentId);
                 return $insertStmt->execute();
             }
+            
             return false;
         } catch (\Exception $e) {
+            error_log("Error in checkMissingStatus: " . $e->getMessage());
             return false;
         }
     }
@@ -528,6 +541,7 @@ class Document {
         try {
             $this->db->beginTransaction();
     
+            // Modified query to only consider requirements that are past due
             $insertQuery = "INSERT INTO document (
                 event_id,
                 requirement_id,
@@ -552,10 +566,11 @@ class Document {
                 0,
                 NULL
             FROM requirement r
-            WHERE NOT EXISTS (
-                SELECT 1 
-                FROM document d 
-                WHERE d.requirement_id = r.requirement_id 
+            WHERE r.due_date < NOW()  -- Only past due requirements
+            AND NOT EXISTS (
+                SELECT 1
+                FROM document d
+                WHERE d.requirement_id = r.requirement_id
                 AND d.student_id = :student_id
             )";
     
@@ -565,11 +580,11 @@ class Document {
     
             $this->db->commit();
             return true;
-    
         } catch (\Exception $e) {
             if ($this->db->inTransaction()) {
                 $this->db->rollBack();
             }
+            error_log("Error in checkAndCreateMissingDocuments: " . $e->getMessage());
             return false;
         }
     }
