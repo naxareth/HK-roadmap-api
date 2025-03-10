@@ -115,45 +115,77 @@ class CommentController {
     }
 
     public function getComments() {
-        $user = $this->authenticateUser();
-        if (!$user) {
-            http_response_code(401);
-            echo json_encode(array("message" => "Unauthorized"));
-            return;
-        }
+        try {
+            $user = $this->authenticateUser();
+            if (!$user) {
+                http_response_code(401);
+                echo json_encode(["message" => "Unauthorized"]);
+                return;
+            }
 
-        $document_id = isset($_GET['document_id']) ? $_GET['document_id'] : null;
-        if(!$document_id) {
-            http_response_code(400);
-            echo json_encode(array("message" => "Missing document ID"));
-            return;
-        }
+            $document_id = isset($_GET['document_id']) ? (int)$_GET['document_id'] : null;
+            if (!$document_id) {
+                http_response_code(400);
+                echo json_encode(["message" => "Missing document ID"]);
+                return;
+            }
 
-        $result = $this->comment->getCommentsByDocument($document_id);
-        if($result === false) {
+            // For students, verify document ownership
+            if ($user['user_type'] === 'student') {
+                $query = "SELECT student_id FROM document WHERE document_id = :document_id";
+                $stmt = $this->db->prepare($query);
+                $stmt->bindParam(':document_id', $document_id, PDO::PARAM_INT);
+                $stmt->execute();
+                $document = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$document) {
+                    http_response_code(404);
+                    echo json_encode(["message" => "Document not found"]);
+                    return;
+                }
+
+                if ((int)$document['student_id'] !== (int)$user['user_id']) {
+                    http_response_code(403);
+                    echo json_encode(["message" => "Access denied to this document's comments"]);
+                    return;
+                }
+            }
+
+            $result = $this->comment->getCommentsByDocument($document_id);
+            if ($result === false) {
+                http_response_code(500);
+                echo json_encode(["message" => "Error fetching comments"]);
+                return;
+            }
+
+            $comments_arr = [];
+            while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
+                $is_owner = (
+                    $row['user_type'] === $user['user_type'] && 
+                    (string)$row['user_id'] === (string)$user['user_id']
+                );
+
+                $comment_item = [
+                    'comment_id' => (int)$row['comment_id'],
+                    'document_id' => (int)$row['document_id'],
+                    'requirement_id' => (int)$row['requirement_id'],
+                    'user_type' => $row['user_type'],
+                    'user_name' => $row['user_name'],
+                    'body' => $row['body'],
+                    'created_at' => $row['created_at'],
+                    'is_owner' => $is_owner
+                ];
+                array_push($comments_arr, $comment_item);
+            }
+
+            http_response_code(200);
+            echo json_encode($comments_arr);
+
+        } catch (Exception $e) {
+            error_log("Error in getComments: " . $e->getMessage());
             http_response_code(500);
-            echo json_encode(array("message" => "Error fetching comments"));
-            return;
+            echo json_encode(["message" => "An error occurred while fetching comments"]);
         }
-
-        $comments_arr = array();
-        while($row = $result->fetch(PDO::FETCH_ASSOC)) {
-            $comment_item = array(
-                'comment_id' => $row['comment_id'],
-                'document_id' => $row['document_id'],
-                'requirement_id' => $row['requirement_id'],
-                'user_type' => $row['user_type'],
-                'user_name' => $row['user_name'],
-                'body' => $row['body'],
-                'created_at' => $row['created_at'],
-                'is_owner' => ($row['user_type'] === $user['user_type'] && 
-                             $row['user_id'] === $user['user_id'])
-            );
-            array_push($comments_arr, $comment_item);
-        }
-
-        http_response_code(200);
-        echo json_encode($comments_arr);
     }
 
     public function updateComment() {
@@ -180,7 +212,6 @@ class CommentController {
                 return;
             }
 
-            // Important: Keep type checking for student permissions
             if ($user['user_type'] === 'student') {
                 if ($existingComment['user_type'] !== $user['user_type'] ||
                     (string)$existingComment['user_id'] !== (string)$user['user_id']) {
@@ -246,7 +277,6 @@ class CommentController {
                     return;
                 }
             } else {
-                // Important: Keep type checking for student permissions
                 $this->comment->user_type = $user['user_type'];
                 $this->comment->user_id = $user['user_id'];
                 

@@ -1,0 +1,26 @@
+[2025-03-10 10:02:48] getComments called with document_id: 93
+[2025-03-10 10:02:48] Authenticated user: Array
+(
+    [user_type] => student
+    [user_id] => 2
+    [user_name] => Philip
+)
+
+[2025-03-10 10:02:48] Error in getComments: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'hkr_database.documents' doesn't exist
+[2025-03-10 10:02:48] Stack trace: #0 C:\xampp\htdocs\hk-roadmap\Controllers\CommentController.php(160): PDOStatement->execute()
+#1 C:\xampp\htdocs\hk-roadmap\Routes\api.php(181): Controllers\CommentController->getComments()
+#2 C:\xampp\htdocs\hk-roadmap\Public\index.php(285): Routes\Api->route(Array, 'GET')
+#3 {main}
+[2025-03-10 10:03:07] getComments called with document_id: 93
+[2025-03-10 10:03:07] Authenticated user: Array
+(
+    [user_type] => student
+    [user_id] => 2
+    [user_name] => Philip
+)
+
+[2025-03-10 10:03:07] Error in getComments: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'hkr_database.documents' doesn't exist
+[2025-03-10 10:03:07] Stack trace: #0 C:\xampp\htdocs\hk-roadmap\Controllers\CommentController.php(160): PDOStatement->execute()
+#1 C:\xampp\htdocs\hk-roadmap\Routes\api.php(181): Controllers\CommentController->getComments()
+#2 C:\xampp\htdocs\hk-roadmap\Public\index.php(285): Routes\Api->route(Array, 'GET')
+#3 {main}

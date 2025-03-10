@@ -56,10 +56,6 @@ class Comment {
 
     public function getCommentsByDocument($document_id) {
         try {
-            if (!is_numeric($document_id)) {
-                return false;
-            }
-
             $query = "SELECT 
                         c.*,
                         DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') as created_at,
@@ -67,13 +63,14 @@ class Comment {
                     FROM " . $this->table . " c
                     WHERE c.document_id = :document_id
                     ORDER BY c.created_at DESC";
-
+    
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':document_id', $document_id, PDO::PARAM_INT);
             $stmt->execute();
-
+    
             return $stmt;
         } catch (PDOException $e) {
+            error_log("Error in getCommentsByDocument: " . $e->getMessage());
             return false;
         }
     }
