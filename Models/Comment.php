@@ -2,6 +2,7 @@
 namespace Models;
 
 use PDOException;
+use PDO;
 
 class Comment {
     private $conn;
@@ -22,7 +23,6 @@ class Comment {
         $this->conn = $db;
     }
 
-    // Create new comment
     public function create() {
         try {
             $query = "INSERT INTO " . $this->table . "
@@ -40,26 +40,25 @@ class Comment {
             $this->user_name = htmlspecialchars(strip_tags($this->user_name));
             $this->body = htmlspecialchars(strip_tags($this->body));
 
-            // Bind parameters
-            $stmt->bindParam(':document_id', $this->document_id);
-            $stmt->bindParam(':requirement_id', $this->requirement_id);
-            $stmt->bindParam(':user_type', $this->user_type);
-            $stmt->bindParam(':user_id', $this->user_id);
-            $stmt->bindParam(':user_name', $this->user_name);
-            $stmt->bindParam(':body', $this->body);
+            // Important: Keep explicit type binding
+            $stmt->bindParam(':document_id', $this->document_id, PDO::PARAM_INT);
+            $stmt->bindParam(':requirement_id', $this->requirement_id, PDO::PARAM_INT);
+            $stmt->bindParam(':user_type', $this->user_type, PDO::PARAM_STR);
+            $stmt->bindParam(':user_id', $this->user_id, PDO::PARAM_INT);
+            $stmt->bindParam(':user_name', $this->user_name, PDO::PARAM_STR);
+            $stmt->bindParam(':body', $this->body, PDO::PARAM_STR);
 
             return $stmt->execute();
         } catch(PDOException $e) {
-            error_log("Error creating comment: " . $e->getMessage());
             return false;
         }
     }
 
-    // Get comments by document ID
     public function getCommentsByDocument($document_id) {
         try {
-            // Debug: Log the query execution
-            error_log("Executing getCommentsByDocument for document_id: " . $document_id);
+            if (!is_numeric($document_id)) {
+                return false;
+            }
 
             $query = "SELECT 
                         c.*,
@@ -70,22 +69,21 @@ class Comment {
                     ORDER BY c.created_at DESC";
 
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':document_id', $document_id);
+            $stmt->bindParam(':document_id', $document_id, PDO::PARAM_INT);
             $stmt->execute();
-
-            // Debug: Log the number of rows found
-            error_log("Found " . $stmt->rowCount() . " rows");
 
             return $stmt;
         } catch (PDOException $e) {
-            error_log("Error in getCommentsByDocument: " . $e->getMessage());
             return false;
         }
     }
 
-    // Get comments by requirement ID
     public function getCommentsByRequirement($requirement_id, $event_id = null) {
         try {
+            if (!is_numeric($requirement_id) || ($event_id !== null && !is_numeric($event_id))) {
+                return false;
+            }
+
             $query = "SELECT 
                         c.*,
                         DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') as created_at,
@@ -101,90 +99,101 @@ class Comment {
             $query .= " ORDER BY c.created_at DESC";
 
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':requirement_id', $requirement_id);
+            $stmt->bindParam(':requirement_id', $requirement_id, PDO::PARAM_INT);
             
             if ($event_id) {
-                $stmt->bindParam(':event_id', $event_id);
+                $stmt->bindParam(':event_id', $event_id, PDO::PARAM_INT);
             }
 
             $stmt->execute();
             return $stmt;
         } catch (PDOException $e) {
-            error_log("Error in getCommentsByRequirement: " . $e->getMessage());
             return false;
         }
     }
 
-    // Update comment
-    // Update comment
-public function update() {
-    try {
-        $query = "UPDATE " . $this->table . "
-                SET body = :body,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE comment_id = :comment_id
-                AND user_type = :user_type 
-                AND user_id = :user_id";
+    public function update() {
+        try {
+            if (!is_numeric($this->comment_id) || !is_string($this->user_type) || !is_numeric($this->user_id)) {
+                return false;
+            }
 
-        $stmt = $this->conn->prepare($query);
+            $query = "UPDATE " . $this->table . "
+                    SET body = :body,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE comment_id = :comment_id
+                    AND user_type = :user_type 
+                    AND user_id = :user_id";
 
-        // Sanitize input
-        $this->body = htmlspecialchars(strip_tags($this->body));
-        $this->comment_id = htmlspecialchars(strip_tags($this->comment_id));
+            $stmt = $this->conn->prepare($query);
 
-        // Bind parameters
-        $stmt->bindParam(':body', $this->body);
-        $stmt->bindParam(':comment_id', $this->comment_id);
-        $stmt->bindParam(':user_type', $this->user_type);
-        $stmt->bindParam(':user_id', $this->user_id);
+            // Sanitize input
+            $this->body = htmlspecialchars(strip_tags($this->body));
+            $this->comment_id = htmlspecialchars(strip_tags($this->comment_id));
 
-        return $stmt->execute();
-    } catch(PDOException $e) {
-        error_log("Error updating comment: " . $e->getMessage());
-        return false;
-    }
-}
+            // Important: Keep explicit type binding
+            $stmt->bindParam(':body', $this->body, PDO::PARAM_STR);
+            $stmt->bindParam(':comment_id', $this->comment_id, PDO::PARAM_INT);
+            $stmt->bindParam(':user_type', $this->user_type, PDO::PARAM_STR);
+            $stmt->bindParam(':user_id', $this->user_id, PDO::PARAM_INT);
 
-// Delete comment
-public function delete() {
-    try {
-        error_log("COMMENT MODEL - Delete Method");
-        error_log("Attempting to delete comment with:");
-        error_log("Comment ID: " . $this->comment_id);
-        error_log("User Type: " . $this->user_type);
-        error_log("User ID: " . $this->user_id);
-
-        $query = "DELETE FROM " . $this->table . "
-                WHERE comment_id = :comment_id";
-
-        error_log("SQL Query: " . $query);
-
-        $stmt = $this->conn->prepare($query);
-
-        // Sanitize input
-        $this->comment_id = htmlspecialchars(strip_tags($this->comment_id));
-
-        // Bind parameters
-        $stmt->bindParam(':comment_id', $this->comment_id);
-
-        $result = $stmt->execute();
-        error_log("Delete execution result: " . ($result ? "true" : "false"));
-        
-        if (!$result) {
-            error_log("SQL Error Info: " . json_encode($stmt->errorInfo()));
+            $result = $stmt->execute();
+            return $result && $stmt->rowCount() > 0;
+        } catch(PDOException $e) {
+            return false;
         }
-
-        return $result;
-    } catch(PDOException $e) {
-        error_log("Error deleting comment: " . $e->getMessage());
-        error_log("SQL State: " . $e->getCode());
-        return false;
     }
-}
 
-    // Get single comment by ID
+    public function delete() {
+        try {
+            if (!is_numeric($this->comment_id) || !is_string($this->user_type) || !is_numeric($this->user_id)) {
+                return false;
+            }
+
+            $query = "DELETE FROM " . $this->table . "
+                    WHERE comment_id = :comment_id
+                    AND user_type = :user_type 
+                    AND user_id = :user_id";
+
+            $stmt = $this->conn->prepare($query);
+
+            // Important: Keep explicit type binding
+            $stmt->bindParam(':comment_id', $this->comment_id, PDO::PARAM_INT);
+            $stmt->bindParam(':user_type', $this->user_type, PDO::PARAM_STR);
+            $stmt->bindParam(':user_id', $this->user_id, PDO::PARAM_INT);
+
+            $result = $stmt->execute();
+            return $result && $stmt->rowCount() > 0;
+        } catch(PDOException $e) {
+            return false;
+        }
+    }
+
+    public function deleteByAdmin() {
+        try {
+            if (!is_numeric($this->comment_id)) {
+                return false;
+            }
+
+            $query = "DELETE FROM " . $this->table . "
+                    WHERE comment_id = :comment_id";
+
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':comment_id', $this->comment_id, PDO::PARAM_INT);
+
+            $result = $stmt->execute();
+            return $result && $stmt->rowCount() > 0;
+        } catch(PDOException $e) {
+            return false;
+        }
+    }
+
     public function getCommentById($comment_id) {
         try {
+            if (!is_numeric($comment_id)) {
+                return false;
+            }
+
             $query = "SELECT 
                         c.*,
                         DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') as created_at,
@@ -193,12 +202,11 @@ public function delete() {
                     WHERE c.comment_id = :comment_id";
 
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':comment_id', $comment_id);
+            $stmt->bindParam(':comment_id', $comment_id, PDO::PARAM_INT);
             $stmt->execute();
 
-            return $stmt->fetch(\PDO::FETCH_ASSOC);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch(PDOException $e) {
-            error_log("Error getting comment by ID: " . $e->getMessage());
             return false;
         }
     }
