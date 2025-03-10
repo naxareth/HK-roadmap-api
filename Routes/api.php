@@ -162,7 +162,7 @@ class Api {
                 }
                 break;
 
-            // Comment Routes
+           // Comment Routes
             case 'comments/add':
                 if ($method === 'POST') {
                     echo $this->commentController->addComment();
@@ -170,18 +170,21 @@ class Api {
                 }
                 break;
 
-                case 'comments/get':
-                    if ($method === 'GET') {
-                        $document_id = isset($_GET['document_id']) ? $_GET['document_id'] : null;
-                        if (!$document_id) {
-                            http_response_code(400);
-                            echo json_encode(['message' => 'Missing document_id parameter']);
-                            return;
-                        }
-                        $this->commentController->getComments();
+            case 'comments/get':
+                if ($method === 'GET') {
+                    $requirement_id = isset($_GET['requirement_id']) ? $_GET['requirement_id'] : null;
+                    $student_id = isset($_GET['student_id']) ? $_GET['student_id'] : null;
+                    
+                    if (!$requirement_id || !$student_id) {
+                        http_response_code(400);
+                        echo json_encode(['message' => 'Missing requirement_id or student_id parameter']);
                         return;
                     }
-                    break;
+                    
+                    $this->commentController->getConversation();
+                    return;
+                }
+                break;
 
             case 'comments/update':
                 if ($method === 'PUT') {

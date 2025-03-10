@@ -156,51 +156,50 @@ if (empty($path[0])) {
             ],
 
             // Comment endpoints
-
             "comments" => [
                 "add" => [
                     "method" => "POST",
                     "url" => "/comments/add",
-                    "description" => "Add a new comment to a document",
+                    "description" => "Add a new comment to a conversation",
                     "body" => [
-                        "document_id" => "integer (required)",
                         "requirement_id" => "integer (required)",
+                        "student_id" => "integer (required)",
                         "body" => "string (required)"
                     ],
                     "authentication" => "Bearer token required"
                 ],
-          "get" => [
-    "method" => "GET",
-    "url" => "/comments/get",
-    "description" => "Get comments for a document or requirement",
-    "params" => [
-        "document_id" => "integer (required if getting comments for a document)",
-        "requirement_id" => "integer (required if document_id not provided)",
-        "event_id" => "integer (optional, can be used with requirement_id)"
-    ],
-    "response" => [
-        "success" => [
-            "status" => 200,
-            "data" => [
-                [
-                    "comment_id" => "integer",
-                    "document_id" => "integer",
-                    "requirement_id" => "integer",
-                    "user_type" => "string (admin|student)",
-                    "user_name" => "string",
-                    "body" => "string",
-                    "created_at" => "timestamp",
-                    "is_owner" => "boolean"
-                ]
-            ]
-        ],
-        "error" => [
-            "status" => 400,
-            "message" => "string"
-        ]
-    ],
-    "authentication" => "Bearer token required"
-],
+                "get" => [
+                    "method" => "GET",
+                    "url" => "/comments/get",
+                    "description" => "Get all comments in a conversation between admin and student",
+                    "params" => [
+                        "requirement_id" => "integer (required)",
+                        "student_id" => "integer (required)"
+                    ],
+                    "response" => [
+                        "success" => [
+                            "status" => 200,
+                            "data" => [
+                                [
+                                    "comment_id" => "integer",
+                                    "requirement_id" => "integer",
+                                    "student_id" => "integer",
+                                    "user_type" => "string (admin|student)",
+                                    "user_name" => "string",
+                                    "body" => "string",
+                                    "created_at" => "timestamp",
+                                    "updated_at" => "timestamp",
+                                    "is_owner" => "boolean"
+                                ]
+                            ]
+                        ],
+                        "error" => [
+                            "status" => 400,
+                            "message" => "string"
+                        ]
+                    ],
+                    "authentication" => "Bearer token required"
+                ],
                 "update" => [
                     "method" => "PUT",
                     "url" => "/comments/update",

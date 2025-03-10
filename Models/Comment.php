@@ -1,4 +1,5 @@
 <?php
+
 namespace Models;
 
 use PDOException;
@@ -12,6 +13,7 @@ class Comment {
     public $comment_id;
     public $document_id;
     public $requirement_id;
+    public $student_id;  // Added for chat room functionality
     public $user_type;
     public $user_id;
     public $user_name;
@@ -26,15 +28,16 @@ class Comment {
     public function create() {
         try {
             $query = "INSERT INTO " . $this->table . "
-                    (document_id, requirement_id, user_type, user_id, user_name, body)
+                    (document_id, requirement_id, student_id, user_type, user_id, user_name, body)
                     VALUES
-                    (:document_id, :requirement_id, :user_type, :user_id, :user_name, :body)";
+                    (:document_id, :requirement_id, :student_id, :user_type, :user_id, :user_name, :body)";
 
             $stmt = $this->conn->prepare($query);
 
             // Sanitize input
-            $this->document_id = htmlspecialchars(strip_tags($this->document_id));
+            $this->document_id = $this->document_id ? htmlspecialchars(strip_tags($this->document_id)) : null;
             $this->requirement_id = htmlspecialchars(strip_tags($this->requirement_id));
+            $this->student_id = htmlspecialchars(strip_tags($this->student_id));
             $this->user_type = htmlspecialchars(strip_tags($this->user_type));
             $this->user_id = htmlspecialchars(strip_tags($this->user_id));
             $this->user_name = htmlspecialchars(strip_tags($this->user_name));
@@ -43,6 +46,7 @@ class Comment {
             // Important: Keep explicit type binding
             $stmt->bindParam(':document_id', $this->document_id, PDO::PARAM_INT);
             $stmt->bindParam(':requirement_id', $this->requirement_id, PDO::PARAM_INT);
+            $stmt->bindParam(':student_id', $this->student_id, PDO::PARAM_INT);
             $stmt->bindParam(':user_type', $this->user_type, PDO::PARAM_STR);
             $stmt->bindParam(':user_id', $this->user_id, PDO::PARAM_INT);
             $stmt->bindParam(':user_name', $this->user_name, PDO::PARAM_STR);
@@ -50,6 +54,30 @@ class Comment {
 
             return $stmt->execute();
         } catch(PDOException $e) {
+            error_log("Error in create comment: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getConversation($requirement_id, $student_id) {
+        try {
+            $query = "SELECT 
+                    c.*,
+                    DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') as created_at,
+                    DATE_FORMAT(c.updated_at, '%Y-%m-%d %H:%i:%s') as updated_at
+                    FROM " . $this->table . " c
+                    WHERE c.requirement_id = :requirement_id 
+                    AND c.student_id = :student_id
+                    ORDER BY c.created_at ASC";  // Chronological order for chat
+
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':requirement_id', $requirement_id, PDO::PARAM_INT);
+            $stmt->bindParam(':student_id', $student_id, PDO::PARAM_INT);
+            $stmt->execute();
+
+            return $stmt;
+        } catch (PDOException $e) {
+            error_log("Error in getConversation: " . $e->getMessage());
             return false;
         }
     }
@@ -57,17 +85,17 @@ class Comment {
     public function getCommentsByDocument($document_id) {
         try {
             $query = "SELECT 
-                        c.*,
-                        DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') as created_at,
-                        DATE_FORMAT(c.updated_at, '%Y-%m-%d %H:%i:%s') as updated_at
+                    c.*,
+                    DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') as created_at,
+                    DATE_FORMAT(c.updated_at, '%Y-%m-%d %H:%i:%s') as updated_at
                     FROM " . $this->table . " c
                     WHERE c.document_id = :document_id
-                    ORDER BY c.created_at DESC";
-    
+                    ORDER BY c.created_at ASC";  // Changed to ASC for chat-like flow
+
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':document_id', $document_id, PDO::PARAM_INT);
             $stmt->execute();
-    
+
             return $stmt;
         } catch (PDOException $e) {
             error_log("Error in getCommentsByDocument: " . $e->getMessage());
@@ -75,36 +103,32 @@ class Comment {
         }
     }
 
-    public function getCommentsByRequirement($requirement_id, $event_id = null) {
+    public function getCommentsByRequirement($requirement_id, $student_id = null) {
         try {
-            if (!is_numeric($requirement_id) || ($event_id !== null && !is_numeric($event_id))) {
-                return false;
-            }
-
             $query = "SELECT 
-                        c.*,
-                        DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') as created_at,
-                        DATE_FORMAT(c.updated_at, '%Y-%m-%d %H:%i:%s') as updated_at
+                    c.*,
+                    DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') as created_at,
+                    DATE_FORMAT(c.updated_at, '%Y-%m-%d %H:%i:%s') as updated_at
                     FROM " . $this->table . " c
-                    JOIN documents d ON c.document_id = d.document_id
                     WHERE c.requirement_id = :requirement_id";
 
-            if ($event_id) {
-                $query .= " AND d.event_id = :event_id";
+            if ($student_id) {
+                $query .= " AND c.student_id = :student_id";
             }
 
-            $query .= " ORDER BY c.created_at DESC";
+            $query .= " ORDER BY c.created_at ASC";  // Changed to ASC for chat-like flow
 
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':requirement_id', $requirement_id, PDO::PARAM_INT);
             
-            if ($event_id) {
-                $stmt->bindParam(':event_id', $event_id, PDO::PARAM_INT);
+            if ($student_id) {
+                $stmt->bindParam(':student_id', $student_id, PDO::PARAM_INT);
             }
 
             $stmt->execute();
             return $stmt;
         } catch (PDOException $e) {
+            error_log("Error in getCommentsByRequirement: " . $e->getMessage());
             return false;
         }
     }
@@ -117,9 +141,9 @@ class Comment {
 
             $query = "UPDATE " . $this->table . "
                     SET body = :body,
-                        updated_at = CURRENT_TIMESTAMP
+                    updated_at = CURRENT_TIMESTAMP
                     WHERE comment_id = :comment_id
-                    AND user_type = :user_type 
+                    AND user_type = :user_type
                     AND user_id = :user_id";
 
             $stmt = $this->conn->prepare($query);
@@ -137,6 +161,7 @@ class Comment {
             $result = $stmt->execute();
             return $result && $stmt->rowCount() > 0;
         } catch(PDOException $e) {
+            error_log("Error in update comment: " . $e->getMessage());
             return false;
         }
     }
@@ -149,12 +174,11 @@ class Comment {
 
             $query = "DELETE FROM " . $this->table . "
                     WHERE comment_id = :comment_id
-                    AND user_type = :user_type 
+                    AND user_type = :user_type
                     AND user_id = :user_id";
 
             $stmt = $this->conn->prepare($query);
 
-            // Important: Keep explicit type binding
             $stmt->bindParam(':comment_id', $this->comment_id, PDO::PARAM_INT);
             $stmt->bindParam(':user_type', $this->user_type, PDO::PARAM_STR);
             $stmt->bindParam(':user_id', $this->user_id, PDO::PARAM_INT);
@@ -162,6 +186,7 @@ class Comment {
             $result = $stmt->execute();
             return $result && $stmt->rowCount() > 0;
         } catch(PDOException $e) {
+            error_log("Error in delete comment: " . $e->getMessage());
             return false;
         }
     }
@@ -181,6 +206,7 @@ class Comment {
             $result = $stmt->execute();
             return $result && $stmt->rowCount() > 0;
         } catch(PDOException $e) {
+            error_log("Error in deleteByAdmin: " . $e->getMessage());
             return false;
         }
     }
@@ -192,9 +218,9 @@ class Comment {
             }
 
             $query = "SELECT 
-                        c.*,
-                        DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') as created_at,
-                        DATE_FORMAT(c.updated_at, '%Y-%m-%d %H:%i:%s') as updated_at
+                    c.*,
+                    DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') as created_at,
+                    DATE_FORMAT(c.updated_at, '%Y-%m-%d %H:%i:%s') as updated_at
                     FROM " . $this->table . " c
                     WHERE c.comment_id = :comment_id";
 
@@ -204,6 +230,7 @@ class Comment {
 
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch(PDOException $e) {
+            error_log("Error in getCommentById: " . $e->getMessage());
             return false;
         }
     }
