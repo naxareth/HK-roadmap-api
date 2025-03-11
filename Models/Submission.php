@@ -3,6 +3,7 @@
 namespace Models;
 
 use PDO;
+use PDOException;
 
 class Submission {
     private $db;

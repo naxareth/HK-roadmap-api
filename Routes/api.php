@@ -9,6 +9,7 @@ use Controllers\EventController;
 use Controllers\RequirementController;
 use Controllers\StudentController;
 use Controllers\SubmissionController;
+use Controllers\CommentController;
 use Controllers\NotificationController;
 use Controllers\MailController;
 use Controllers\AnnouncementController;
@@ -22,6 +23,7 @@ class Api {
     private $studentController;
     private $eventController;
     private $submissionController;
+    private $commentController;
     private $notificationController;
     private $mailController;
     private $announcementController;
@@ -34,6 +36,7 @@ class Api {
         $this->studentController = new StudentController($db);
         $this->eventController = new EventController($db);
         $this->submissionController = new SubmissionController($db);
+        $this->commentController = new CommentController($db);
         $this->notificationController = new NotificationController($db);
         $this->mailController = new MailController($db);
         $this->announcementController = new AnnouncementController($db);
@@ -159,6 +162,44 @@ class Api {
             case (preg_match('/^documents\/status\/(\d+)$/', $endpoint, $matches) ? $endpoint : !$endpoint):
                 if ($method === 'GET') {
                     return $this->documentController->getDocumentStatus($matches[1]);
+                }
+                break;
+
+            // Comment Routes
+            case 'comments/add':
+                if ($method === 'POST') {
+                    echo $this->commentController->addComment();
+                    return;
+                }
+                break;
+
+            case 'comments/get':
+                if ($method === 'GET') {
+                    $requirement_id = isset($_GET['requirement_id']) ? $_GET['requirement_id'] : null;
+                    $student_id = isset($_GET['student_id']) ? $_GET['student_id'] : null;
+                    
+                    if (!$requirement_id || !$student_id) {
+                        http_response_code(400);
+                        echo json_encode(['message' => 'Missing requirement_id or student_id parameter']);
+                        return;
+                    }
+                    
+                    $this->commentController->getConversation();
+                    return;
+                }
+                break;
+
+            case 'comments/update':
+                if ($method === 'PUT') {
+                    echo $this->commentController->updateComment();
+                    return;
+                }
+                break;
+
+            case 'comments/delete':
+                if ($method === 'DELETE') {
+                    echo $this->commentController->deleteComment();
+                    return;
                 }
                 break;
 

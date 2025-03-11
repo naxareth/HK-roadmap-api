@@ -4,6 +4,8 @@ namespace Controllers;
 
 use Models\Submission;
 use Controllers\AdminController;
+use PDOException;
+use Exception;
 
 require_once '../models/Submission.php';
 require_once 'AdminController.php';

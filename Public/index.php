@@ -11,6 +11,8 @@ include_once __DIR__ . '/../Models/Document.php';
 include_once __DIR__ . '/../Models/Requirement.php';
 include_once __DIR__ . '/../Models/Event.php';
 include_once __DIR__ . '/../Models/Submission.php';
+include_once __DIR__ . '/../Models/Comment.php';
+include_once __DIR__ . '/../Models/Notification.php';
 
 include_once __DIR__ . '/../Controllers/AdminController.php';
 include_once __DIR__ . '/../Controllers/StudentController.php';
@@ -18,6 +20,9 @@ include_once __DIR__ . '/../Controllers/DocumentController.php';
 include_once __DIR__ . '/../Controllers/RequirementController.php';
 include_once __DIR__ . '/../Controllers/EventController.php';
 include_once __DIR__ . '/../Controllers/SubmissionController.php';
+include_once __DIR__ . '/../Controllers/NotificationController.php';
+include_once __DIR__ . '/../Controllers/MailController.php';
+include_once __DIR__ . '/../Controllers/CommentController.php';
 
 require_once __DIR__ . '/../Middleware/Middleware.php';
 require_once __DIR__ . '/../Middleware/AuthMiddleware.php';
@@ -148,6 +153,72 @@ if (empty($path[0])) {
                 "get_admin" => "GET /documents/admin",
                 "get_student" => "GET /documents/student",
                 "get_status" => "GET /documents/status/{id}"
+            ],
+
+            // Comment endpoints
+            "comments" => [
+                "add" => [
+                    "method" => "POST",
+                    "url" => "/comments/add",
+                    "description" => "Add a new comment to a conversation",
+                    "body" => [
+                        "requirement_id" => "integer (required)",
+                        "student_id" => "integer (required)",
+                        "body" => "string (required)"
+                    ],
+                    "authentication" => "Bearer token required"
+                ],
+                "get" => [
+                    "method" => "GET",
+                    "url" => "/comments/get",
+                    "description" => "Get all comments in a conversation between admin and student",
+                    "params" => [
+                        "requirement_id" => "integer (required)",
+                        "student_id" => "integer (required)"
+                    ],
+                    "response" => [
+                        "success" => [
+                            "status" => 200,
+                            "data" => [
+                                [
+                                    "comment_id" => "integer",
+                                    "requirement_id" => "integer",
+                                    "student_id" => "integer",
+                                    "user_type" => "string (admin|student)",
+                                    "user_name" => "string",
+                                    "body" => "string",
+                                    "created_at" => "timestamp",
+                                    "updated_at" => "timestamp",
+                                    "is_owner" => "boolean"
+                                ]
+                            ]
+                        ],
+                        "error" => [
+                            "status" => 400,
+                            "message" => "string"
+                        ]
+                    ],
+                    "authentication" => "Bearer token required"
+                ],
+                "update" => [
+                    "method" => "PUT",
+                    "url" => "/comments/update",
+                    "description" => "Update an existing comment",
+                    "body" => [
+                        "comment_id" => "integer (required)",
+                        "body" => "string (required)"
+                    ],
+                    "authentication" => "Bearer token required"
+                ],
+                "delete" => [
+                    "method" => "DELETE",
+                    "url" => "/comments/delete",
+                    "description" => "Delete a comment",
+                    "body" => [
+                        "comment_id" => "integer (required)"
+                    ],
+                    "authentication" => "Bearer token required"
+                ]
             ],
             // Requirement endpoints
             "requirements" => [
