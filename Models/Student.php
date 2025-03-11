@@ -32,6 +32,46 @@ class Student {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function getProfile($token) {
+        try {
+            // First get student_id from token
+            $query = "SELECT student_id FROM student_tokens WHERE token = :token";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':token', $token);
+            $stmt->execute();
+            
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$result) {
+                return null;
+            }
+            
+            // Then get student details
+            $query = "SELECT student_id, name, email FROM student WHERE student_id = :student_id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':student_id', $result['student_id']);
+            $stmt->execute();
+            
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Get profile error: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function getProfileById($student_id) {
+        try {
+            $query = "SELECT student_id, name, email FROM student WHERE student_id = :student_id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':student_id', $student_id);
+            $stmt->execute();
+            
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Get profile error: " . $e->getMessage());
+            return null;
+        }
+    }
+
     public function register($name, $email, $password) {
         if ($this->emailExists($email)) {
             return false; // Email already exists

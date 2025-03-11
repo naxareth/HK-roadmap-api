@@ -111,6 +111,7 @@ if (empty($path[0])) {
                 "register" => "POST /student/register",
                 "login" => "POST /student/login",
                 "profile" => "GET /student/profile",
+                "all_students" => "GET /student/all-students",
                 "logout" => "POST /student/logout",
                 "send_otp" => "POST /student/send-otp",
                 "verify_otp" => "POST /student/verify-otp",

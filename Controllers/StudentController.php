@@ -3,6 +3,8 @@
 namespace Controllers;
 
 use Models\Student;
+use PDO;
+use PDOException;
 
 require_once '../models/Student.php';
 
@@ -16,164 +18,275 @@ class StudentController {
     public function validateToken() {
         $headers = getallheaders();
         if (!isset($headers['Authorization'])) {
-            echo json_encode(["message" => "Token is required."]);
+            http_response_code(401);
+            echo json_encode(["message" => "Token is required"]);
             return false;
         }
 
         $authHeader = $headers['Authorization'];
         if (strpos($authHeader, 'Bearer ') !== 0) {
-            echo json_encode(["message" => "Invalid Authorization header format."]);
+            http_response_code(401);
+            echo json_encode(["message" => "Invalid Authorization header format"]);
             return false;
         }
 
         $token = substr($authHeader, 7);
-        $student = $this->studentModel->validateToken($token);
-        if ($student) {
-            return true;
-        } else {
-            return false;
-        }
+        return $this->studentModel->validateToken($token);
+    }
 
+    public function getProfile() {
+        try {
+            $tokenData = $this->validateToken();
+            if (!$tokenData) {
+                return;
+            }
+
+            $student_id = $tokenData['student_id'];
+            $student = $this->studentModel->getProfileById($student_id);
+            
+            if ($student) {
+                echo json_encode($student);
+            } else {
+                http_response_code(404);
+                echo json_encode(["message" => "Student not found"]);
+            }
+        } catch (PDOException $e) {
+            error_log("Profile fetch error: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(["message" => "Server error"]);
+        }
     }
 
     public function getStudent() {
-        $students = $this->studentModel->getAllStudents();
-        return $students; 
+        try {
+            if (!$this->validateToken()) {
+                return;
+            }
+            
+            $students = $this->studentModel->getAllStudents();
+            echo json_encode(["students" => $students]);
+        } catch (PDOException $e) {
+            error_log("Get students error: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(["message" => "Server error"]);
+        }
     }
 
     public function getStudentEmails() {
-        $students = $this->studentModel->getAllStudents();
-        $emails = array_column($students, 'email');
-        echo json_encode($emails);
+        try {
+            if (!$this->validateToken()) {
+                return;
+            }
+            
+            $students = $this->studentModel->getAllStudents();
+            $emails = array_column($students, 'email');
+            echo json_encode(["emails" => $emails]);
+        } catch (PDOException $e) {
+            error_log("Get emails error: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(["message" => "Server error"]);
+        }
     }
-    
 
     public function sendOTP() {
-        if (!isset($_POST['email'])) {
-            echo json_encode(["message" => "Email is required."]);
-            return;
-        }
+        try {
+            if (!isset($_POST['email'])) {
+                http_response_code(400);
+                echo json_encode(["message" => "Email is required"]);
+                return;
+            }
 
-        $email = $_POST['email'];
-        if ($this->studentModel->requestOtp($email)) {
-            echo json_encode(["message" => "OTP sent to your email."]);
-        } else {
-            echo json_encode(["message" => "Failed to send OTP."]);
+            $email = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                http_response_code(400);
+                echo json_encode(["message" => "Invalid email format"]);
+                return;
+            }
+
+            if ($this->studentModel->requestOtp($email)) {
+                echo json_encode(["message" => "OTP sent successfully"]);
+            } else {
+                http_response_code(400);
+                echo json_encode(["message" => "Failed to send OTP"]);
+            }
+        } catch (PDOException $e) {
+            error_log("Send OTP error: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(["message" => "Server error"]);
         }
     }
 
     public function verifyOTP() {
-        if (!isset($_POST['email'], $_POST['otp'])) {
-            echo json_encode(["message" => "Email and OTP are required."]);
-            return;
-        }
+        try {
+            if (!isset($_POST['email'], $_POST['otp'])) {
+                http_response_code(400);
+                echo json_encode(["message" => "Email and OTP are required"]);
+                return;
+            }
 
-        $email = $_POST['email'];
-        $otp = $_POST['otp'];
+            $email = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
+            $otp = filter_var($_POST['otp'], FILTER_SANITIZE_NUMBER_INT);
 
-        if ($this->studentModel->verifyOTP($email, $otp)) {
-            echo json_encode(["message" => "OTP verified successfully."]);
-        } else {
-            echo json_encode(["message" => "Invalid OTP."]);
+            if ($this->studentModel->verifyOTP($email, $otp)) {
+                echo json_encode(["message" => "OTP verified successfully"]);
+            } else {
+                http_response_code(400);
+                echo json_encode(["message" => "Invalid OTP"]);
+            }
+        } catch (PDOException $e) {
+            error_log("Verify OTP error: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(["message" => "Server error"]);
         }
     }
 
     public function changePassword() {
-        if (!isset($_POST['email'], $_POST['new_password'])) {
-            echo json_encode(["message" => "Email and new password are required."]);
-            return;
-        }
+        try {
+            if (!isset($_POST['email'], $_POST['new_password'])) {
+                http_response_code(400);
+                echo json_encode(["message" => "Email and new password are required"]);
+                return;
+            }
 
-        $email = $_POST['email'];
-        $newPassword = $_POST['new_password'];
+            $email = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
+            $newPassword = $_POST['new_password'];
 
-        if ($this->studentModel->changePassword($email, $newPassword)) {
-            echo json_encode(["message" => "Password changed successfully."]);
-        } else {
-            echo json_encode(["message" => "Failed to change password."]);
+            if (strlen($newPassword) < 6) {
+                http_response_code(400);
+                echo json_encode(["message" => "Password must be at least 6 characters"]);
+                return;
+            }
+
+            if ($this->studentModel->changePassword($email, $newPassword)) {
+                echo json_encode(["message" => "Password changed successfully"]);
+            } else {
+                http_response_code(400);
+                echo json_encode(["message" => "Failed to change password"]);
+            }
+        } catch (PDOException $e) {
+            error_log("Change password error: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(["message" => "Server error"]);
         }
     }
 
     public function register() {
-        if (!isset($_POST['name'], $_POST['email'], $_POST['password'], $_POST['confirm_password'])) {
-            echo json_encode(["message" => "Missing required fields."]);
-            return;
-        }
+        try {
+            if (!isset($_POST['name'], $_POST['email'], $_POST['password'], $_POST['confirm_password'])) {
+                http_response_code(400);
+                echo json_encode(["message" => "All fields are required"]);
+                return;
+            }
 
-        $name = $_POST['name'];
-        $email = $_POST['email'];
-        $password = $_POST['password'];
-        $confirm_password = $_POST['confirm_password'];
+            $name = filter_var($_POST['name'], FILTER_SANITIZE_STRING);
+            $email = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
+            $password = $_POST['password'];
+            $confirm_password = $_POST['confirm_password'];
 
-        if (empty($name) || empty($email) || empty($password) || empty($confirm_password)) {
-            echo json_encode(["message" => "All fields are required."]);
-            return;
-        }
+            if (empty($name) || empty($email) || empty($password) || empty($confirm_password)) {
+                http_response_code(400);
+                echo json_encode(["message" => "All fields are required"]);
+                return;
+            }
 
-        if ($password !== $confirm_password) {
-            echo json_encode(["message" => "Passwords do not match."]);
-            return;
-        }
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                http_response_code(400);
+                echo json_encode(["message" => "Invalid email format"]);
+                return;
+            }
 
-        // Check if the email already exists
-        if ($this->studentModel->emailExists($email)) {
-            echo json_encode(["message" => "An account with this email already exists."]);
-            return;
-        }
+            if (strlen($password) < 6) {
+                http_response_code(400);
+                echo json_encode(["message" => "Password must be at least 6 characters"]);
+                return;
+            }
 
-        $token = bin2hex(random_bytes(32));
-        if ($this->studentModel->register($name, $email, $password, $token)) {
-            echo json_encode(["message" => "Student registered successfully."]);
-        } else {
-            echo json_encode(["message" => "Student registration failed."]);
+            if ($password !== $confirm_password) {
+                http_response_code(400);
+                echo json_encode(["message" => "Passwords do not match"]);
+                return;
+            }
+
+            if ($this->studentModel->emailExists($email)) {
+                http_response_code(400);
+                echo json_encode(["message" => "Email already exists"]);
+                return;
+            }
+
+            if ($this->studentModel->register($name, $email, $password)) {
+                echo json_encode(["message" => "Registration successful"]);
+            } else {
+                http_response_code(400);
+                echo json_encode(["message" => "Registration failed"]);
+            }
+        } catch (PDOException $e) {
+            error_log("Registration error: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(["message" => "Server error"]);
         }
     }
 
     public function login() {
-        if (!isset($_POST['email'], $_POST['password'])) {
-            echo json_encode(["message" => "Missing required fields."]);
-            return;
-        }
+        try {
+            if (!isset($_POST['email'], $_POST['password'])) {
+                http_response_code(400);
+                echo json_encode(["message" => "Email and password are required"]);
+                return;
+            }
 
-        $email = $_POST['email'];
-        $password = $_POST['password'];
+            $email = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
+            $password = $_POST['password'];
 
-        if (empty($email) || empty($password)) {
-            echo json_encode(["message" => "All fields are required."]);
-            return;
-        }
+            if (empty($email) || empty($password)) {
+                http_response_code(400);
+                echo json_encode(["message" => "Email and password are required"]);
+                return;
+            }
 
-        $student = $this->studentModel->login($email, $password);
+            $student = $this->studentModel->login($email, $password);
 
-        if ($student) {
-            $token = bin2hex(random_bytes(32));
-            $this->studentModel->updateToken($student['student_id'], $token); // Store the token in the student_tokens table
-            echo json_encode(["message" => "Login successful.", "token" => $token]);
-        } else {
-            echo json_encode(["message" => "Invalid email or password."]);
+            if ($student) {
+                $token = bin2hex(random_bytes(32));
+                if ($this->studentModel->updateToken($student['student_id'], $token)) {
+                    echo json_encode([
+                        "message" => "Login successful",
+                        "token" => $token,
+                        "student_id" => $student['student_id'],
+                        "name" => $student['name'],
+                        "email" => $student['email']
+                    ]);
+                } else {
+                    http_response_code(500);
+                    echo json_encode(["message" => "Failed to generate token"]);
+                }
+            } else {
+                http_response_code(401);
+                echo json_encode(["message" => "Invalid credentials"]);
+            }
+        } catch (PDOException $e) {
+            error_log("Login error: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(["message" => "Server error"]);
         }
     }
 
     public function logout() {
-        $headers = getallheaders();
-        if (!isset($headers['Authorization'])) {
-            echo json_encode(["message" => "Authorization header missing."]);
-            return;
-        }
-        
-        $authHeader = $headers['Authorization'];
-        if (strpos($authHeader, 'Bearer ') !== 0) {
-            echo json_encode(["message" => "Invalid Authorization header format."]);
-            return;
-        }
-        
-        $token = substr($authHeader, 7);
-        $result = $this->studentModel->logout($token);
+        try {
+            $tokenData = $this->validateToken();
+            if (!$tokenData) {
+                return;
+            }
 
-        if ($result) {
-            echo json_encode(["message" => "Student logged out successfully."]);
-        } else {
-            echo json_encode(["message" => "Failed to log out student."]);
+            if ($this->studentModel->logout($tokenData['student_id'])) {
+                echo json_encode(["message" => "Logout successful"]);
+            } else {
+                http_response_code(400);
+                echo json_encode(["message" => "Logout failed"]);
+            }
+        } catch (PDOException $e) {
+            error_log("Logout error: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(["message" => "Server error"]);
         }
     }
 }
