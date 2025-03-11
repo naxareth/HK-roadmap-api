@@ -11,6 +11,7 @@ use Controllers\StudentController;
 use Controllers\SubmissionController;
 use Controllers\NotificationController;
 use Controllers\MailController;
+use Controllers\AnnouncementController;
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
@@ -23,6 +24,7 @@ class Api {
     private $submissionController;
     private $notificationController;
     private $mailController;
+    private $announcementController;
     private $middleware = [];
 
     public function __construct($db) {
@@ -34,6 +36,7 @@ class Api {
         $this->submissionController = new SubmissionController($db);
         $this->notificationController = new NotificationController($db);
         $this->mailController = new MailController($db);
+        $this->announcementController = new AnnouncementController($db);
     }
 
     public function use($middleware) {
@@ -225,15 +228,33 @@ class Api {
                 }
                 break;
 
+            case 'submission/detail':
+                if ($method === 'GET') {
+                    return $this->submissionController->getSubmissionsBySubId();
+                }
+                break;
+
             case 'notification/get':
                 if ($method === 'GET') {
                     return $this->notificationController->getNotifications();
                 }
                 break;
+        
+            case 'notification/mark':
+                if ($method === 'PUT') {
+                    return $this->notificationController->markAllRead();
+                }
+                break;
+
+            case 'notification/count':
+                if ($method === 'GET') {
+                    return $this->notificationController->getUnreadCount();
+                }
+                break;
 
             case (preg_match('/^notification\/edit$/', $endpoint) ? $endpoint : !$endpoint):
                 if ($method === 'PUT') {
-                    return $this->notificationController->markNotif();
+                    return $this->notificationController->toggleNotificationStatus();
                 }
                 break;
             //mail send
@@ -241,7 +262,58 @@ class Api {
                 if ($method === 'POST') {
                     return $this->mailController->sendEmail();
                 }
+
+            case 'announcements/get':
+                if ($method === 'GET') {
+                    return $this->announcementController->getAllAnnouncements();
+                }
+                break;
+
+            case 'announcements/add':
+                if ($method === 'POST') {
+                    return $this->announcementController->createAnnouncement();
+                }
+                break;
+
+            case 'announcements/update':
+                if ($method === 'PUT') {
+                    return $this->announcementController->updateAnnouncement();
+                }
+                break;
+
+            case 'announcements/delete':
+                if ($method === 'DELETE') {
+                    return $this->announcementController->deleteAnnouncement();
+                }
+                break;
                 
+            case (preg_match('/^uploads\/(.+)$/', $endpoint, $matches) ? $endpoint : !$endpoint):
+                if ($method === 'GET') {
+                    $filename = basename($matches[1]);
+                    $filePath = __DIR__.'/../../Public/uploads/'.$filename;
+                        
+                    // Security checks
+                    if (!file_exists($filePath)) {
+                        http_response_code(404);
+                        return json_encode(["message" => "File not found"]);
+                    }
+                        
+                    $allowedTypes = ['jpg', 'jpeg', 'png', 'pdf', 'gif'];
+                    $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                        
+                    if (!in_array($ext, $allowedTypes)) {
+                        http_response_code(403);
+                        return json_encode(["message" => "File type not allowed"]);
+                    }
+                
+                    // Serve the file
+                    header('Content-Type: '.mime_content_type($filePath));
+                    header('Content-Length: ' . filesize($filePath));
+                    readfile($filePath);
+                    exit;
+                }
+                break;
+
             default:
                 http_response_code(404);
                 return json_encode([

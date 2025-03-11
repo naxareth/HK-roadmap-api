@@ -21,10 +21,24 @@ class SubmissionController {
         return $this->submissionModel->getSubmissionsByEventId($eventId);
     }
 
+    public function getSubmissionsBySubId() {
+        $submissionId = $_GET['submission_id'] ?? null;
+
+        if (!$submissionId) {
+            http_response_code(400);
+            echo json_encode(["message" => "Submission ID is required"]);
+            return;
+        }
+    
+        // Use $this->submissionModel to access the model
+        $submissionDetails = $this->submissionModel->getSubmissionsBySubId($submissionId);
+        echo json_encode($submissionDetails);
+    }
+    
     public function getAllSubmissions() {
         $submissions = $this->submissionModel->getAllSubmissions();
         echo json_encode($submissions);
-        return $submissions;
+        return;
     }
 
     public function updateSubmissionStatus() {

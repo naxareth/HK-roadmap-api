@@ -38,7 +38,7 @@ class StudentController {
 
     public function getStudent() {
         $students = $this->studentModel->getAllStudents();
-        return $students; 
+        echo json_encode($students); 
     }
 
     public function getStudentEmails() {

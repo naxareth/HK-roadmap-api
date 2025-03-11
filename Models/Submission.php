@@ -12,9 +12,30 @@ class Submission {
     }
 
     public function getAllSubmissions() {
-        $query = "SELECT * FROM submission";
-        $stmt = $this->db->query($query);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        try {
+            $query = "SELECT 
+                        e.event_name,
+                        r.requirement_name,
+                        st.name AS student_name,
+                        MAX(s.status) AS status,  -- Use MAX() to resolve grouped status
+                        MAX(s.submission_date) AS submission_date,  -- Latest submission date
+                        GROUP_CONCAT(s.submission_id) AS submission_ids
+                     FROM submission s
+                     JOIN event e ON s.event_id = e.event_id
+                     JOIN requirement r ON s.requirement_id = r.requirement_id
+                     JOIN student st ON s.student_id = st.student_id
+                     GROUP BY e.event_id, r.requirement_id, st.student_id
+                     ORDER BY s.submission_date DESC";
+    
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            $submissions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+            return $submissions;
+        } catch (PDOException $e) {
+            http_response_code(500);
+            echo json_encode(["message" => "Server error: " . $e->getMessage()]);
+        }
     }
 
     public function getSubmissionsByEventId($eventId) {
@@ -25,6 +46,27 @@ class Submission {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function getSubmissionsBySubId($submissionId) {
+        $query = "SELECT 
+                    s.*, 
+                    d.file_path,
+                    d.link_url,
+                    d.document_type,
+                    e.event_name,
+                    r.requirement_name,
+                    st.name AS student_name
+                  FROM submission s
+                  JOIN document d ON s.document_id = d.document_id
+                  JOIN event e ON s.event_id = e.event_id
+                  JOIN requirement r ON s.requirement_id = r.requirement_id
+                  JOIN student st ON s.student_id = st.student_id
+                  WHERE s.submission_id = :submission_id";
+        
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':submission_id', $submissionId);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
     public function updateSubmissionStatus($submissionId, $status, $approvedBy) {
         try {
             $this->db->beginTransaction();

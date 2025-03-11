@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document and Submission Tables</title>
     <link rel="stylesheet" href="/assets/css/Dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script>
     </script>
 </head>
@@ -12,14 +13,34 @@
     <!-- Princess -->
     <div class="top-nav">
         <h1>HK Roadmap</h1>
-        <button class="account-button" onclick="togglePopup()">Account Settings</button>
+        <div class="nav-controls">
+            <div class="notifications-container">
+                <button class="notification-bell" onclick="toggleNotifPopup()">
+                    <i class="fas fa-bell" style="color: black;"></i>
+                    <span class="notification-badge" id="notificationBadge">0</span>
+                </button>
+                <div id="notificationPopup" class="notification-popup">
+                    <div class="notification-header">
+                        <h3>Notifications</h3>
+                        <button class="mark-all" onclick="markAllAsRead()">Mark All Read</button>
+                    </div>
+                    <div class="notification-list" id="notificationList"></div>
+                </div>
+            </div>
+            <div class="profile-container" onclick="toggleProfileMenu()">
+                <span class="profile-name" id="profileName">Admin Name</span>
+                <div id="profileMenu" class="profile-menu">
+                    <button onclick="logout()">Logout</button>
+                </div>
+                <img src="/assets/images/default-profile.png" class="profile-pic" alt="Profile">
+            </div>
+        </div>
     </div>
     <div class="container">
         <aside class="sidebar">
             <ul>
                 <li><a href="#" onclick="showSection('home')" id="showHomeButton">Home</a></li>
                 <li><a href="#" onclick="showSection('announce')" id="showAnnounceButton">Announcement</a></li>
-                <li><a href="#" onclick="showSection('notif')" id="showNotifButton">Notifications</a></li>
                 <li><a href="#" onclick="showSection('admin')" id="showAdminButton">Admin</a></li>
             </ul>
         </aside>
@@ -82,15 +103,12 @@
                         <!-- Table headers -->
                         <thead>
                             <tr>
-                                <th>Submission ID</th>
-                                <th>Requirement ID</th>
-                                <th>Event ID</th>
-                                <th>Student ID</th>
-                                <th>File Path</th>
-                                <th>Submission Date</th>
+                                <th>Event</th>
+                                <th>Requirement</th>
+                                <th>Student</th>
+                                <th>Date</th>
                                 <th>Status</th>
-                                <th>Approved By</th>
-                                <th>Update</th>
+                                <th>View</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -135,30 +153,28 @@
                 </div>                            
             </section>
 
-            <section id="notif-section" class="notif-container" style="display: none;">
-                <div class="notification-header">
-                    <h2>Notifications</h2>
-                </div>
-                <div id="notificationContainer" class="cards">
-                    <!-- Notifications will be inserted here -->
-                </div>
-            </section>
-
-            <section id="announce-section" class="admin-container" style="display: none;">
+            <section id="announce-section" class="announcement-container" style="display: none;">
                 <div class="announcement-header">
                     <h2>Announcements</h2>
-                    <button id="create-announcement">Create Announcement</button>
                 </div>
+                
+                <div class="background-form">
+                    <form id="announcementForm">
+                        <input type="hidden" id="announcementId">
+                        <input type="text" id="announcementTitle" placeholder="Announcement Title" required>
+                        <textarea id="announcementContent" placeholder="Announcement Content" required></textarea>
+                        <button type="submit">Post Announcement</button>
+                    </form>
+                </div>
+
+                <div class="announcement-header">
+                    <h2>Previous Annoucements</h2>
+                </div>
+                
                 <div id="announcementContainer" class="announcement-cards">
                     <!-- Announcements will be inserted here -->
                 </div>
             </section>
-
-            <div id="accountPopup" class="popup" style="display: none;">
-                <span class="close-popup" onclick="toggleAccountPopup()">×</span>
-                <div class="popup-header">Account Settings</div>
-                <button class="popup-button" onclick="logout()">Logout</button>
-            </div>
 
             <div id="eventPopup" class="popup" style="display: none;">
                 <span class="close-popup" onclick="toggleEventPopup()">×</span>
@@ -184,6 +200,31 @@
                 <input type="date" id="dueDate" required>
                 <button class="popup-button" onclick="saveRequirement()">Save Requirement</button>
             </div>
+
+            <div id="editAnnouncementPopup" class="announcePopup" style="display: none;">
+                <span class="close-popup" onclick="toggleEditAnnouncementPopup()">×</span>
+                <div class="popup-header">Edit Announcement</div>
+                <form id="editAnnouncementForm">
+                    <input type="hidden" id="editAnnouncementId">
+                    <input type="text" id="editAnnouncementTitle" placeholder="Announcement Title" required>
+                    <textarea id="editAnnouncementContent" placeholder="Announcement Content" required></textarea>
+                    <button type="submit">Update Announcement</button>
+                </form>
+            </div>
+
+            <div id="documentPopup" class="popup" style="display: none;">
+                <span class="close-popup" onclick="closeDocumentPopup()">×</span>
+                <div class="popup-content">
+                    <div id="documentDetails">
+                        <!-- Dynamic content will be inserted here -->
+                    </div>
+                    <div class="action-buttons">
+                        <button id="approveButton" class="approve-btn" onclick="approveAllDocuments()">Approve All</button>
+                        <button id="rejectButton" class="reject-btn" onclick="rejectAllDocuments()">Reject All</button>
+                    </div>
+                </div>
+            </div>
+
         </main>
     </div>
     <script src="/assets/js/Dashboard.js"></script>

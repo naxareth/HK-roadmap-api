@@ -168,16 +168,25 @@ if (empty($path[0])) {
             // Submission endpoints
             "submissions" => [
                 "update_status" => "PUT /submission/update",
-                "get_all" => "GET /submission/update"
+                "get_all" => "GET /submission/update",
+                "sub_id" => "GET /submission/detail"
             ],
             // Notifs endpoints
             "notifications" => [
                 "get" => "GET /notification/get",
-                "update" => "PUT /notification/edit"
+                "update" => "PUT /notification/edit",
+                "mark" => "PUT /notification/mark",
+                "count" => "GET /notification/count"
             ],
             // Email endpoint
             "mails" => [
                 "send" => "POST /mail/send"
+            ],
+            //annoucement endpoint
+            "annoucements" => [
+                "add" => "POST /annoucements/add",
+                "update" => "PUT /annoucements/update",
+                "delete" => "DELETE /annoucements/delete"
             ]
         ],
         "documentation" => [

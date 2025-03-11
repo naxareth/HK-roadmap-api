@@ -38,6 +38,38 @@ function toggleRequirementPopup() {
     }
 }
 
+function toggleNotifPopup() {
+    const popup = document.getElementById('notificationPopup');
+    const isOpening = popup.style.display !== 'block';
+    
+    popup.style.display = isOpening ? 'block' : 'none';
+    
+    if (isOpening) {
+        // Clear old notifications and show loading state
+        document.getElementById('notificationList').innerHTML = 
+            '<div class="loading">Loading notifications...</div>';
+        
+        fetchNotifications();
+    }
+}
+
+function toggleProfileMenu() {
+    const menu = document.getElementById('profileMenu');
+    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+}
+
+function toggleEditAnnouncementPopup() {
+    const popup = document.getElementById('editAnnouncementPopup');
+    if (popup) {
+        popup.style.display = popup.style.display === 'block' ? 'none' : 'block';
+    }
+}
+
+function toggleMenu(event) { 
+    const menu = event.target.closest('.card-menu').querySelector('.menu-options'); 
+    menu.style.display = menu.style.display === 'block' ? 'none' : 'block'; 
+}
+
 // Tabs for the tables and tabs
 function showTab(tabId) {
     const tabContents = document.querySelectorAll('.tab-content');
@@ -58,7 +90,7 @@ function showTab(tabId) {
 
 function showSection(section) {
     const sectionToShow = document.getElementById(section + '-section');
-    const sectionsToHide = ['home-section', 'admin-section', 'notif-section', 'announce-section'];
+    const sectionsToHide = ['home-section', 'admin-section', 'announce-section'];
 
     sectionsToHide.forEach(sec => {
         const element = document.getElementById(sec);
@@ -113,7 +145,7 @@ function fetchStudent() {
             tableBody.innerHTML = ''; 
             data.forEach(doc => {
                 const row = `<tr>
-                    <td>${doc.student_id}</td>
+                    <td>${doc.name}</td>
                     <td>${doc.email}</td>
                     <td>${doc.password}</td>
                 </tr>`;
@@ -186,35 +218,167 @@ function fetchSubmissions() {
         .then(response => response.json())
         .then(data => {
             const tableBody = document.querySelector('#submissionsTable tbody');
-            tableBody.innerHTML = ''; 
-            data.forEach(sub => {
-                const row = `<tr>
-                    <td>${sub.submission_id}</td>
-                    <td>${sub.requirement_id}</td>
-                    <td>${sub.event_id}</td>
-                    <td>${sub.student_id}</td>
-                    <td>${sub.file_path}</td>
-                    <td>${sub.submission_date}</td>
-                    <td>${sub.status}</td>
-                    <td>${sub.approved_by}</td>
-                    <td>
-                        <button class="approve-button" data-id="${sub.submission_id}">Approve</button>
-                        <button class="reject-button" data-id="${sub.submission_id}">Reject</button>
-                    </td>
-                </tr>`;
+            tableBody.innerHTML = '';
+            data.forEach(group => {
+                const row = `
+                    <tr>
+                        <td>${group.event_name}</td>
+                        <td>${group.requirement_name}</td>
+                        <td>${group.student_name}</td>
+                        <td>${new Date(group.submission_date).toLocaleDateString()}</td>
+                        <td>${group.status}</td>
+                        <td>
+                            <button class="view-docs-btn" data-ids="${group.submission_ids}">Review</button>
+                        </td>
+                    </tr>
+                `;
                 tableBody.innerHTML += row;
             });
 
-            // Add event listeners for the new buttons
-            document.querySelectorAll('.approve-button').forEach(button => {
-                button.addEventListener('click', handleStatusUpdate);
+            // Attach click handlers for grouped submissions
+            document.querySelectorAll('.view-docs-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const submissionIds = btn.dataset.ids.split(',');
+                    viewDocuments(submissionIds); // Open popup with all docs in group
+                });
             });
-            document.querySelectorAll('.reject-button').forEach(button => {
-                button.addEventListener('click', handleStatusUpdate);
-            });
-        })
-        .catch(error => console.error('Error fetching submissions:', error));
+        });
 }
+
+//view documents for submission
+
+let currentDocIndex = 0;
+let docItems = [];
+
+function viewDocuments(submissionIds) {
+    const popup = document.getElementById('documentPopup');
+    const content = document.getElementById('documentDetails');
+    
+    content.innerHTML = `
+        <div class="doc-tabs"></div>
+        <div class="doc-content"></div>
+    `;
+
+    // Fetch documents
+    Promise.all(submissionIds.map(fetchDocument))
+        .then(docs => {
+            docItems = docs.filter(doc => doc);
+            currentDocIndex = 0;
+            if (docItems.length === 0) {
+                content.innerHTML = '<div class="loading">No documents found</div>';
+                return;
+            }
+            renderDocuments();
+            popup.style.display = 'block';
+        });
+}
+
+async function fetchDocument(id) {
+    return fetch(`/hk-roadmap/submission/detail?submission_id=${id}`)
+        .then(res => res.json())
+        .catch(() => null);
+}
+
+function renderDocuments() {
+    const tabsContainer = document.querySelector('.doc-tabs');
+    const contentContainer = document.querySelector('.doc-content');
+    
+    // Clear existing elements
+    tabsContainer.innerHTML = '';
+    contentContainer.innerHTML = '';
+
+    // Create tabs and content
+    docItems.forEach((doc, index) => {
+        // Tab
+        const tab = document.createElement('button');
+        tab.className = `doc-tab ${index === currentDocIndex ? 'active' : ''}`;
+        tab.textContent = `Document ${index + 1}`;
+        tab.onclick = () => switchDocument(index);
+        tabsContainer.appendChild(tab);
+
+        // Content
+        const docItem = document.createElement('div');
+        docItem.className = `doc-item ${index === currentDocIndex ? 'active' : ''}`;
+        
+        if (doc.document_type === 'link') {
+            docItem.innerHTML = `
+                <a href="${doc.link_url}" class="doc-link" target="_blank">
+                    ${doc.link_url}
+                </a>
+            `;
+        } else {
+            docItem.innerHTML = `
+                <img src="http://localhost:8000/${doc.file_path}" 
+                     alt="Document preview" 
+                     class="doc-image">
+            `;
+        }
+        
+        contentContainer.appendChild(docItem);
+    });
+}
+
+function switchDocument(index) {
+    currentDocIndex = index;
+    renderDocuments();
+}
+
+async function approveAllDocuments() {
+    try {
+        for (const doc of docItems) {
+            await handleStatusUpdate(doc.submission_id, 'approved');
+        }
+        closeDocumentPopup();
+        fetchSubmissions();
+    } catch (error) {
+        console.error('Error approving all documents:', error);
+    }
+}
+
+async function rejectAllDocuments() {
+    try {
+        for (const doc of docItems) {
+            await handleStatusUpdate(doc.submission_id, 'rejected');
+        }
+        closeDocumentPopup();
+        fetchSubmissions();
+    } catch (error) {
+        console.error('Error rejecting all documents:', error);
+    }
+}
+
+async function handleStatusUpdate(submissionId, status) {
+    try {
+        const response = await fetch(`/hk-roadmap/submission/update`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+            },
+            body: JSON.stringify({ 
+                submission_id: submissionId, 
+                status: status.toUpperCase()
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to update document status');
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error(`Error ${status} document:`, error);
+        throw error;
+    }
+}
+
+function closeDocumentPopup() {
+    const popup = document.getElementById('documentPopup');
+    popup.style.display = 'none';
+    currentDocIndex = 0;
+    docItems = [];
+}
+
 
 // others, misc, etc
 async function initializeYearDropdown() {
@@ -296,7 +460,6 @@ async function fetchCardEvents(selectedFilter) {
                             <br>
                             <p><strong>Event:</strong> ${doc.event_name}</p>
                             <p><strong>Date:</strong> ${formattedDate}</p>
-                            <i class="far fa-file-alt"></i>
                         </div>
                         <div class="button-content">
                             <button class="show-requirements">Show Requirements</button>
@@ -860,41 +1023,6 @@ async function deleteRequirement(requirementId) {
     }
 }
 
-//submissions
-
-async function handleStatusUpdate(event) {
-    const button = event.target;
-    const submissionId = button.getAttribute('data-id');
-    const action = button.classList.contains('approve-button') ? 'approved' : 'rejected';
-
-    try {
-        const response = await fetch(`/hk-roadmap/submission/update`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-            },
-            body: JSON.stringify({
-                submission_id: submissionId,
-                status: action
-            })
-        });
-
-        const text = await response.text();
-        const data = text ? JSON.parse(text) : {};
-
-        if (!response.ok) {
-            throw new Error(data.message || `HTTP error! Status: ${response.status}`);
-        }
-
-        alert(`Submission ${action}!`);
-        fetchSubmissions();
-    } catch (error) {
-        console.error('Status update error:', error);
-        alert(`Error: ${error.message}`);
-    }
-}
-
 //notifications
 
 function formatDateTime(timestamp) {
@@ -915,57 +1043,108 @@ function formatDateTime(timestamp) {
 
 async function fetchNotifications() {
     try {
-        const authToken = localStorage.getItem('authToken');
-        const notificationContainer = document.getElementById('notificationContainer');
-
+        notificationList.innerHTML = '<div class="loading">Loading...</div>';
+        
         const response = await fetch('/hk-roadmap/notification/get', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
-            }
+            headers: getAuthHeaders(),
+            cache: 'no-cache' // Prevent browser caching
         });
 
-        if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`);
+        if (!response.ok) throw new Error(`HTTP error! ${response.status}`);
+        
         const notifications = await response.json();
-
+        
         // Clear existing content
-        notificationContainer.innerHTML = '';
+        let unreadCount = 0;
+        notificationList.innerHTML = '';
 
-        if (Array.isArray(notifications)) {
-
-            // Create notification cards
-            notifications.forEach(notification => {
-                // Add temporary logging
-                console.log('Notification ID:', notification.notification_id);
-                console.log('Read status:', notification.read_notif, typeof notification.read_notif);
-                
-                const card = `
-                    <div class="card notification-card" data-notification-id="${notification.notification_id}">
-                        <div class="text-content">
-                            <p class="notification-body">${notification.notification_body}</p>
-                        </div>
-                        <div class="button-content">
-                            <small class="notification-meta">
-                                ${formatDateTime(notification.created_at)}
-                                ${notification.read_notif === 0 ? 
-                                    `<button class="acknowledge-btn" 
-                                        onclick="markAsRead(${notification.notification_id})">
-                                        Mark Read
-                                    </button>` : 
-                                    '<span class="read-badge">Read</span>'
-                                }
-                            </small>
-                        </div>
-                    </div>
-                `;
-                notificationContainer.insertAdjacentHTML('beforeend', card);
-            });
+        if (notifications.length === 0) {
+            notificationList.innerHTML = '<div class="empty">No new notifications</div>';
+            updateNotificationBadge(0);
+            return;
         }
+
+        // Sort notifications by date (newest first)
+        const sortedNotifications = notifications.sort((a, b) => {
+            const dateA = new Date(a.created_at);
+            const dateB = new Date(b.created_at);
+            return dateB - dateA; // Descending order
+        });
+
+        sortedNotifications.forEach(notification => {
+            const notificationItem = document.createElement('div');
+            notificationItem.className = `notification-item ${notification.read_notif ? '' : 'unread'}`;
+            notificationItem.innerHTML = `
+                <div class="notification-content">
+                    <p>${notification.notification_body}</p>
+                    <small>${formatDateTime(notification.created_at)}</small>
+                    <button class="mark-read-btn" 
+                            onclick="toggleReadStatus(${notification.notification_id}, this)"
+                            data-read="${notification.read_notif ? 1 : 0}">
+                        ${notification.read_notif ? 'Mark Unread' : 'Mark Read'}
+                    </button>
+                </div>
+            `;
+            notificationItem.ondblclick = () => navigateToSubmission(notification.submission_id);
+            notificationList.appendChild(notificationItem);
+            if (!notification.read_notif) unreadCount++;
+        });
+
+        updateNotificationBadge(unreadCount);
+        
     } catch (error) {
-        console.error('Error fetching notifications:', error);
-        alert('Failed to load notifications. Please try again later.');
+        console.error('Notification error:', error);
+        notificationList.innerHTML = '<div class="error">Failed to load notifications</div>';
     }
+}
+
+async function toggleReadStatus(notificationId, button) {
+    const isRead = button.dataset.read === '1';
+
+    try {
+        const response = await fetch(`/hk-roadmap/notification/edit`, {
+            method: 'PUT',
+            headers: {
+                ...getAuthHeaders(),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                notification_id: parseInt(notificationId),  // Ensure number type
+                read: !isRead  // Send boolean value
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`Server error: ${error}`);
+        }
+
+        button.dataset.read = isRead ? '0' : '1';
+        button.textContent = isRead ? 'Mark Read' : 'Mark Unread';
+        button.closest('.notification-item').classList.toggle('unread');
+        
+        const currentCount = parseInt(document.getElementById('notificationBadge').textContent);
+        document.getElementById('notificationBadge').textContent = isRead ? 
+            currentCount + 1 : 
+            Math.max(currentCount - 1, 0);
+
+    } catch (error) {
+        console.error('Toggle read error:', error);
+        alert('Failed to update notification status');
+    }
+}
+
+function navigateToSubmission(submissionId) {
+    showSection('admin');
+    showTab('submissions');
+    
+    setTimeout(() => {
+        const submissionRow = document.querySelector(`[data-submission-id="${submissionId}"]`);
+        if (submissionRow) {
+            submissionRow.scrollIntoView({ behavior: 'smooth' });
+            submissionRow.style.animation = 'highlight 1.5s';
+        }
+    }, 500);
 }
 
 async function markAsRead(notificationId) {
@@ -993,23 +1172,203 @@ async function markAsRead(notificationId) {
     }
 }
 
+function updateNotificationBadge(count) {
+    const badge = document.getElementById('notificationBadge');
+    const numericCount = Number(count) || 0;
+    
+    badge.textContent = numericCount > 9 ? '9+' : numericCount;
+    badge.style.display = numericCount > 0 ? 'block' : 'none';
+    
+    // Add aria-live for screen readers
+    badge.setAttribute('aria-live', 'polite');
+    badge.setAttribute('aria-atomic', 'true');
+}
+
+async function markAllAsRead() {
+    try {
+        const response = await fetch('/hk-roadmap/notification/mark', {
+            method: 'PUT',
+            headers: getAuthHeaders()
+        });
+
+        if (!response.ok) throw new Error('Failed to mark all as read');
+        
+        // Update UI
+        document.querySelectorAll('.notification-item').forEach(item => {
+            item.classList.remove('unread');
+            const button = item.querySelector('.mark-read-btn');
+            if (button) {
+                button.dataset.read = '1';
+                button.textContent = 'Mark Unread';
+            }
+        });
+        
+        updateNotificationBadge(0);
+        alert('All notifications marked as read!');
+
+    } catch (error) {
+        console.error('Error:', error);
+        alert(error.message);
+    }
+}
+
+//annoucement
+async function fetchAnnouncements() {
+    try {
+        const response = await fetch('/hk-roadmap/announcements/get', {
+            headers: getAuthHeaders()
+        });
+        
+        const data = await response.json();
+        const container = document.getElementById('announcementContainer');
+        container.innerHTML = '';
+
+        if (data.announcements && data.announcements.length > 0) {
+            data.announcements.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            
+            data.announcements.forEach(announcement => {
+                const card = `
+                    <div class="card announcement-card" data-id="${announcement.announcement_id}">
+                        <div class="text-content">
+                            <div class="card-title">
+                                <div class="card-author">Posted by: ${announcement.author_name}</div> <!-- Access admin name -->
+                                <h3>${announcement.title}</h3>
+                            </div>
+                            <div class="card-content">
+                                <p>${announcement.content.replace(/\n/g, '<br>')}</p>
+                            </div>
+                            <div class="card-meta">
+                                <div class="card-date">
+                                    ${new Date(announcement.created_at).toLocaleDateString()}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="button-content">
+                            <div class="card-menu">
+                                <button class="menu-button">⋯</button>
+                                <div class="menu-options">
+                                    <button class="edit-announcement">Edit</button>
+                                    <button class="delete-announcement">Delete</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+                container.insertAdjacentHTML('beforeend', card);
+            });
+            
+            addAnnouncementEventListeners();
+        } else {
+            container.innerHTML = '<p>No announcements found</p>';
+        }
+    } catch (error) {
+        console.error('Error fetching announcements:', error);
+    }
+}
+
+function addAnnouncementEventListeners() {
+    document.querySelectorAll('.menu-button').forEach(button => {
+        button.addEventListener('click', toggleMenu);
+    });
+
+    document.querySelectorAll('.delete-announcement').forEach(button => {
+        button.addEventListener('click', handleAnnouncementDelete);
+    });
+
+    document.querySelectorAll('.edit-announcement').forEach(button => {
+        button.addEventListener('click', handleAnnouncementEdit);
+    });
+}
+
+function handleAnnouncementDelete(event) {
+    const card = event.target.closest('.announcement-card');
+    const id = card.dataset.id;
+    
+    if (confirm('Are you sure you want to delete this announcement?')) {
+        fetch('/hk-roadmap/announcements/delete', {
+            method: 'DELETE',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ id })
+        }).then(fetchAnnouncements);
+    }
+}
+
+async function handleAnnouncementEdit(event) {
+    const card = event.target.closest('.announcement-card');
+    const id = card.dataset.id;
+    const title = card.querySelector('h3').innerText; // Use innerText to preserve formatting
+    const content = card.querySelector('p').innerText; // Use innerText to preserve formatting
+
+    // Populate edit form
+    document.getElementById('editAnnouncementTitle').value = title;
+    document.getElementById('editAnnouncementContent').value = content; // Keep line breaks
+    document.getElementById('editAnnouncementId').value = id;
+    
+    // Show edit announcement popup
+    toggleEditAnnouncementPopup();
+}
+
+// frontend systems and etc
+
+const createRefreshControls = (fetchCallback, interval = 30000) => {
+    let isRefreshing = false;
+    let refreshInterval = null;
+
+    async function refreshNotifications() {
+        if (isRefreshing) return;
+        isRefreshing = true;
+
+        try {
+            await fetchCallback();
+        } catch (error) {
+            console.error('Refresh failed:', error);
+        } finally {
+            isRefreshing = false;
+        }
+    }
+
+    function startAutoRefresh() {
+        refreshInterval = setInterval(refreshNotifications, interval);
+    }
+
+    function stopAutoRefresh() {
+        clearInterval(refreshInterval);
+    }
+
+    return {
+        start: startAutoRefresh,
+        stop: stopAutoRefresh,
+        refresh: refreshNotifications
+    };
+};
+
 
 // frontend listeners
 document.addEventListener('DOMContentLoaded', initializeYearDropdown);
 
+function logout() {
+    alert('Logging out...');
+    adminLogout();
+}
+
 
 document.addEventListener('DOMContentLoaded', () => {
+    const refreshControls = createRefreshControls(fetchNotifications, 10000);
+    refreshControls.start();
     showSection('home');
     fetchCardEvents();
     showTab('documents');
 
     getAuthHeaders();
 
-    
-    function logout() {
-        alert('Logging out...');
-        adminLogout();
-    }
+    document.querySelectorAll('.view-document-button').forEach(button => {
+        button.addEventListener('click', () => viewDocument(button.getAttribute('data-id')));
+    });
+    document.querySelectorAll('.approve-button').forEach(button => {
+        button.addEventListener('click', handleStatusUpdate);
+    });
+    document.querySelectorAll('.reject-button').forEach(button => {
+        button.addEventListener('click', handleStatusUpdate);
+    });
 
     document.getElementById('event-section').addEventListener('click', function(event) {
         if (event.target.classList.contains('show-requirements')) {
@@ -1090,6 +1449,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        badgeRefresher.init();
+    });
+
+    window.addEventListener('beforeunload', () => {
+        badgeRefresher.cleanup();
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.notifications-container')) {
+            document.getElementById('notificationPopup').style.display = 'none';
+        }
+        if (!e.target.closest('.profile-container')) {
+            document.getElementById('profileMenu').style.display = 'none';
+        }
+    });
+
     document.getElementById('yearSelect').addEventListener('change', function() {
         const selectedYear = this.value;
         fetchCardEvents(selectedYear); // Fetch events for the selected year
@@ -1125,10 +1502,62 @@ document.addEventListener('DOMContentLoaded', () => {
     if (logoutButton) {
         logoutButton.addEventListener('click', logout);
     }
+    
+    document.getElementById('announcementForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const id = document.getElementById('announcementId').value;
+        const title = document.getElementById('announcementTitle').value;
+        const content = document.getElementById('announcementContent').value;
+    
+        try {
+            if (!id) {
+                await fetch('/hk-roadmap/announcements/add', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ title, content })
+                });
+            }
+            
+            this.reset();
+            document.getElementById('announcementId').value = '';
+            
+            await fetchAnnouncements();
+            
+        } catch (error) {
+            console.error('Error saving announcement:', error);
+            alert('Failed to save announcement');
+        }
+    });
 
-    if (document.getElementById('notif-section')) {
-        fetchNotifications();
-    }
+    document.getElementById('editAnnouncementForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const id = document.getElementById('editAnnouncementId').value;
+        const title = document.getElementById('editAnnouncementTitle').value;
+        const content = document.getElementById('editAnnouncementContent').value;
+    
+        try {
+            // Update existing announcement
+            await fetch('/hk-roadmap/announcements/update', {
+                method: 'PUT',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({ id, title, content })
+            });
+    
+            this.reset();
+            document.getElementById('editAnnouncementId').value = '';
+    
+            await fetchAnnouncements();
+            
+            toggleEditAnnouncementPopup();
+            
+        } catch (error) {
+            console.error('Error updating announcement:', error);
+            alert('Failed to update announcement');
+        }
+    });
+
     if (document.getElementById('announce-section')) {
         fetchAnnouncements();
     }
