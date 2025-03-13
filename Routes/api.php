@@ -12,6 +12,8 @@ use Controllers\SubmissionController;
 use Controllers\CommentController;
 use Controllers\NotificationController;
 use Controllers\MailController;
+use Controllers\ProfileController;
+
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
@@ -25,6 +27,7 @@ class Api {
     private $commentController;
     private $notificationController;
     private $mailController;
+    private $profileController;
     private $middleware = [];
 
     public function __construct($db) {
@@ -37,6 +40,7 @@ class Api {
         $this->commentController = new CommentController($db);
         $this->notificationController = new NotificationController($db);
         $this->mailController = new MailController($db);
+        $this->profileController = new ProfileController($db);
     }
 
     public function use($middleware) {
@@ -106,6 +110,32 @@ class Api {
                 return $this->studentController->verifyOTP();
             case 'student/change-password':
                 return $this->studentController->changePassword();
+
+              
+            // Profile Routes
+            case 'profile/get':
+                if ($method === 'GET') {
+                    return $this->profileController->getProfile();
+                }
+                break;
+
+            case 'profile/update':
+                if ($method === 'POST') {
+                    return $this->profileController->updateProfile();
+                }
+                break;
+
+            case 'profile/departments':
+                if ($method === 'GET') {
+                    return $this->profileController->getDepartments();
+                }
+                break;
+
+            case 'profile/programs':
+                if ($method === 'GET') {
+                    return $this->profileController->getPrograms();
+                }
+                break;
 
             // Document Routes
             case 'documents/admin':

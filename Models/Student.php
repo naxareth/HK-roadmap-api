@@ -1,5 +1,4 @@
 <?php
-
 namespace Models;
 
 use PDO;
@@ -34,23 +33,14 @@ class Student {
 
     public function getProfile($token) {
         try {
-            // First get student_id from token
-            $query = "SELECT student_id FROM student_tokens WHERE token = :token";
+            $query = "SELECT s.student_id, s.name, s.email, p.*
+                     FROM student s
+                     LEFT JOIN user_profiles p ON s.student_id = p.user_id AND p.user_type = 'student'
+                     JOIN student_tokens st ON s.student_id = st.student_id
+                     WHERE st.token = :token";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':token', $token);
             $stmt->execute();
-            
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            if (!$result) {
-                return null;
-            }
-            
-            // Then get student details
-            $query = "SELECT student_id, name, email FROM student WHERE student_id = :student_id";
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':student_id', $result['student_id']);
-            $stmt->execute();
-            
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             error_log("Get profile error: " . $e->getMessage());
@@ -60,11 +50,13 @@ class Student {
 
     public function getProfileById($student_id) {
         try {
-            $query = "SELECT student_id, name, email FROM student WHERE student_id = :student_id";
+            $query = "SELECT s.student_id, s.name, s.email, p.*
+                     FROM student s
+                     LEFT JOIN user_profiles p ON s.student_id = p.user_id AND p.user_type = 'student'
+                     WHERE s.student_id = :student_id";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':student_id', $student_id);
             $stmt->execute();
-            
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             error_log("Get profile error: " . $e->getMessage());
@@ -73,37 +65,101 @@ class Student {
     }
 
     public function register($name, $email, $password) {
-        if ($this->emailExists($email)) {
-            return false; // Email already exists
+        try {
+            $this->conn->beginTransaction();
+
+            if ($this->emailExists($email)) {
+                $this->conn->rollBack();
+                return false;
+            }
+
+            // Create student account
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            $sql = "INSERT INTO student (name, email, password) VALUES (:name, :email, :password)";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(':name', $name);
+            $stmt->bindParam(':email', $email);
+            $stmt->bindParam(':password', $hashedPassword);
+            
+            if (!$stmt->execute()) {
+                throw new PDOException("Failed to create student account");
+            }
+
+            $studentId = $this->conn->lastInsertId();
+
+            // Create initial profile
+            $profileSql = "INSERT INTO user_profiles (user_id, user_type, name, email) 
+                          VALUES (:user_id, 'student', :name, :email)";
+            
+            $profileStmt = $this->conn->prepare($profileSql);
+            $profileStmt->bindParam(':user_id', $studentId);
+            $profileStmt->bindParam(':name', $name);
+            $profileStmt->bindParam(':email', $email);
+            
+            if (!$profileStmt->execute()) {
+                throw new PDOException("Failed to create student profile");
+            }
+
+            $this->conn->commit();
+            return true;
+
+        } catch (PDOException $e) {
+            $this->conn->rollBack();
+            error_log("Student registration error: " . $e->getMessage());
+            return false;
         }
-
-        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-        $sql = "INSERT INTO student (name, email, password) VALUES (:name, :email, :password)";
-
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bindParam(':name', $name);
-        $stmt->bindParam(':email', $email);
-        $stmt->bindParam(':password', $hashedPassword);
-        return $stmt->execute();
     }
 
     public function emailExists($email) {
         $query = "SELECT * FROM student WHERE email = :email";
         $stmt = $this->conn->prepare($query);
         $stmt->execute(['email' => $email]);
-        return $stmt->fetch(PDO::FETCH_ASSOC) !== false; // Return true if email exists
+        return $stmt->fetch(PDO::FETCH_ASSOC) !== false;
     }
 
     public function login($email, $password) {
-        $query = "SELECT * FROM student WHERE email = :email";
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute(['email' => $email]);
-        $student = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($student && password_verify($password, $student['password'])) {
-            return $student; // Return student data on successful login
+        try {
+            $this->conn->beginTransaction();
+    
+            // First check if login credentials are valid
+            $query = "SELECT s.*, p.profile_id
+                     FROM student s
+                     LEFT JOIN user_profiles p ON s.student_id = p.user_id AND p.user_type = 'student'
+                     WHERE s.email = :email";
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute(['email' => $email]);
+            $student = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+            if ($student && password_verify($password, $student['password'])) {
+                // Check if profile exists
+                if (!$student['profile_id']) {
+                    // Create initial profile if it doesn't exist
+                    $profileSql = "INSERT INTO user_profiles (user_id, user_type, name, email)
+                                 VALUES (:user_id, 'student', :name, :email)";
+                    
+                    $profileStmt = $this->conn->prepare($profileSql);
+                    $profileStmt->bindParam(':user_id', $student['student_id']);
+                    $profileStmt->bindParam(':name', $student['name']);
+                    $profileStmt->bindParam(':email', $student['email']);
+                    
+                    if (!$profileStmt->execute()) {
+                        throw new PDOException("Failed to create initial student profile");
+                    }
+                }
+                
+                $this->conn->commit();
+                return $student;
+            }
+    
+            $this->conn->commit();
+            return false;
+    
+        } catch (PDOException $e) {
+            $this->conn->rollBack();
+            error_log("Login error: " . $e->getMessage());
+            return false;
         }
-        return false; // Invalid credentials
     }
 
     public function validateToken($token) {
@@ -111,32 +167,34 @@ class Student {
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':token', $token);
         $stmt->execute();
-        return $stmt->fetch(PDO::FETCH_ASSOC); // Return student ID if token is valid
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     public function updateToken($student_id, $token) {
+        // First delete any existing tokens for this student
+        $deleteQuery = "DELETE FROM student_tokens WHERE student_id = :student_id";
+        $stmt = $this->conn->prepare($deleteQuery);
+        $stmt->bindParam(':student_id', $student_id);
+        $stmt->execute();
+
+        // Then insert new token
         $query = "INSERT INTO student_tokens (student_id, token) VALUES (:student_id, :token)";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':token', $token);
         $stmt->bindParam(':student_id', $student_id);
-        
-        if ($stmt->execute()) {
-            return true;
-        }
-        return false;
+        return $stmt->execute();
     }
+
     public function requestOtp($email) {
         try {
             if ($this->emailExists($email)) {
-                $otp = rand(100000, 999999); 
-                $_SESSION['otp'] = $otp; 
-                $_SESSION['otp_expiry'] = time() + 300; 
-
+                $otp = rand(100000, 999999);
+                $_SESSION['otp'] = $otp;
+                $_SESSION['otp_expiry'] = time() + 300;
                 $this->sendEmail($email, $otp);
                 return true;
-            } else {
-                return false;
             }
+            return false;
         } catch (PDOException $e) {
             error_log("OTP request error: " . $e->getMessage());
             return false;
@@ -161,28 +219,15 @@ class Student {
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':password', $hashedPassword);
         $stmt->bindParam(':email', $email);
-        return $stmt->execute(); // Return true if password changed successfully
+        return $stmt->execute();
     }
 
     public function logout($token) {
         try {
-            // First verify token exists
-            $query = "SELECT * FROM student_tokens WHERE token = :token";
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':token', $token);
-            $stmt->execute();
-            $tokenData = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if (!$tokenData) {
-                error_log("Token not found: " . $token);
-                return false;
-            }
-
-            // Proceed with deletion
             $query = "DELETE FROM student_tokens WHERE token = :token";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':token', $token);
-            return $stmt->execute(['token' => $token]);
+            return $stmt->execute();
         } catch (PDOException $e) {
             error_log("Logout error: " . $e->getMessage());
             return false;
@@ -203,4 +248,3 @@ class Student {
     }
 }
 ?>
-

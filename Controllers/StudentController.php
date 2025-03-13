@@ -178,7 +178,7 @@ class StudentController {
                 return;
             }
 
-            $name = filter_var($_POST['name'], FILTER_SANITIZE_STRING);
+            $name = trim($_POST['name']);
             $email = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
             $password = $_POST['password'];
             $confirm_password = $_POST['confirm_password'];
