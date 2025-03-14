@@ -34,7 +34,7 @@ class StudentController {
         return $this->studentModel->validateToken($token);
     }
 
-    public function getProfile() {
+    public function getStudentProfile() {
         try {
             $tokenData = $this->validateToken();
             if (!$tokenData) {

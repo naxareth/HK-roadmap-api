@@ -144,16 +144,17 @@ class Profile {
 
     public function uploadProfilePicture($file) {
         try {
-            $targetDir = "../uploads/profile_pictures/";
+            // Remove the "../" - folder should be in web root
+            $targetDir = "uploads/profile_pictures/";
             if (!file_exists($targetDir)) {
                 mkdir($targetDir, 0777, true);
             }
             
-            $fileName = uniqid() . '_' . basename($file['name']);
+            $fileName = uniqid() . '.jpg';
             $targetPath = $targetDir . $fileName;
-
+    
             if (move_uploaded_file($file['tmp_name'], $targetPath)) {
-                return $fileName;
+                return 'uploads/profile_pictures/' . $fileName;
             }
             return false;
         } catch (Exception $e) {
@@ -161,7 +162,6 @@ class Profile {
             return false;
         }
     }
-
     public static function getDepartments() {
         return self::DEPARTMENTS;
     }

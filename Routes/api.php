@@ -97,7 +97,7 @@ class Api {
             case 'student/register':
                 return $this->studentController->register();
             case 'student/profile':
-                return $this->studentController->getProfile();
+                return $this->studentController->getStudentProfile();
             case 'student/all-students':
                 return $this->studentController->getStudent();
             case 'student/login':
