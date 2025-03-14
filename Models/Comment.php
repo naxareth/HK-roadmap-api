@@ -25,6 +25,29 @@ class Comment {
         $this->conn = $db;
     }
 
+    //admin get, no student id
+
+    public function getCommentsByRequirementAdmin($requirement_id) {
+        try {
+            $query = "SELECT 
+                    c.*,
+                    DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') as created_at,
+                    DATE_FORMAT(c.updated_at, '%Y-%m-%d %H:%i:%s') as updated_at
+                    FROM " . $this->table . " c
+                    WHERE c.requirement_id = :requirement_id
+                    ORDER BY c.created_at ASC";
+    
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':requirement_id', $requirement_id, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            return $stmt;
+        } catch (PDOException $e) {
+            error_log("Error in getCommentsByRequirementAdmin: " . $e->getMessage());
+            return false;
+        }
+    }
+
     public function create() {
         try {
             $query = "INSERT INTO " . $this->table . "
@@ -162,6 +185,34 @@ class Comment {
             return $result && $stmt->rowCount() > 0;
         } catch(PDOException $e) {
             error_log("Error in update comment: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function updateByAdmin() {
+        try {
+            if (!is_numeric($this->comment_id)) {
+                return false;
+            }
+    
+            $query = "UPDATE " . $this->table . "
+                    SET body = :body,
+                    updated_at = CURRENT_TIMESTAMP
+                    WHERE comment_id = :comment_id";
+    
+            $stmt = $this->conn->prepare($query);
+    
+            // Sanitize input
+            $this->body = htmlspecialchars(strip_tags($this->body));
+            $this->comment_id = htmlspecialchars(strip_tags($this->comment_id));
+    
+            $stmt->bindParam(':body', $this->body, PDO::PARAM_STR);
+            $stmt->bindParam(':comment_id', $this->comment_id, PDO::PARAM_INT);
+    
+            $result = $stmt->execute();
+            return $result && $stmt->rowCount() > 0;
+        } catch(PDOException $e) {
+            error_log("Error in updateByAdmin: " . $e->getMessage());
             return false;
         }
     }

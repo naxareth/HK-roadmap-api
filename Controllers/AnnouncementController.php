@@ -3,14 +3,42 @@ namespace Controllers;
 
 use Models\Announcement;
 use Models\Admin;
+use Models\Student;
 
 class AnnouncementController {
     private $announcementModel;
     private $adminModel;
+    private $studentModel; 
 
     public function __construct($db) {
         $this->announcementModel = new Announcement($db);
         $this->adminModel = new Admin($db);
+        $this->studentModel = new Student($db);
+    }
+
+    public function getStudentNotifications() {
+        $studentData = $this->validateStudentAuth(); 
+        if (!$studentData) return;
+
+        $notifications = $this->announcementModel->getAllAnnouncements();
+        if ($notifications !== false) {
+            echo json_encode(["notifications" => $notifications]);
+        } else {
+            http_response_code(500);
+            echo json_encode(["message" => "Failed to fetch notifications"]);
+        }
+    }
+
+    private function validateStudentAuth() {
+        $headers = getallheaders();
+        if (!isset($headers['Authorization'])) {
+            http_response_code(401);
+            echo json_encode(["message" => "Authorization header missing"]);
+            return null;
+        }
+
+        $token = str_replace('Bearer ', '', $headers['Authorization']);
+        return $this->studentModel->validateToken($token); // Validate student token
     }
 
     private function validateAuth() {

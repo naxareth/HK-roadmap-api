@@ -973,3 +973,201 @@ button {
 .close-popup:hover {
     color: #333;
 }
+/* Student Comment Group */
+.student-comment-group {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #eee;
+}
+
+/* Comment Card */
+.comment-card {
+    position: relative;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 1.2rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+}
+
+/* Comment Header */
+.comment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Comment Meta */
+.comment-meta {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+/* Author Header */
+.comment-author-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    margin-bottom: 0.25rem;
+}
+
+.comment-author {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.comment-date {
+    font-size: 0.85rem;
+    color: #7f8c8d;
+}
+
+/* Comment Body */
+.comment-body {
+    color: #333;
+    line-height: 1.4;
+    margin: 0.25rem 0 0 1rem;
+    padding-left: 1rem;
+    border-left: 2px solid #3498db;
+}
+
+/* Comment Actions */
+.comment-actions {
+    position: absolute;
+    right: 1rem;
+    top: 1rem;
+    z-index: 2;
+}
+
+.menu-button {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: #666;
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+/* Action Menu */
+.action-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+    min-width: 120px;
+    overflow: hidden;
+}
+
+.action-menu button {
+    display: block;
+    width: 100%;
+    padding: 0.6rem 1rem;
+    background: none;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    color: #333;
+    font-size: 0.9rem;
+    transition: background-color 0.2s ease;
+}
+
+.action-menu button:hover {
+    background-color: #f8f9fa;
+}
+
+/* Mobile Responsive */
+@media (max-width: 480px) {
+    .comment-card {
+        padding: 1rem;
+    }
+    
+    .comment-actions {
+        right: 0.5rem;
+        top: 0.5rem;
+    }
+}
+
+#submissionsTable td {
+    vertical-align: middle;
+    align-items: center;
+    text-align: center;
+    padding: 12px;
+}
+
+#searchContainer {
+    margin: 20px 0;
+    text-align: right;
+}
+
+#searchInput {
+    padding: 8px;
+    width: 96%;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+#editCommentText {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+/* Staff Table Container */
+.staff-container {
+    width: calc(100% - 60px);
+    margin: 30px;
+    overflow-x: auto;
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+}
+
+.staff-container table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 14px;
+}
+
+.staff-container th {
+    background: #f8f9fa;
+    color: #2d3436;
+    padding: 16px 20px;
+    font-weight: 600;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.staff-container td {
+    padding: 14px 20px;
+    color: #4a4a4a;
+    border-bottom: 1px solid #f1f3f5;
+    background: #ffffff;
+}
+
+.status-cell {
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.view-button {
+    background: #2196F3;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+}

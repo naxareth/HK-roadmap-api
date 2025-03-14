@@ -45,124 +45,78 @@ function validateChangePassword(currentPassword, newPassword, confirmNewPassword
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    const closeButtons = document.querySelectorAll('.close-popup');
-    closeButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            this.parentElement.parentElement.style.display = 'none';
-        });
-    });
+    // Get role and email from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const role = urlParams.get('role');
+    const email = decodeURIComponent(urlParams.get('email'));
 
-    document.getElementById('togglePassword').addEventListener('click', function() {
-        const passwordField = document.getElementById('new-password');
-        const type = passwordField.type === 'password' ? 'text' : 'password';
-        passwordField.type = type;
-        this.classList.toggle('fa-eye');
-        this.classList.toggle('fa-eye-slash');
-    });
+    // Update forms with email and role
+    const emailInputs = document.querySelectorAll('input[name="email"]');
+    emailInputs.forEach(input => input.value = email);
     
-    document.getElementById('toggleConfirmPassword').addEventListener('click', function() {
-        const confirmPasswordField = document.getElementById('confirm-password');
-        const type = confirmPasswordField.type === 'password' ? 'text' : 'password';
-        confirmPasswordField.type = type;
-        this.classList.toggle('fa-eye');
-        this.classList.toggle('fa-eye-slash');
-    });
-    
+    const roleInputs = document.querySelectorAll('input[name="role"]');
+    roleInputs.forEach(input => input.value = role);
+
+    // Verification form handler
     const verifyForm = document.getElementById('verifyForm');
-    const changePasswordForm = document.getElementById('changePasswordForm');
-
     if (verifyForm) {
         verifyForm.addEventListener('submit', async function(event) {
             event.preventDefault();
-            
             clearError();
-            
-            const email = verifyForm.querySelector('input[name="email"]').value.trim();
+
             const otp = verifyForm.querySelector('input[name="otp"]').value.trim();
 
-            if (!email || !otp) {
-                showError('Please fill in all fields');
-                return;
-            }
-
-            // Disable submit button during request
-            const submitButton = verifyForm.querySelector('button[type="submit"]');
-            submitButton.disabled = true;
-            submitButton.textContent = 'Verifying...';
-
             try {
-                const response = await apiService.verifyOTP({ email, otp });
-                
-                if (response.success) {
-                    // Show password change form
-                    verifyForm.style.display = 'none';
-                    changePasswordForm.style.display = 'block';
+                let response;
+                if (role === 'admin') {
+                    response = await apiService.verifyAdminOTP({ email, otp });
                 } else {
-                    showError(response.error.message || 'Verification failed. Please try again.');
+                    response = await apiService.verifyStaffOTP({ email, otp });
+                }
+
+                if (response.success) {
+                    verifyForm.style.display = 'none';
+                    document.getElementById('changePasswordForm').style.display = 'block';
+                } else {
+                    showError(response.message || `${role} OTP verification failed`);
                 }
             } catch (error) {
-                console.error('Verification error:', error);
-                showError('An error occurred during verification. Please try again.');
-            } finally {
-                // Re-enable submit button
-                const submitButton = verifyForm.querySelector('button[type="submit"]');
-                submitButton.disabled = false;
-                submitButton.textContent = 'Verify';
+                showError('Error verifying OTP');
             }
         });
     }
 
+    // Password change form handler
+    const changePasswordForm = document.getElementById('changePasswordForm');
     if (changePasswordForm) {
         changePasswordForm.addEventListener('submit', async function(event) {
             event.preventDefault();
-            
             clearError();
 
-            const email = changePasswordForm.querySelector('input[name="email"]').value.trim();
             const newPassword = changePasswordForm.querySelector('input[name="new-password"]').value.trim();
-            const confirmedPassword = changePasswordForm.querySelector('input[name="confirmed-password"]').value.trim();
+            const confirmPassword = changePasswordForm.querySelector('input[name="confirm-password"]').value.trim();
 
-            if (!newPassword || !confirmedPassword) {
-                showError('Please fill in all fields');
-                return;
-            }
-
-            if (newPassword !== confirmedPassword) {
+            if (newPassword !== confirmPassword) {
                 showError('Passwords do not match');
                 return;
             }
 
-            if (!validateChangePassword(email, newPassword, confirmedPassword)) {
-                console.log('Validation failed');
-                showError('Validation failed');
-                return;
-            }
-
-            // Disable submit button during request
-            const submitButton = changePasswordForm.querySelector('button[type="submit"]');
-            submitButton.disabled = true;
-            submitButton.textContent = 'Changing Password...';
-
             try {
-                const response = await apiService.changePassword({ 
-                    email,
-                    newPassword
-                });
-                
+                let response;
+                if (role === 'admin') {
+                    response = await apiService.changeAdminPassword({ email, newPassword });
+                } else {
+                    response = await apiService.changeStaffPassword({ email, newPassword });
+                }
+
                 if (response.success) {
-                    showSuccess('Password changed successfully!');
+                    alert('Password changed successfully!');
                     window.location.href = 'login.html';
                 } else {
-                    showError(response.error.message || 'Password change failed. Please try again.');
+                    showError(response.message || `${role} password change failed`);
                 }
             } catch (error) {
-                console.error('Password change error:', error);
-                showError('An error occurred while changing password. Please try again.');
-            } finally {
-                // Re-enable submit button
-                const submitButton = changePasswordForm.querySelector('button[type="submit"]');
-                submitButton.disabled = false;
-                submitButton.textContent = 'Change Password';
+                showError('Error changing password');
             }
         });
     }

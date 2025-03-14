@@ -33,6 +33,43 @@ class CommentController {
         return null;
     }
 
+    public function getComment() {
+        $user = $this->authenticateUser();
+        if (!$user) {
+            http_response_code(401);
+            return json_encode(["message" => "Unauthorized"]);
+        }
+    
+        try {
+            $comment_id = $_GET['comment_id'] ?? null;
+            if (!$comment_id) {
+                http_response_code(400);
+                return json_encode(["message" => "Missing comment_id"]);
+            }
+    
+            $comment = $this->comment->getCommentById($comment_id);
+            if (!$comment) {
+                http_response_code(404);
+                return json_encode(["message" => "Comment not found"]);
+            }
+    
+            // Authorization check
+            if ($user['user_type'] === 'student' && 
+                (int)$comment['user_id'] !== (int)$user['user_id'] &&
+                (int)$comment['student_id'] !== (int)$user['user_id']) {
+                http_response_code(403);
+                return json_encode(["message" => "Access denied"]);
+            }
+    
+            return json_encode($comment);
+    
+        } catch (Exception $e) {
+            error_log("Error in getComment: " . $e->getMessage());
+            http_response_code(500);
+            return json_encode(["message" => "Server error"]);
+        }
+    }
+
     private function authenticateUser() {
         $token = $this->getBearerToken();
         if (!$token) {
@@ -76,6 +113,38 @@ class CommentController {
         }
 
         return null;
+    }
+
+    public function getCommentsForAdmin() {
+        $user = $this->authenticateUser();
+        if (!$user || $user['user_type'] !== 'admin') {
+            http_response_code(403);
+            echo json_encode(["message" => "Admin access required"]);
+            return;
+        }
+    
+        $requirement_id = $_GET['requirement_id'] ?? null;
+        
+        if (!$requirement_id) {
+            http_response_code(400);
+            echo json_encode(["message" => "Missing requirement_id"]);
+            return;
+        }
+    
+        $result = $this->comment->getCommentsByRequirementAdmin($requirement_id);
+        
+        if ($result === false) {
+            http_response_code(500);
+            echo json_encode(["message" => "Error fetching comments"]);
+            return;
+        }
+    
+        $comments = [];
+        while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
+            $comments[] = $row;
+        }
+    
+        echo json_encode($comments);
     }
 
     public function addComment() {
@@ -253,14 +322,14 @@ class CommentController {
                 echo json_encode(["message" => "Missing required fields: comment_id and body"]);
                 return;
             }
-
+    
             $existingComment = $this->comment->getCommentById($data['comment_id']);
             if (!$existingComment) {
                 http_response_code(404);
                 echo json_encode(["message" => "Comment not found"]);
                 return;
             }
-
+    
             // Access control
             if ($user['user_type'] === 'student') {
                 if ($existingComment['user_type'] !== 'student' || 
@@ -271,21 +340,29 @@ class CommentController {
                     return;
                 }
             }
-
+    
+            // For admins, no additional checks needed; they can edit any comment
             $this->comment->comment_id = $data['comment_id'];
             $this->comment->body = $data['body'];
-            $this->comment->user_type = $user['user_type'];
-            $this->comment->user_id = $user['user_id'];
-
-            if ($this->comment->update()) {
+            
+            // If admin, use a different update method that doesn't check user_type/user_id
+            if ($user['user_type'] === 'admin') {
+                $success = $this->comment->updateByAdmin();
+            } else {
+                $this->comment->user_type = $user['user_type'];
+                $this->comment->user_id = $user['user_id'];
+                $success = $this->comment->update();
+            }
+    
+            if ($success) {
                 http_response_code(200);
                 echo json_encode(["message" => "Comment updated successfully"]);
                 return;
             }
-
+    
             http_response_code(500);
             echo json_encode(["message" => "Failed to update comment"]);
-
+    
         } catch (Exception $e) {
             error_log("Error in updateComment: " . $e->getMessage());
             http_response_code(500);

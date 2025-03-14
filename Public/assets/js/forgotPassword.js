@@ -25,47 +25,50 @@ document.addEventListener('DOMContentLoaded', function() {
     if (recoveryForm) {
         recoveryForm.addEventListener('submit', async function(event) {
             event.preventDefault();
-            
             clearError();
             
-            const email = recoveryForm.querySelector('input[name="email"]').value.trim();
+            // Get form elements
+            const roleSelect = recoveryForm.querySelector('select[name="role"]');
+            const emailInput = recoveryForm.querySelector('input[name="email"]');
+            
+            const role = roleSelect.value;
+            const email = emailInput.value.trim();
 
-            if (!email) {
-                showError('Please enter your email address');
+            // Validate inputs
+            if (!role || !email) {
+                showError('Please select a role and enter your email');
                 return;
             }
 
-            
             // Disable submit button during request
             const submitButton = recoveryForm.querySelector('button[type="submit"]');
             submitButton.disabled = true;
             submitButton.textContent = 'Sending OTP...';
 
             try {
-                const response = await apiService.requestOTP({ email });
+                let response;
+                if (role === 'admin') {
+                    response = await apiService.requestAdminOTP({ email });
+                } else {
+                    response = await apiService.requestStaffOTP({ email });
+                }
+
                 if (response.success) {
                     alert('OTP has been sent to your email');
-                    window.location.href = 'changePassword.html';
+                    // Redirect with role parameter
+                    window.location.href = `changePassword.html?role=${role}&email=${encodeURIComponent(email)}`;
                 } else {
-                    alert(response.message || 'Failed to send OTP. Please try again.');
-
+                    showError(response.message || `${role} OTP request failed`);
                 }
             } catch (error) {
                 console.error('OTP request error:', error);
-                const errorMessage = error.message || 'An error occurred while sending OTP. Please try again.';
-                if (error.message.includes('NetworkError')) {
-                    showError('Network error. Please check your internet connection.');
-
-                } else {
-                    showError(errorMessage);
-
-                }
+                const errorMessage = error.message || 'An error occurred while sending OTP';
+                showError(errorMessage);
             } finally {
-                // Re-enable submit button
-                const submitButton = recoveryForm.querySelector('button[type="submit"]');
                 submitButton.disabled = false;
                 submitButton.textContent = 'Send OTP';
             }
         });
     }
 });
+

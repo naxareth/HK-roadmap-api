@@ -245,7 +245,7 @@ function fetchSubmissions() {
         });
 }
 
-//view documents for submission
+//view documents and search for submission
 
 let currentDocIndex = 0;
 let docItems = [];
@@ -377,6 +377,47 @@ function closeDocumentPopup() {
     popup.style.display = 'none';
     currentDocIndex = 0;
     docItems = [];
+}
+
+let allSubmissions = [];
+
+function fetchSubmissions() {
+    fetch('/hk-roadmap/submission/update')
+        .then(response => response.json())
+        .then(data => {
+            allSubmissions = data; // Store submissions globally
+            renderTable(data);
+        });
+}
+
+// Modified render function
+function renderTable(data) {
+    const tableBody = document.querySelector('#submissionsTable tbody');
+    tableBody.innerHTML = '';
+    
+    data.forEach(group => {
+        const row = `
+            <tr>
+                <td>${group.event_name}</td>
+                <td>${group.requirement_name}</td>
+                <td>${group.student_name}</td>
+                <td>${new Date(group.submission_date).toLocaleDateString()}</td>
+                <td>${group.status}</td>
+                <td>
+                    <button class="view-docs-btn" data-ids="${group.submission_ids}">Review</button>
+                </td>
+            </tr>
+        `;
+        tableBody.innerHTML += row;
+    });
+
+    // Reattach event listeners
+    document.querySelectorAll('.view-docs-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const submissionIds = btn.dataset.ids.split(',');
+            viewDocuments(submissionIds);
+        });
+    });
 }
 
 
@@ -532,6 +573,7 @@ async function showRequirements(eventId) {
                         <div class="button-content">
                             <button class="edit-requirement" data-requirement-id="${req.requirement_id}">Edit</button>
                             <button class="delete-requirement" data-requirement-id="${req.requirement_id}" aria-label="Delete requirement ${req.requirement_id}">Delete</button>
+                            <button class="show-comments" data-requirement-id="${req.requirement_id}">Show Comments</button>
                         </div>
                     </div>`;
                 requirementsSection.insertAdjacentHTML('beforeend', requirement); 
@@ -1023,6 +1065,213 @@ async function deleteRequirement(requirementId) {
     }
 }
 
+//sub-CRUD requirements, comments
+
+async function showComments(requirementId) {
+    try {
+        currentRequirementId = requirementId;
+        const authToken = localStorage.getItem('authToken');
+        const response = await fetch(`/hk-roadmap/comments/admin?requirement_id=${requirementId}`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        
+        if (!response.ok) throw new Error('Failed to fetch comments');
+        const comments = await response.json();
+
+        const commentsList = document.getElementById('comments-list');
+        commentsList.innerHTML = '';
+
+        if (comments.length === 0) {
+            commentsList.innerHTML = '<p class="no-comments">No comments found</p>';
+            return;
+        }
+
+        // Group comments by student_id
+        const commentsByStudent = comments.reduce((groups, comment) => {
+            const key = comment.student_id;
+            if (!groups[key]) {
+                groups[key] = [];
+            }
+            groups[key].push(comment);
+            return groups;
+        }, {});
+
+        // Create sections for each student
+        Object.entries(commentsByStudent).forEach(([studentId, studentComments]) => {
+            const studentSection = document.createElement('div');
+            studentSection.className = 'student-comment-group';
+            
+            // Student header
+            const studentHeader = document.createElement('div');
+            studentHeader.className = 'student-header';
+            studentHeader.innerHTML = `
+                <h4>${studentComments[0].user_name} (ID: ${studentId})</h4>
+            `;
+            
+            // Comments list
+            const commentsContainer = document.createElement('div');
+            commentsContainer.className = 'student-comments';
+            
+            studentComments.forEach(comment => {
+                const commentDate = new Date(comment.created_at).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                const commentCard = `
+                    <div class="card comment-card">
+                        <div class="comment-header">
+                            <div class="comment-meta">
+                                <div class="comment-author-header">
+                                    <span class="comment-author">${comment.user_name}</span>
+                                    <span class="comment-date">${commentDate}</span>
+                                </div>
+                                <p class="comment-body">${comment.body}</p>
+                            </div>
+                            <div class="comment-actions">
+                                <button class="menu-button" onclick="toggleCommentMenu(this)">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <div class="action-menu">
+                                    <button onclick="handleEditComment('${comment.comment_id}')">Edit</button>
+                                    <button onclick="handleDeleteComment('${comment.comment_id}')">Delete</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+                commentsContainer.insertAdjacentHTML('beforeend', commentCard);
+            });
+
+            studentSection.appendChild(studentHeader);
+            studentSection.appendChild(commentsContainer);
+            commentsList.appendChild(studentSection);
+        });
+
+        document.getElementById('requirements-section').style.display = 'none';
+        document.getElementById('backToEventsButton').style.display = 'none';
+        document.getElementById('comment-section').style.display = 'grid';
+        document.getElementById('backtoRequirements').style.display = 'block';
+
+    } catch (error) {
+        console.error('Error loading comments:', error);
+        alert('Failed to load comments');
+    }
+}
+
+function toggleCommentMenu(button) {
+    const menu = button.closest('.comment-actions').querySelector('.action-menu');
+    const allMenus = document.querySelectorAll('.action-menu');
+    
+    // Close all other menus
+    allMenus.forEach(m => m !== menu ? m.style.display = 'none' : null);
+    
+    // Toggle current menu
+    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+}
+
+let currentEditCommentId = null;
+
+async function handleEditComment(commentId) {
+    try {
+        // Fetch existing comment content
+        const authToken = localStorage.getItem('authToken');
+        const response = await fetch(`/hk-roadmap/comments/id?comment_id=${commentId}`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        
+        if (!response.ok) throw new Error('Failed to fetch comment');
+        const comment = await response.json();
+
+        // Populate modal
+        currentEditCommentId = commentId;
+        document.getElementById('editCommentText').value = comment.body;
+        document.getElementById('editCommentModal').style.display = 'block';
+    } catch (error) {
+        console.error('Error fetching comment:', error);
+        alert('Failed to load comment for editing');
+    }
+}
+
+async function submitCommentEdit() {
+    if (!currentEditCommentId) return;
+
+    try {
+        const authToken = localStorage.getItem('authToken');
+        const response = await fetch('/hk-roadmap/comments/update', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({
+                comment_id: currentEditCommentId,
+                body: document.getElementById('editCommentText').value
+            })
+        });
+
+        if (response.ok) {
+            // Update the comment in the UI
+            const commentBody = document.querySelector(
+                `.comment-card[data-comment-id="${currentEditCommentId}"] .comment-body`
+            );
+            if (commentBody) {
+                commentBody.textContent = document.getElementById('editCommentText').value;
+            }
+            closeEditModal();
+            await showComments(currentRequirementId);
+        } else {
+            throw new Error('Failed to update comment');
+        }
+    } catch (error) {
+        console.error('Error updating comment:', error);
+        alert('Failed to update comment');
+    }
+}
+
+function closeEditModal() {
+    document.getElementById('editCommentModal').style.display = 'none';
+    currentEditCommentId = null;
+    document.getElementById('editCommentText').value = '';
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('editCommentModal');
+    if (event.target === modal) {
+        closeEditModal();
+    }
+}
+
+async function handleDeleteComment(commentId) {
+    if (!confirm('Are you sure you want to delete this comment?')) return;
+    
+    try {
+        const authToken = localStorage.getItem('authToken');
+        const response = await fetch(`/hk-roadmap/comments/delete`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({ comment_id: commentId })
+        });
+
+        if (response.ok) {
+            document.querySelector(`.comment-card[data-comment-id="${commentId}"]`).remove();
+            await showComments(currentRequirementId);
+        } else {
+            throw new Error('Failed to delete comment');
+        }
+    } catch (error) {
+        console.error('Delete comment error:', error);
+        alert('Failed to delete comment');
+    }
+}
+
+
 //notifications
 
 function formatDateTime(timestamp) {
@@ -1342,6 +1591,7 @@ const createRefreshControls = (fetchCallback, interval = 30000) => {
 };
 
 
+
 // frontend listeners
 document.addEventListener('DOMContentLoaded', initializeYearDropdown);
 
@@ -1385,7 +1635,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.comment-actions')) {
+            document.querySelectorAll('.action-menu').forEach(menu => {
+                menu.style.display = 'none';
+            });
+        }
+    });
+
     document.getElementById('requirements-section').addEventListener('click', function(event) {
+        const card = event.target.closest('.card');
+        if (!card) return;
+
+        const requirementId = card.dataset.requirementId;
         if (event.target.classList.contains('edit-requirement')) {
             const requirementId = event.target.closest('.card').dataset.requirementId;
             console.log(`Edit requirement ID: ${requirementId}`);
@@ -1394,7 +1656,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (confirm(`Are you sure you want to delete requirement ID: ${requirementId}?`)) {
                 deleteRequirement(requirementId);
             }
-        }
+        } 
     });
 
     const eventCreateButton = document.getElementById('event-create');
@@ -1465,6 +1727,44 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!e.target.closest('.profile-container')) {
             document.getElementById('profileMenu').style.display = 'none';
         }
+    });
+
+    document.getElementById('searchInput').addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase().trim();
+        const searchTerms = searchTerm.split(/\s+/);
+        
+        const filtered = allSubmissions.filter(group => {
+            const eventName = group.event_name.toLowerCase();
+            const requirementName = group.requirement_name.toLowerCase();
+            const studentName = group.student_name.toLowerCase();
+            const status = group.status.toLowerCase();
+            const submissionDate = new Date(group.submission_date).toLocaleDateString().toLowerCase();
+            
+            return searchTerms.every(term => 
+                eventName.includes(term) ||
+                requirementName.includes(term) ||
+                studentName.includes(term) ||
+                status.includes(term) ||
+                submissionDate.includes(term)
+            );
+        });
+        
+        renderTable(filtered);
+    });
+
+    
+    document.getElementById('requirements-section').addEventListener('click', function(event) {
+        if (event.target.classList.contains('show-comments')) {
+            const requirementId = event.target.closest('.card').dataset.requirementId;
+            showComments(requirementId);
+        }
+    });
+
+    document.getElementById('backToReqBtn').addEventListener('click', () => {
+        document.getElementById('comment-section').style.display = 'none';
+        document.getElementById('requirements-section').style.display = 'grid';
+        document.getElementById('backtoRequirements').style.display = 'none';
+        document.getElementById('backToEventsButton').style.display = 'grid';
     });
 
     document.getElementById('yearSelect').addEventListener('change', function() {

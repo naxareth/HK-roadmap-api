@@ -235,4 +235,179 @@ export default class ApiService {
             return this.handleError(error, 'Password change error');
         }
     }
+
+    async verifyStaffCredentials(credentials) {
+        try {
+            const response = await fetch(`${this.baseURL}/hk-roadmap/staff/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.authToken}`
+                },
+                body: JSON.stringify(credentials)
+            });
+
+            const responseData = await response.json();
+
+            if (!response.ok) {
+                return {
+                    success: false,
+                    data: null,
+                    error: {
+                        message: responseData.message || 'Staff authentication failed',
+                        status: response.status,
+                        details: responseData.details
+                    }
+                };
+            }
+
+            return { success: true, data: responseData, error: null };
+
+        } catch (error) {
+            return this.handleError(error, 'Staff Login');
+        }
+    }
+
+    async registerStaff(staffData) {
+        try {
+            const response = await fetch(`${this.baseURL}/hk-roadmap/staff/register`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.authToken}`
+                },
+                body: JSON.stringify(staffData)
+            });
+
+            const responseData = await response.json();
+
+            if (!response.ok) {
+                return {
+                    success: false,
+                    data: null,
+                    error: {
+                        message: responseData.message || 'Staff registration failed',
+                        status: response.status,
+                        details: responseData.details
+                    }
+                };
+            }
+
+            return { success: true, data: responseData, error: null };
+
+        } catch (error) {
+            return this.handleError(error, 'Staff Registration');
+        }
+    }
+
+    async requestStaffOTP(emailData) {
+        try {
+            const response = await fetch(`${this.baseURL}/hk-roadmap/staff/request-otp`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.authToken}`
+                },
+                body: JSON.stringify(emailData)
+            });
+
+            const responseData = await response.json();
+
+            if (responseData.success) {
+                return { success: true, data: responseData, error: null };
+            }
+
+            return {
+                success: false,
+                data: null,
+                error: {
+                    message: responseData.message || 'Failed to send OTP to staff',
+                    status: response.status || 404,
+                    details: responseData.details
+                }
+            };
+
+        } catch (error) {
+            return this.handleError(error, 'Staff OTP Request');
+        }
+    }
+
+    async verifyStaffOTP(otpData) {
+        try {
+            const response = await fetch(`${this.baseURL}/hk-roadmap/staff/verify-otp`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.authToken}`
+                },
+                body: JSON.stringify(otpData)
+            });
+
+            const responseData = await response.json();
+
+            if (responseData.message && responseData.message.includes('OTP verified successfully')) {
+                return { success: true, data: responseData, error: null };
+            }
+
+            return {
+                success: false,
+                data: null,
+                error: {
+                    message: responseData.message || 'Staff OTP verification failed',
+                    status: response.status || 500,
+                    details: responseData.details
+                }
+            };
+
+        } catch (error) {
+            return this.handleError(error, 'Staff OTP Verification');
+        }
+    }
+
+    async changeStaffPassword(passwordData) {
+        try {
+            if (!passwordData.email || !passwordData.newPassword) {
+                return {
+                    success: false,
+                    data: null,
+                    error: {
+                        message: 'Staff email and new password are required',
+                        status: 400,
+                        details: null
+                    }
+                };
+            }
+
+            const response = await fetch(`${this.baseURL}/hk-roadmap/staff/change-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.authToken}`
+                },
+                body: JSON.stringify({
+                    email: passwordData.email,
+                    new_password: passwordData.newPassword
+                })
+            });
+
+            const responseData = await response.json();
+
+            if (responseData.message && responseData.message.includes('Password changed successfully')) {
+                return { success: true, data: responseData, error: null };
+            }
+
+            return {
+                success: false,
+                data: null,
+                error: {
+                    message: responseData.message || 'Staff password change failed',
+                    status: response.status || 500,
+                    details: responseData.details
+                }
+            };
+
+        } catch (error) {
+            return this.handleError(error, 'Staff Password Change');
+        }
+    }
 }

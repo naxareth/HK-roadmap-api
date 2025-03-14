@@ -4,19 +4,24 @@ namespace Controllers;
 
 use Models\Submission;
 use Controllers\AdminController;
+use Controllers\StaffController;
+
 use PDOException;
 use Exception;
 
 require_once '../models/Submission.php';
 require_once 'AdminController.php';
+require_once 'StaffController.php';
 
 class SubmissionController {
     private $submissionModel;
     private $adminController;
+    private $staffController;
 
     public function __construct($db) {
         $this->submissionModel = new Submission($db);
         $this->adminController = new AdminController($db);
+        $this->staffController = new StaffController($db);
     }
 
     public function getSubmissionsByEventId($eventId) {
@@ -47,16 +52,18 @@ class SubmissionController {
         header('Content-Type: application/json'); // Force JSON response
         
         try {
-            $adminData = $this->validateSubmissionToken(getallheaders()['Authorization'] ?? '');
+            // Validate either admin or staff token
+            $userData = $this->validateSubmissionToken(getallheaders()['Authorization'] ?? '');
             
-            if (!$adminData || !isset($adminData['admin_id'])) {
+            if (!$userData || (!isset($userData['admin_id']) && !isset($userData['staff_id']))) {
                 http_response_code(401);
                 echo json_encode(["success" => false, "message" => "Invalid token"]);
                 return;
             }
-
+    
             $input = json_decode(file_get_contents('php://input'), true);
             
+            // Rest of the method remains the same
             if (json_last_error() !== JSON_ERROR_NONE) {
                 http_response_code(400);
                 echo json_encode(["success" => false, "message" => "Invalid JSON"]);
@@ -69,11 +76,16 @@ class SubmissionController {
                 return;
             }
     
+            // Determine approver type
+            $approvedBy = isset($userData['admin_id']) 
+                ? "Admin: " . $userData['name']
+                : "Staff: " . $userData['name'];
+    
             // Update submission
             $success = $this->submissionModel->updateSubmissionStatus(
                 $input['submission_id'],
                 $input['status'],
-                $adminData['name']
+                $approvedBy
             );
     
             echo json_encode([
@@ -98,7 +110,8 @@ class SubmissionController {
         }
     
         $token = substr($authHeader, 7);
-        return $this->adminController->validateSubmissionToken($token);
+        return $this->adminController->validateSubmissionToken($token)  
+        ?: $this->staffController->validateSubmissionToken($token);
     }
 
     private function parseMultipartFormData($rawInput) {

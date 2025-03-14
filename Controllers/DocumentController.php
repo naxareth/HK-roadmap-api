@@ -6,16 +6,19 @@ use Exception;
 use Models\Document;
 use Models\Student;
 use Controllers\AdminController;
+use Controllers\StaffController;
 
 class DocumentController {
     private $documentModel;
     private $adminController;
+    private $staffController;
     private $studentModel;
 
     public function __construct($db) {
         $this->documentModel = new Document($db);
         $this->studentModel = new Student($db);
         $this->adminController = new AdminController($db);
+        $this->staffController = new StaffController($db); 
     }
 
     private function validateAuthHeader() {
@@ -48,6 +51,30 @@ class DocumentController {
         }
     
         // Update overdue documents before getting the list
+        $this->documentModel->updateOverdueDocuments();
+    
+        $documents = $this->documentModel->getAllDocuments();
+        if ($documents) {
+            echo json_encode([
+                "documents" => $documents
+            ]);
+        } else {
+            http_response_code(404);
+            echo json_encode(["message" => "No documents found"]);
+        }
+    }
+
+    public function getAllDocumentsByStaff() {
+        $token = $this->validateAuthHeader();
+        if (!$token) return;
+    
+        $adminData = $this->staffController->validateToken($token);
+        if ($adminData === false) {
+            http_response_code(401);
+            echo json_encode(["message" => "Invalid token or unauthorized access"]);
+            return;
+        }
+        
         $this->documentModel->updateOverdueDocuments();
     
         $documents = $this->documentModel->getAllDocuments();

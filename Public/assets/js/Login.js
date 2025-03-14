@@ -25,19 +25,18 @@ function showSuccess() {
     }
 }
 
-function validateInput(email, password) {
-    if (!email || !password) {
-        showError('Please fill in all fields');
+function validateLogin(role, email, password) {
+    if (!role || !email || !password) {
+        showError('All fields are required');
         return false;
     }
-    
     if (!/\S+@\S+\.\S+/.test(email)) {
-        showError('Please enter a valid email address');
+        showError('Invalid email format');
         return false;
     }
-    
     return true;
 }
+
 
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -64,59 +63,56 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const loginForm = document.getElementById('loginForm');
     
-    if (loginForm) {
-        loginForm.addEventListener('submit', async function(event) {
-            event.preventDefault();
-            
-            clearError();
-            
-            const emailInput = loginForm.querySelector('input[name="email"]');
-            const passwordInput = loginForm.querySelector('input[name="password"]');
-            
-            if (!emailInput || !passwordInput) {
-                showError('Form fields not found');
-                return;
+    loginForm.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        clearError();
+    
+        const roleSelect = this.querySelector('select[name="role"]');
+        const emailInput = this.querySelector('input[name="email"]');
+        const passwordInput = this.querySelector('input[name="password"]');
+    
+        const role = roleSelect.value;
+        const email = emailInput.value.trim();
+        const password = passwordInput.value.trim();
+    
+        if (!validateLogin(role, email, password)) return;
+    
+        const submitButton = this.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.textContent = 'Logging in...';
+    
+        try {
+            let response;
+            if (role === 'admin') {
+                response = await apiService.verifyAdminCredentials({ email, password });
+            } else {
+                response = await apiService.verifyStaffCredentials({ email, password });
             }
-            
-            const email = emailInput.value.trim();
-            const password = passwordInput.value.trim();
-        
-            if (!validateInput(email, password)) {
-                return;
-            }
-            
-            const submitButton = loginForm.querySelector('button[type="submit"]');
-            submitButton.disabled = true;
-            submitButton.textContent = 'Logging in...';
-        
-            try {
-                const response = await apiService.verifyAdminCredentials({ email, password });
+    
+            if (response.success) {
+                const token = response.data.token;
+                console.log('Redirecting to:', window.location.href); 
+                localStorage.setItem('lastRedirect', new Date().toISOString());
+                localStorage.setItem('authToken', token); 
+                localStorage.setItem('userRole', role);
+                showSuccess(`${role.toUpperCase()} login successful! Redirecting...`);
+                apiService.setAuthToken(token);
+                showSuccess('Logging in successfully! Please wait...');
+
+                // Redirect based on role
+                const redirectUrl = role === 'admin' ? 'dashboard.html' : 'staffDashboard.html';
+                setTimeout(() => {
+                    window.location.href = redirectUrl;
+                }, 2000);
                 
-                if (response.success) {
-                    const token = response.data.token;
-                    localStorage.setItem('authToken', token); 
-                    
-                    apiService.setAuthToken(token);
-                    showSuccess('Logging in successfully! Please wait...');
-                    setTimeout(() => {
-                        window.location.href = 'dashboard.html';
-                    }, 2000);
-                } else {
-                    showError(response.message || 'Login failed. Please check your credentials.');
-                }
-            } catch (error) {
-                console.error('Login error:', error);
-                const errorMessage = error.message || 'An error occurred during login. Please try again.';
-                if (error.message.includes('NetworkError')) {
-                    showError('Network error. Please check your internet connection.');
-                } else {
-                    showError(errorMessage);
-                }
-            } finally {
-                // Re-enable submit button
-                submitButton.disabled = false;
-                submitButton.textContent = 'Login';
+            } else {
+                showError(response.message || `Failed to login as ${role}`);
             }
-        });
-    }
+        } catch (error) {
+            handleNetworkError(error);
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Login';
+        }
+    });
 });

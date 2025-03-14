@@ -63,8 +63,17 @@
                     <button id="requirement-create">Create Requirement</button>
                     <!-- See Javascript -->
                 </section>
+                <section class="cards" id="comment-section" style="display: none;">
+                    <div class="comments-header">
+                        <h3>Comments</h3>
+                    </div>
+                    <div id="comments-list" class="cards"></div>
+                </section>
                 <div style="text-align: center; margin-top: 20px; display: none;" class="backToEventsButton" id="backToEventsButton">
                     <button class="backToEventsBtn" id="backToEventsBtn">Back to Events</button>
+                </div>
+                <div style="text-align: center; margin-top: 20px; display: none;" class="backToRequirements" id="backtoRequirements">
+                    <button class="backToReqBtn" id="backToReqBtn">Back to Requirements</button>
                 </div>
             </section>
             <section id="admin-section" class="admin-container">
@@ -99,6 +108,9 @@
             
                 <div id="submissions" class="tab-content" style="display: none;">
                     <h2>Submissions Table</h2>
+                    <div id="searchContainer">
+                        <input type="text" id="searchInput" placeholder="Search by any field...">
+                    </div>
                     <table id="submissionsTable">
                         <!-- Table headers -->
                         <thead>
@@ -216,11 +228,23 @@
                 <span class="close-popup" onclick="closeDocumentPopup()">×</span>
                 <div class="popup-content">
                     <div id="documentDetails">
-                        <!-- Dynamic content will be inserted here -->
+                        <!-- See Javascript -->
                     </div>
                     <div class="action-buttons">
                         <button id="approveButton" class="approve-btn" onclick="approveAllDocuments()">Approve All</button>
                         <button id="rejectButton" class="reject-btn" onclick="rejectAllDocuments()">Reject All</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="editCommentModal" class="popup" style="display: none;">
+                <span class="close-popup" onclick="closeEditModal()">&times;</span>
+                <div class="popup-content">
+                    <h3>Edit Comment</h3>
+                    <textarea id="editCommentText" rows="4"></textarea>
+                    <div class="action-buttons">
+                        <button onclick="submitCommentEdit()">Save Changes</button>
+                        <button onclick="closeEditModal()">Cancel</button>
                     </div>
                 </div>
             </div>

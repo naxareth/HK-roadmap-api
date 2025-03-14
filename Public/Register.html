@@ -41,7 +41,7 @@
                         <div class="block"></div>
                     </div>
                     <div class="register-container">
-                        <form id="registerForm" action="/admin/register" method="POST">
+                        <form id="registerForm" method="POST">
                             <div class="form-input">
                                 <label>Name</label>
                                 <input type="text" placeholder="Enter Name" name="name" required autocomplete="name">
@@ -59,6 +59,14 @@
                                 <label>Confirm Password</label>
                                 <input type="password" placeholder="Confirm Password" name="confirm-password" id="confirm-password" required autocomplete="current-password">
                                 <i class="fas fa-eye-slash toggle-password" id="toggleConfirmPassword"></i>
+                            </div>
+                            <div class="form-input">
+                                <label>Login As</label>
+                                <select name="role" required class="role-select">
+                                    <option value="">Select Role</option>
+                                    <option value="admin">Administrator</option>
+                                    <option value="staff">Staff</option>
+                                </select>
                             </div>
                             <div class="Button">
                                 <button type="submit" class="Submit">Submit</button>

@@ -116,6 +116,15 @@ if (empty($path[0])) {
                 "verify_otp" => "POST /student/verify-otp",
                 "change_password" => "POST /student/change-password"
             ],
+            "staff" => [
+                "register" => "POST /staff/register",
+                "login" => "POST /staff/login",
+                "profile" => "GET /staff/profile",
+                "logout" => "POST /staff/logout",
+                "send_otp" => "POST /staff/send-otp",
+                "verify_otp" => "POST /staff/verify-otp",
+                "change_password" => "POST /staff/change-password"
+            ],
            // Document endpoints
             "documents" => [
                 "upload" => [
@@ -152,7 +161,8 @@ if (empty($path[0])) {
                 "delete" => "DELETE /documents/delete",
                 "get_admin" => "GET /documents/admin",
                 "get_student" => "GET /documents/student",
-                "get_status" => "GET /documents/status/{id}"
+                "get_status" => "GET /documents/status/{id}",
+                "get_staff" => "GET /documents/staff"
             ],
 
             // Comment endpoints
@@ -200,9 +210,81 @@ if (empty($path[0])) {
                     ],
                     "authentication" => "Bearer token required"
                 ],
+                "id" => [
+                    "method" => "GET",
+                    "url" => "/comments/id",
+                    "description" => "Get comment by id",
+                    "params" => [
+                        "comment_id" => "integer (required)",
+                    ],
+                    "response" => [
+                        "success" => [
+                            "status" => 200,
+                            "data" => [
+                                [
+                                    "comment_id" => "integer",
+                                    "requirement_id" => "integer",
+                                    "student_id" => "integer",
+                                    "user_type" => "string (admin|student)",
+                                    "user_name" => "string",
+                                    "body" => "string",
+                                    "created_at" => "timestamp",
+                                    "updated_at" => "timestamp",
+                                    "is_owner" => "boolean"
+                                ]
+                            ]
+                        ],
+                        "error" => [
+                            "status" => 400,
+                            "message" => "string"
+                        ]
+                    ],
+                    "authentication" => "Bearer token required"
+                ],
+                "admin" => [
+                    "method" => "GET",
+                    "url" => "/comments/admin",
+                    "description" => "Get all comments in a requirement for admin",
+                    "params" => [
+                        "requirement_id" => "integer (required)",
+                    ],
+                    "response" => [
+                        "success" => [
+                            "status" => 200,
+                            "data" => [
+                                [
+                                    "comment_id" => "integer",
+                                    "requirement_id" => "integer",
+                                    "student_id" => "integer",
+                                    "user_type" => "string (admin|student)",
+                                    "user_name" => "string",
+                                    "body" => "string",
+                                    "created_at" => "timestamp",
+                                    "updated_at" => "timestamp",
+                                    "is_owner" => "boolean"
+                                ]
+                            ]
+                        ],
+                        "error" => [
+                            "status" => 400,
+                            "message" => "string"
+                        ]
+                    ],
+                    "authentication" => "Bearer token required"
+                ],
                 "update" => [
                     "method" => "PUT",
                     "url" => "/comments/update",
+                    "description" => "Update an existing comment",
+                    "body" => [
+                        "comment_id" => "integer (required)",
+                        "body" => "string (required)"
+                    ],
+                    "authentication" => "Bearer token required"
+                ],
+                "update_admin" => [
+                    "method" => "PUT",
+                    "url" => "/comments/update-admin",
                     "description" => "Update an existing comment",
                     "body" => [
                         "comment_id" => "integer (required)",
@@ -247,17 +329,26 @@ if (empty($path[0])) {
                 "get" => "GET /notification/get",
                 "update" => "PUT /notification/edit",
                 "mark" => "PUT /notification/mark",
-                "count" => "GET /notification/count"
+                "count" => "GET /notification/count",
+                "student" => "GET /notification/student",
+                "mark_student" => "PUT /notification/mark-student",
+                "edit_student" => "PUT /notification/edit-student",
+                "count_student" => "GET /notification/count-student",
+                "staff" => "GET /notification/staff",
+                "edit_staff" => "PUT /notification/edit-staff",
+                "staff_unread" => "GET /notification/staff/unread",
+                "mark_staff" => "PUT /notification/staff/mark-all"
             ],
             // Email endpoint
             "mails" => [
                 "send" => "POST /mail/send"
             ],
-            //annoucement endpoint
-            "annoucements" => [
-                "add" => "POST /annoucements/add",
-                "update" => "PUT /annoucements/update",
-                "delete" => "DELETE /annoucements/delete"
+            //announcement endpoint
+            "announcements" => [
+                "add" => "POST /announcements/add",
+                "update" => "PUT /announcements/update",
+                "delete" => "DELETE /announcements/delete",
+                "students" => "GET /announcements/student"
             ]
         ],
         "documentation" => [

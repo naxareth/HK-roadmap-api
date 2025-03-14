@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Dashboard</title>
+    <link rel="stylesheet" href="/assets/css/Dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="top-nav">
+        <h1>HK Roadmap</h1>
+        <div class="nav-controls">
+            <div class="notifications-container">
+                <button class="notification-bell" onclick="toggleNotifPopup()">
+                    <i class="fas fa-bell" style="color: black;"></i>
+                    <span class="notification-badge" id="notificationBadge">0</span>
+                </button>
+                <div id="notificationPopup" class="notification-popup">
+                    <div class="notification-header">
+                        <h3>Notifications</h3>
+                        <button class="mark-all" onclick="markAllAsRead()">Mark All Read</button>
+                    </div>
+                    <div class="notification-list" id="notificationList"></div>
+                </div>
+            </div>
+            <!-- Notifications container remains unchanged -->
+            <div class="profile-container" onclick="toggleProfileMenu()">
+                <span class="profile-name" id="profileName">Staff Name</span>
+                <div id="profileMenu" class="profile-menu">
+                    <button onclick="logout()">Logout</button>
+                </div>
+                <img src="/assets/images/default-profile.png" class="profile-pic" alt="Profile">
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <aside class="sidebar">
+            <ul>
+                <!-- Removed "Announcement" link -->
+                <li><a href="#" onclick="showSection('home')">Home</a></li>
+            </ul>
+        </aside>
+        <main class="content">
+            <!-- Staff Section (Renamed and Adjusted) -->
+            <section id="home-section" class="staff-container">
+                <div class="tab-container">
+                    <button class="tab-button" onclick="showTab('documents')">Documents</button>
+                    <button class="tab-button" onclick="showTab('submissions')">Submissions</button>
+                    <button class="tab-button" onclick="showTab('students')">Students</button>
+                    <button class="tab-button" onclick="showTab('staff')">Staff</button>
+                </div>
+                <div id="documents" class="tab-content">
+                    <h2>Documents Table</h2>
+                    <table id="documentsTable">
+                        <!-- Table headers -->
+                        <thead>
+                            <tr>
+                                <th>Document ID</th>
+                                <th>Event ID</th>
+                                <th>Requirement ID</th>
+                                <th>Student ID</th>
+                                <th>File Path</th>
+                                <th>Upload Date</th>
+                                <th>Status</th>
+                                <th>Is Submitted</th>
+                                <th>Submitted At</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="staff" class="tab-content" style="display: none;">
+                    <h2>Staff Table</h2>
+                    <table id="staffsTable">
+                        <thead>
+                            <tr>
+                                <th>Staff ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Password</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div id="submissions" class="tab-content" style="display: none;">
+                    <h2>Submissions Table</h2>
+                    <div id="searchContainer">
+                        <input type="text" id="searchInput" placeholder="Search by any field...">
+                    </div>
+                    <table id="submissionsTable">
+                        <!-- Table headers -->
+                        <thead>
+                            <tr>
+                                <th>Event</th>
+                                <th>Requirement</th>
+                                <th>Student</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>View</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="students" class="tab-content" style="display: none;">
+                    <h2>Student Table</h2>
+                    <table id="studentsTable">
+                        <!-- Table headers -->
+                        <thead>
+                            <tr>
+                                <th>Student ID</th>
+                                <th>Email</th>
+                                <th>Password</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+        <div id="documentPopup" class="popup" style="display: none;">
+            <span class="close-popup" onclick="closeDocumentPopup()">×</span>
+            <div class="popup-content">
+                <div id="documentDetails">
+                    <!-- Content will be inserted here -->
+                </div>
+                <div class="action-buttons">
+                    <button class="approve-btn" onclick="approveAllDocuments()">Approve All</button>
+                    <button class="reject-btn" onclick="rejectAllDocuments()">Reject All</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="/assets/js/staffDashboard.js"></script>
+</body>
+</html>

@@ -13,6 +13,7 @@ use Controllers\CommentController;
 use Controllers\NotificationController;
 use Controllers\MailController;
 use Controllers\AnnouncementController;
+use Controllers\StaffController;
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
@@ -27,6 +28,7 @@ class Api {
     private $notificationController;
     private $mailController;
     private $announcementController;
+    private $staffController;
     private $middleware = [];
 
     public function __construct($db) {
@@ -40,6 +42,7 @@ class Api {
         $this->notificationController = new NotificationController($db);
         $this->mailController = new MailController($db);
         $this->announcementController = new AnnouncementController($db);
+        $this->staffController = new StaffController($db);
     }
 
     public function use($middleware) {
@@ -107,6 +110,22 @@ class Api {
                 return $this->studentController->verifyOTP();
             case 'student/change-password':
                 return $this->studentController->changePassword();
+            
+            //Staff Routes
+            case 'staff/register':
+                return $this->staffController->register();
+            case 'staff/profile':
+                return $this->staffController->getStaff();
+            case 'staff/login':
+                return $this->staffController->login();
+            case 'staff/logout':
+                return $this->staffController->logout();
+            case 'staff/send-otp':
+                return $this->staffController->sendOTP();
+            case 'staff/verify-otp':
+                return $this->staffController->verifyOTP();
+            case 'staff/change-password':
+                return $this->staffController->changePassword();
 
             // Document Routes
             case 'documents/admin':
@@ -114,6 +133,11 @@ class Api {
                     return $this->documentController->getAllDocumentsByAdmin();
                 }
                 break;
+
+            case 'documents/staff':
+                if ($method === 'GET') {
+                    return $this->documentController->getAllDocumentsByStaff();
+                }
 
             case 'documents/student':
                 if ($method === 'GET') {
@@ -166,6 +190,14 @@ class Api {
                 break;
 
             // Comment Routes
+
+            case 'comments/id':
+                if ($method === 'GET') {
+                    echo $this->commentController->getComment();
+                    return;
+                }
+                break;
+
             case 'comments/add':
                 if ($method === 'POST') {
                     echo $this->commentController->addComment();
@@ -185,6 +217,21 @@ class Api {
                     }
                     
                     $this->commentController->getConversation();
+                    return;
+                }
+                break;
+
+            case 'comments/admin':
+                if ($method === 'GET') {
+                    $requirement_id = isset($_GET['requirement_id']) ? $_GET['requirement_id'] : null;
+                        
+                    if (!$requirement_id) {
+                        http_response_code(400);
+                        echo json_encode(['message' => 'Missing requirement_id parameter']);
+                        return;
+                    }
+                        
+                    $this->commentController->getCommentsForAdmin();
                     return;
                 }
                 break;
@@ -277,27 +324,76 @@ class Api {
 
             case 'notification/get':
                 if ($method === 'GET') {
-                    return $this->notificationController->getNotifications();
+                    return $this->notificationController->getAdminNotifications();
                 }
                 break;
-        
+
+            case 'notification/mark-student':
+                if ($method === 'PUT') {
+                    return $this->notificationController->markAllStudentRead();
+                }
+                break;
+
             case 'notification/mark':
                 if ($method === 'PUT') {
-                    return $this->notificationController->markAllRead();
+                    return $this->notificationController->markAllAdminRead();
                 }
                 break;
 
             case 'notification/count':
                 if ($method === 'GET') {
-                    return $this->notificationController->getUnreadCount();
+                    return $this->notificationController->getAdminUnreadCount();
                 }
                 break;
 
-            case (preg_match('/^notification\/edit$/', $endpoint) ? $endpoint : !$endpoint):
-                if ($method === 'PUT') {
-                    return $this->notificationController->toggleNotificationStatus();
+            case 'notification/count-student':
+                if ($method === 'GET') {
+                    return $this->notificationController->getStudentUnreadCount();
                 }
                 break;
+            
+            case 'notification/student':
+                if ($method === 'GET') {
+                    return $this->notificationController->getNotificationsByStudentId();
+                }
+
+            case (preg_match('/^notification\/edit$/', $endpoint) ? $endpoint : !$endpoint):
+                if ($method === 'PUT') {
+                    return $this->notificationController->toggleAdminNotification();
+                }
+                break;
+
+            case (preg_match('/^notification\/edit-student$/', $endpoint) ? $endpoint : !$endpoint):
+                if ($method === 'PUT') {
+                    return $this->notificationController->toggleStudentNotification();
+                }
+                break;
+
+            case 'notification/staff':
+                if ($method === 'GET') {
+                    return $this->notificationController->getStaffNotifications();
+                }
+                break;
+        
+            case (preg_match('/^notification\/edit-staff$/', $endpoint) ? $endpoint : !$endpoint):
+                if ($method === 'PUT') {
+                    return $this->notificationController->toggleStaffNotification();
+                }
+                break;
+                
+            case 'notification/staff/unread':
+                if ($method === 'GET') {
+                    return $this->notificationController->getStaffUnreadCount();
+                }
+                break;
+                
+            case 'notification/staff/mark-all':
+                if ($method === 'PUT') {
+                    return $this->notificationController->markAllStaffRead();
+                }
+                break;
+
+            
             //mail send
             case 'mail/send':
                 if ($method === 'POST') {
@@ -313,6 +409,12 @@ class Api {
             case 'announcements/add':
                 if ($method === 'POST') {
                     return $this->announcementController->createAnnouncement();
+                }
+                break;
+            
+            case 'announcements/student':
+                if ($method === 'GET') {
+                    return $this->announcementController->getStudentNotifications();
                 }
                 break;
 
