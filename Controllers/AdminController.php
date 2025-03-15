@@ -188,29 +188,41 @@ class AdminController {
         }
     }
 
-    public function validateToken() {
-        $headers = getallheaders();
-        if (!isset($headers['Authorization'])) {
-            echo json_encode(["message" => "Token is required."]);
-            return false;
+    public function validateToken($token = null) {
+        // If no token provided, try to get it from headers
+        if ($token === null) {
+            $headers = getallheaders();
+            if (!isset($headers['Authorization'])) {
+                return false;
+            }
+
+            $authHeader = $headers['Authorization'];
+            if (strpos($authHeader, 'Bearer ') !== 0) {
+                return false;
+            }
+
+            $token = substr($authHeader, 7);
         }
 
-        $authHeader = $headers['Authorization'];
-        if (strpos($authHeader, 'Bearer ') !== 0) {
-            echo json_encode(["message" => "Invalid Authorization header format."]);
-            return false;
+        // Validate the token and return admin data
+        $adminData = $this->adminModel->validateToken($token);
+        if ($adminData) {
+            return [
+                'admin_id' => $adminData['admin_id']
+            ];
         }
+        return false;
+    }
 
-        $token = substr($authHeader, 7);
-
-        $admin = $this->adminModel->validateToken($token);
-        if ($admin) {
-            /* echo json_encode(["message" => "Token is valid.", "admin" => $admin]); */ //no >:( 
-            return true;
+    // Method to check token and return response (for API endpoints)
+    public function checkToken() {
+        $result = $this->validateToken();
+        if ($result) {
+            echo json_encode(["message" => "Token is valid.", "admin" => $result]);
         } else {
-            return false;
+            http_response_code(401);
+            echo json_encode(["message" => "Invalid token"]);
         }
-
     }
 }
 ?>

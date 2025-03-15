@@ -73,9 +73,12 @@ class Staff {
 
     public function validateToken($token) {
         try {
-            $query = "SELECT * FROM staff_tokens WHERE token = :token";
+            $query = "SELECT s.staff_id, s.name FROM staff_tokens st
+                      JOIN staff s ON st.staff_id = s.staff_id
+                      WHERE st.token = :token";
             $stmt = $this->conn->prepare($query);
-            $stmt->execute([':token' => $token]);
+            $stmt->bindParam(':token', $token);
+            $stmt->execute();
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             error_log("Token validation error: " . $e->getMessage());

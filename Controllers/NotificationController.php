@@ -49,7 +49,8 @@ class NotificationController {
             return null;
         }
         $token = str_replace('Bearer ', '', $headers['Authorization']);
-        return $this->studentModel->validateToken($token);
+        $studentData = $this->studentModel->validateToken($token);
+        return $studentData ? ['student_id' => $studentData['id']] : null;
     }
 
     public function getAdminNotifications() {
@@ -60,9 +61,24 @@ class NotificationController {
         echo json_encode($notifications);
     }
 
-    public function getStudentNotifications($studentId) {
+    public function getStudentNotifications() {
+        header('Content-Type: application/json');
+        
         $student = $this->validateAuthStudent();
-        if (!$student) return;
+        if (!$student) {
+            http_response_code(401);
+            echo json_encode(["message" => "Unauthorized"]);
+            return;
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        $studentId = $input['student_id'] ?? null;
+
+        if ($studentId != $student['id']) {
+            http_response_code(403);
+            echo json_encode(["message" => "Forbidden"]);
+            return;
+        }
 
         $notifications = $this->notificationModel->getNotificationsByStudentId($studentId);
         echo json_encode($notifications);
@@ -103,9 +119,9 @@ class NotificationController {
             // Create student notification if marked as read
             if ($updatedNotification['read_notif'] == 1) {
                 $this->notificationModel->create(
-                    "Admin #{$admin['admin_id']} has viewed your document",
+                    "Admin {$admin['name']} has viewed your document",
                     'student',
-                    $updatedNotification['user_related_id'], // Student ID
+                    $updatedNotification['related_user_id'], // Student ID
                     $admin['admin_id']
                 );
             }
@@ -137,23 +153,44 @@ class NotificationController {
         header('Content-Type: application/json');
         
         try {
-            $this->validateAuthAdmin();
-            $success = $this->notificationModel->markAllAdminRead();
-            
-            if ($success) {
-                echo json_encode([
-                    "success" => true,
-                    "message" => "All admin notifications marked as read"
-                ]);
-            } else {
-                throw new \Exception("Failed to update admin notifications");
+            $admin = $this->validateAuthAdmin();
+            if (!$admin) {
+                http_response_code(401);
+                echo json_encode(["success" => false, "message" => "Unauthorized"]);
+                return;
             }
+
+            $notifications = $this->notificationModel->getUnreadAdminNotifications();
+            $success = true;
+
+            foreach ($notifications as $notification) {
+                $updated = $this->notificationModel->editAdminNotification(
+                    $notification['notification_id'],
+                    true,
+                    $admin['admin_id']
+                );
+
+                if ($updated) {
+                    $this->notificationModel->create(
+                        "Admin {$admin['name']} viewed your document",
+                        'student',
+                        $notification['related_user_id'],
+                        $admin['admin_id']
+                    );
+                } else {
+                    $success = false;
+                }
+            }
+
+            echo json_encode([
+                "success" => $success,
+                "message" => $success ? 
+                    "All admin notifications marked as read" : 
+                    "Partial updates failed"
+            ]);
         } catch (\Exception $e) {
             http_response_code(500);
-            echo json_encode([
-                "success" => false,
-                "message" => $e->getMessage()
-            ]);
+            echo json_encode(["success" => false, "message" => $e->getMessage()]);
         }
     }
 
@@ -244,38 +281,46 @@ class NotificationController {
         echo json_encode($notifications);
     }
 
-    // Toggle staff notification status
     public function toggleStaffNotification() {
-        $input = json_decode(file_get_contents('php://input'), true);
+        header('Content-Type: application/json');
         
+        $input = json_decode(file_get_contents('php://input'), true);
         if (empty($input['notification_id']) || !isset($input['read'])) {
             http_response_code(400);
             echo json_encode(["message" => "Missing required fields"]);
             return;
         }
-
+    
         $staff = $this->validateAuthStaff();
-        if (!$staff) return;
-
+        if (!$staff) {
+            http_response_code(401);
+            echo json_encode(["message" => "Unauthorized"]);
+            return;
+        }
+    
         $notification = $this->notificationModel->getNotificationById($input['notification_id']);
-
+        if (!$notification) {
+            http_response_code(404);
+            echo json_encode(["message" => "Notification not found"]);
+            return;
+        }
+    
         $success = $this->notificationModel->editStaffNotification(
             $input['notification_id'],
             (bool)$input['read'],
-            $staff['staff_id'] // This was missing
+            $staff['staff_id']
         );
-
-        if ($success) {
-            echo json_encode([
-                "success" => true,
-                "notification" => $this->notificationModel->getNotificationById($input['notification_id'])
-            ]);
-        } else {
-            http_response_code(500);
-            echo json_encode(["message" => "Failed to update staff notification"]);
+    
+        if ($success && $input['read']) {
+            $this->notificationModel->createStaffNotification(
+                "Staff {$staff['name']} viewed your document",
+                $notification['related_user_id'], // Ensure this is the correct student ID
+                $staff['staff_id']
+            );
         }
+    
+        echo json_encode(["success" => $success]);
     }
-
     // Get staff unread count
     public function getStaffUnreadCount() {
         try {
@@ -296,22 +341,44 @@ class NotificationController {
         
         try {
             $staff = $this->validateAuthStaff();
-            if (!$staff) return;
-            
-            $success = $this->notificationModel->markAllStaffRead($staff['staff_id']);
-            
+            if (!$staff) {
+                http_response_code(401);
+                echo json_encode(["success" => false, "message" => "Unauthorized"]);
+                return;
+            }
+    
+            // Fetch all unread staff notifications
+            $notifications = $this->notificationModel->getUnreadStaffNotifications($staff['staff_id']);
+            $success = true;
+    
+            foreach ($notifications as $notification) {
+                $updated = $this->notificationModel->editStaffNotification(
+                    $notification['notification_id'],
+                    true,
+                    $staff['staff_id']
+                );
+    
+                if ($updated) {
+                    $this->notificationModel->create(
+                        "Staff {$staff['name']} viewed your document",
+                        'student',
+                        $notification['related_user_id'],
+                        $staff['staff_id']
+                    );
+                } else {
+                    $success = false;
+                }
+            }
+    
             echo json_encode([
                 "success" => $success,
                 "message" => $success ? 
                     "All staff notifications marked as read" : 
-                    "Failed to update staff notifications"
+                    "Partial updates failed"
             ]);
         } catch (\Exception $e) {
             http_response_code(500);
-            echo json_encode([
-                "success" => false,
-                "message" => $e->getMessage()
-            ]);
+            echo json_encode(["success" => false, "message" => $e->getMessage()]);
         }
     }
 }

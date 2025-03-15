@@ -12,6 +12,7 @@ use Controllers\SubmissionController;
 use Controllers\CommentController;
 use Controllers\NotificationController;
 use Controllers\MailController;
+use Controllers\ProfileController;
 use Controllers\AnnouncementController;
 use Controllers\StaffController;
 
@@ -27,6 +28,7 @@ class Api {
     private $commentController;
     private $notificationController;
     private $mailController;
+    private $profileController;
     private $announcementController;
     private $staffController;
     private $middleware = [];
@@ -41,6 +43,7 @@ class Api {
         $this->commentController = new CommentController($db);
         $this->notificationController = new NotificationController($db);
         $this->mailController = new MailController($db);
+        $this->profileController = new ProfileController($db);
         $this->announcementController = new AnnouncementController($db);
         $this->staffController = new StaffController($db);
     }
@@ -99,6 +102,8 @@ class Api {
             case 'student/register':
                 return $this->studentController->register();
             case 'student/profile':
+                return $this->studentController->getProfile();
+            case 'student/all-students':
                 return $this->studentController->getStudent();
             case 'student/login':
                 return $this->studentController->login();
@@ -121,11 +126,37 @@ class Api {
             case 'staff/logout':
                 return $this->staffController->logout();
             case 'staff/send-otp':
-                return $this->staffController->sendOTP();
+                return $this->staffController->requestOTP();
             case 'staff/verify-otp':
                 return $this->staffController->verifyOTP();
             case 'staff/change-password':
                 return $this->staffController->changePassword();
+
+              
+            // Profile Routes
+            case 'profile/get':
+                if ($method === 'GET') {
+                    return $this->profileController->getProfile();
+                }
+                break;
+
+            case 'profile/update':
+                if ($method === 'POST') {
+                    return $this->profileController->updateProfile();
+                }
+                break;
+
+            case 'profile/departments':
+                if ($method === 'GET') {
+                    return $this->profileController->getDepartments();
+                }
+                break;
+
+            case 'profile/programs':
+                if ($method === 'GET') {
+                    return $this->profileController->getPrograms();
+                }
+                break;
 
             // Document Routes
             case 'documents/admin':
@@ -354,7 +385,7 @@ class Api {
             
             case 'notification/student':
                 if ($method === 'GET') {
-                    return $this->notificationController->getNotificationsByStudentId();
+                    return $this->notificationController->getStudentNotifications();
                 }
 
             case (preg_match('/^notification\/edit$/', $endpoint) ? $endpoint : !$endpoint):
