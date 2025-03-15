@@ -33,9 +33,6 @@ class Admin {
                      FROM admin_tokens at
                      JOIN admin a ON at.admin_id = a.admin_id
                      WHERE at.token = :token";
-                     FROM admin_tokens at
-                     JOIN admin a ON at.admin_id = a.admin_id
-                     WHERE at.token = :token";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':token', $token);
             $stmt->execute();
@@ -47,12 +44,6 @@ class Admin {
     }
 
     public function updateToken($admin_id, $token) {
-        // First delete any existing tokens for this admin
-        $deleteQuery = "DELETE FROM admin_tokens WHERE admin_id = :admin_id";
-        $stmt = $this->conn->prepare($deleteQuery);
-        $stmt->bindParam(':admin_id', $admin_id);
-        $stmt->execute();
-
         // Then insert new token
         // First delete any existing tokens for this admin
         $deleteQuery = "DELETE FROM admin_tokens WHERE admin_id = :admin_id";
@@ -65,60 +56,6 @@ class Admin {
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':token', $token);
         $stmt->bindParam(':admin_id', $admin_id);
-        return $stmt->execute();
-    }
-
-    public function updateProfile($admin_id, $profileData) {
-        try {
-            $this->conn->beginTransaction();
-    
-            // Check if profile exists
-            $checkQuery = "SELECT profile_id FROM user_profiles 
-                          WHERE user_id = :admin_id AND user_type = 'admin'";
-            $stmt = $this->conn->prepare($checkQuery);
-            $stmt->bindParam(':admin_id', $admin_id);
-            $stmt->execute();
-            $profile = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-            if ($profile) {
-                // Update existing profile
-                $query = "UPDATE user_profiles 
-                         SET department = :department,
-                             position = :position,
-                             contact_number = :contact_number,
-                             office = :office
-                         WHERE user_id = :admin_id AND user_type = 'admin'";
-            } else {
-                // Create new profile
-                $query = "INSERT INTO user_profiles 
-                         (user_id, user_type, department, position, contact_number, office)
-                         VALUES 
-                         (:admin_id, 'admin', :department, :position, :contact_number, :office)";
-            }
-    
-            $stmt = $this->conn->prepare($query);
-            
-            $stmt->bindParam(':admin_id', $admin_id);
-            $stmt->bindParam(':department', $profileData['department']);
-            $stmt->bindParam(':position', $profileData['position']);
-            $stmt->bindParam(':contact_number', $profileData['contact_number']);
-            $stmt->bindParam(':office', $profileData['office']);
-    
-            $success = $stmt->execute();
-            
-            if ($success) {
-                $this->conn->commit();
-                return true;
-            }
-            
-            $this->conn->rollBack();
-            return false;
-    
-        } catch (PDOException $e) {
-            $this->conn->rollBack();
-            error_log("Profile update error: " . $e->getMessage());
-            return false;
-        }
         return $stmt->execute();
     }
 
@@ -383,8 +320,6 @@ class Admin {
     }
 
     public function verifyOTP($email, $otp) {
-
-    public function verifyOTP($email, $otp) {
         if (isset($_SESSION['otp']) && $_SESSION['otp'] == $otp && time() < $_SESSION['otp_expiry']) {
             return true;
         }
@@ -441,6 +376,5 @@ class Admin {
         return $stmt->execute();
         return $stmt->execute();
     }
-}
 }
 ?>

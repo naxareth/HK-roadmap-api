@@ -141,7 +141,7 @@ class Api {
                 break;
 
             case 'profile/update':
-                if ($method === 'POST') {
+                if ($method === 'PUT') {
                     return $this->profileController->updateProfile();
                 }
                 break;

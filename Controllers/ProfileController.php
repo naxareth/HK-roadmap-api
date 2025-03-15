@@ -8,11 +8,13 @@ class ProfileController {
     private $profileModel;
     private $adminController;
     private $studentController;
+    private $staffController;
 
     public function __construct($db) {
         $this->profileModel = new Profile($db);
         $this->adminController = new AdminController($db);
         $this->studentController = new StudentController($db);
+        $this->staffController = new StaffController($db);
     }
 
     private function validateUserToken() {
@@ -42,6 +44,12 @@ class ProfileController {
         $studentData = $this->studentController->validateToken($token);
         if ($studentData && isset($studentData['student_id'])) {
             return ['type' => 'student', 'id' => $studentData['student_id']];
+        }
+
+        // Try staff token
+        $staffData = $this->staffController->validateToken($token);
+        if ($staffData && isset($staffData['staff_id'])) {
+            return ['type' => 'staff', 'id' => $staffData['staff_id']];
         }
 
         http_response_code(401);
@@ -137,7 +145,7 @@ class ProfileController {
                     'year_level' => $data['year_level'] ?? $existingProfile['year_level'] ?? null,
                     'scholarship_type' => $data['scholarship_type'] ?? $existingProfile['scholarship_type'] ?? null
                 ];
-            } else {
+            } elseif ($userData['type'] === 'admin' || $userData['type'] === 'staff') {
                 $finalData += [
                     'position' => $data['position'] ?? $existingProfile['position'] ?? null
                 ];

@@ -154,7 +154,7 @@ if (empty($path[0])) {
                     ]
                 ],
                 "update" => [
-                    "method" => "POST",
+                    "method" => "PUT",
                     "url" => "/profile/update",
                     "description" => "Update user profile",
                     "authentication" => "Bearer token required",

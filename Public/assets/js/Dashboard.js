@@ -1590,26 +1590,36 @@ const createRefreshControls = (fetchCallback, interval = 30000) => {
     };
 };
 
+//profile
+async function fetchAdminProfile() {
+    try {
+        const response = await fetch('/hk-roadmap/profile/get', {
+            headers: getAuthHeaders()
+        });
 
-// profile 
-
-function enableProfileEditing(inputs, editButton, saveButton) {
-    inputs.forEach(input => {
-        input.disabled = false;
-        input.style.backgroundColor = '#fff'; // Reset background color
-    });
-    editButton.style.display = 'none';
-    saveButton.style.display = 'block';
+        if (response.ok) {
+            const data = await response.json();
+            document.getElementById('adminName').value = data.name || '';
+            document.getElementById('adminEmail').value = data.email || '';
+            document.getElementById('adminDepartment').value = data.department || '';
+            document.getElementById('adminPosition').value = data.position || '';
+            document.getElementById('adminContact').value = data.contact_number || '';
+            document.getElementById('adminProfilePicture').src = data.profile_picture_url || '';
+        } else {
+            throw new Error('Failed to fetch profile');
+        }
+    } catch (error) {
+        console.error('Error fetching profile:', error);
+    }
 }
 
-// Async function to save profile data
 async function saveProfile(inputs, editButton, saveButton) {
     const profileData = {
         name: document.getElementById('adminName').value,
-        age: document.getElementById('adminAge').value,
-        contact: document.getElementById('adminContact').value,
-        school: document.getElementById('adminSchool').value,
-        degree: document.getElementById('adminDegree').value
+        email: document.getElementById('adminEmail').value,
+        department: document.getElementById('adminDepartment').value,
+        position: document.getElementById('adminPosition').value,
+        contact_number: document.getElementById('adminContact').value
     };
 
     try {
@@ -1631,38 +1641,23 @@ async function saveProfile(inputs, editButton, saveButton) {
     }
 }
 
-// Function to disable editing of profile inputs
+function enableProfileEditing(inputs, editButton, saveButton) {
+    inputs.forEach(input => {
+        input.disabled = false;
+        input.style.backgroundColor = '#fff';
+    });
+    editButton.style.display = 'none';
+    saveButton.style.display = 'block';
+}
+
 function disableProfileEditing(inputs, editButton, saveButton) {
     inputs.forEach(input => {
         input.disabled = true;
-        input.style.backgroundColor = '#f0f0f0'; // Grey out inputs
+        input.style.backgroundColor = '#f0f0f0';
     });
     editButton.style.display = 'block';
     saveButton.style.display = 'none';
 }
-
-// Async function to fetch admin profile data
-async function fetchAdminProfile() {
-    try {
-        const response = await fetch('/hk-roadmap/profile/get', {
-            headers: getAuthHeaders()
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            document.getElementById('adminName').value = data.name || '';
-            document.getElementById('adminAge').value = data.age || '';
-            document.getElementById('adminContact').value = data.contact || '';
-            document.getElementById('adminSchool').value = data.school || '';
-            document.getElementById('adminDegree').value = data.degree || '';
-        } else {
-            throw new Error('Failed to fetch profile');
-        }
-    } catch (error) {
-        console.error('Error fetching profile:', error);
-    }
-}
-
 
 // frontend listeners
 document.addEventListener('DOMContentLoaded', initializeYearDropdown);
@@ -1945,4 +1940,6 @@ document.addEventListener('DOMContentLoaded', () => {
     saveButton.addEventListener('click', function() {
         saveProfile(inputs, editButton, saveButton);
     });
+
+    fetchAdminProfile();
 });

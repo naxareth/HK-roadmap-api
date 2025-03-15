@@ -1,5 +1,6 @@
-
 <?php
+
+
 namespace Models;
 
 use PDO;
@@ -8,7 +9,7 @@ use Exception;
 
 class Profile {
     private $conn;
-    
+
     const DEPARTMENTS = [
         'CITE' => 'College of Information Technology and Engineering',
         'CAHS' => 'College of Allied Health Sciences',
@@ -19,7 +20,7 @@ class Profile {
         'CEA' => 'College of Engineering and Architecture',
         'Others' => 'Others'
     ];
-    
+
     const PROGRAMS = [
         'BS Criminology',
         'Bachelor of Arts in Communication',
@@ -117,7 +118,7 @@ class Profile {
                 ':college_program' => $userType === 'student' ? ($data['college_program'] ?? ($existingProfile['college_program'] ?? null)) : null,
                 ':year_level' => $userType === 'student' ? ($data['year_level'] ?? ($existingProfile['year_level'] ?? null)) : null,
                 ':scholarship_type' => $userType === 'student' ? ($data['scholarship_type'] ?? ($existingProfile['scholarship_type'] ?? null)) : null,
-                ':position' => $userType === 'admin' ? ($data['position'] ?? ($existingProfile['position'] ?? null)) : null,
+                ':position' => $userType === 'admin' || $userType === 'staff' ? ($data['position'] ?? ($existingProfile['position'] ?? null)) : null,
                 ':contact_number' => $data['contact_number'] ?? ($existingProfile['contact_number'] ?? null),
                 ':profile_picture_url' => $data['profile_picture_url'] ?? ($existingProfile['profile_picture_url'] ?? null)
             ]);
@@ -172,4 +173,3 @@ class Profile {
     }
 }
 ?>
-
