@@ -25,6 +25,7 @@ include_once __DIR__ . '/../Controllers/NotificationController.php';
 include_once __DIR__ . '/../Controllers/MailController.php';
 include_once __DIR__ . '/../Controllers/CommentController.php';
 include_once __DIR__ . '/../Controllers/ProfileController.php';
+include_once __DIR__ . '/../Controllers/ProfileController.php';
 
 require_once __DIR__ . '/../Middleware/Middleware.php';
 require_once __DIR__ . '/../Middleware/AuthMiddleware.php';
@@ -114,6 +115,7 @@ if (empty($path[0])) {
                 "login" => "POST /student/login",
                 "profile" => "GET /student/profile",
                 "all_students" => "GET /student/all-students",
+                "all_students" => "GET /student/all-students",
                 "logout" => "POST /student/logout",
                 "send_otp" => "POST /student/send-otp",
                 "verify_otp" => "POST /student/verify-otp",
@@ -193,6 +195,72 @@ if (empty($path[0])) {
                 "send_otp" => "POST /staff/send-otp",
                 "verify_otp" => "POST /staff/verify-otp",
                 "change_password" => "POST /staff/change-password"
+            ],
+
+            // Profile endpoints
+
+            "profile" => [
+                "get" => [
+                    "method" => "GET",
+                    "url" => "/profile/get",
+                    "description" => "Get user profile",
+                    "authentication" => "Bearer token required",
+                    "response" => [
+                        "success" => [
+                            "status" => 200,
+                            "data" => [
+                                "user_id" => "integer",
+                                "user_type" => "string (admin|student)",
+                                "name" => "string",
+                                "email" => "string",
+                                "department" => "string",
+                                "department_others" => "string",
+                                "contact_number" => "string",
+                                "profile_picture_url" => "string",
+                                // Student specific fields
+                                "student_number" => "string (if student)",
+                                "college_program" => "string (if student)",
+                                "year_level" => "string (if student)",
+                                "scholarship_type" => "string (if student)",
+                                // Admin specific fields
+                                "position" => "string (if admin)"
+                            ]
+                        ]
+                    ]
+                ],
+                "update" => [
+                    "method" => "POST",
+                    "url" => "/profile/update",
+                    "description" => "Update user profile",
+                    "authentication" => "Bearer token required",
+                    "body" => [
+                        "name" => "string (optional)",
+                        "email" => "string (optional)",
+                        "department" => "string (optional)",
+                        "department_others" => "string (required if department is 'Others')",
+                        "contact_number" => "string (optional)",
+                        "profile_picture" => "file (optional)",
+                        // Student specific fields
+                        "student_number" => "string (if student)",
+                        "college_program" => "string (if student)",
+                        "year_level" => "string (if student)",
+                        "scholarship_type" => "string (if student)",
+                        // Admin specific fields
+                        "position" => "string (if admin)"
+                    ]
+                ],
+                "departments" => [
+                    "method" => "GET",
+                    "url" => "/profile/departments",
+                    "description" => "Get list of departments",
+                    "authentication" => "Not required"
+                ],
+                "programs" => [
+                    "method" => "GET",
+                    "url" => "/profile/programs",
+                    "description" => "Get list of college programs",
+                    "authentication" => "Not required"
+                ]
             ],
            // Document endpoints
             "documents" => [

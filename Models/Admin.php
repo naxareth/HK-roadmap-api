@@ -22,6 +22,7 @@ class Admin {
     public function getAllAdmins() {
         $query = "SELECT * FROM admin";
         $stmt = $this->conn->prepare($query);
+        $stmt = $this->conn->prepare($query);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -29,6 +30,9 @@ class Admin {
     public function validateSubmissionToken($token) {
         try {
             $query = "SELECT a.admin_id, a.name 
+                     FROM admin_tokens at
+                     JOIN admin a ON at.admin_id = a.admin_id
+                     WHERE at.token = :token";
                      FROM admin_tokens at
                      JOIN admin a ON at.admin_id = a.admin_id
                      WHERE at.token = :token";
@@ -43,6 +47,13 @@ class Admin {
     }
 
     public function updateToken($admin_id, $token) {
+        // First delete any existing tokens for this admin
+        $deleteQuery = "DELETE FROM admin_tokens WHERE admin_id = :admin_id";
+        $stmt = $this->conn->prepare($deleteQuery);
+        $stmt->bindParam(':admin_id', $admin_id);
+        $stmt->execute();
+
+        // Then insert new token
         // First delete any existing tokens for this admin
         $deleteQuery = "DELETE FROM admin_tokens WHERE admin_id = :admin_id";
         $stmt = $this->conn->prepare($deleteQuery);
@@ -108,6 +119,60 @@ class Admin {
             error_log("Profile update error: " . $e->getMessage());
             return false;
         }
+        return $stmt->execute();
+    }
+
+    public function updateProfile($admin_id, $profileData) {
+        try {
+            $this->conn->beginTransaction();
+    
+            // Check if profile exists
+            $checkQuery = "SELECT profile_id FROM user_profiles 
+                          WHERE user_id = :admin_id AND user_type = 'admin'";
+            $stmt = $this->conn->prepare($checkQuery);
+            $stmt->bindParam(':admin_id', $admin_id);
+            $stmt->execute();
+            $profile = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+            if ($profile) {
+                // Update existing profile
+                $query = "UPDATE user_profiles 
+                         SET department = :department,
+                             position = :position,
+                             contact_number = :contact_number,
+                             office = :office
+                         WHERE user_id = :admin_id AND user_type = 'admin'";
+            } else {
+                // Create new profile
+                $query = "INSERT INTO user_profiles 
+                         (user_id, user_type, department, position, contact_number, office)
+                         VALUES 
+                         (:admin_id, 'admin', :department, :position, :contact_number, :office)";
+            }
+    
+            $stmt = $this->conn->prepare($query);
+            
+            $stmt->bindParam(':admin_id', $admin_id);
+            $stmt->bindParam(':department', $profileData['department']);
+            $stmt->bindParam(':position', $profileData['position']);
+            $stmt->bindParam(':contact_number', $profileData['contact_number']);
+            $stmt->bindParam(':office', $profileData['office']);
+    
+            $success = $stmt->execute();
+            
+            if ($success) {
+                $this->conn->commit();
+                return true;
+            }
+            
+            $this->conn->rollBack();
+            return false;
+    
+        } catch (PDOException $e) {
+            $this->conn->rollBack();
+            error_log("Profile update error: " . $e->getMessage());
+            return false;
+        }
     }
 
     public function register($name, $email, $password) {
@@ -118,7 +183,49 @@ class Admin {
                 $this->conn->rollBack();
                 return false;
             }
+        try {
+            $this->conn->beginTransaction();
 
+            if ($this->emailExists($email)) {
+                $this->conn->rollBack();
+                return false;
+            }
+
+            // Create admin account
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            $sql = "INSERT INTO admin (name, email, password) VALUES (:name, :email, :password)";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(':name', $name);
+            $stmt->bindParam(':email', $email);
+            $stmt->bindParam(':password', $hashedPassword);
+            
+            if (!$stmt->execute()) {
+                throw new PDOException("Failed to create admin account");
+            }
+
+            $adminId = $this->conn->lastInsertId();
+
+            // Create initial profile
+            $profileSql = "INSERT INTO user_profiles (user_id, user_type, name, email) 
+                          VALUES (:user_id, 'admin', :name, :email)";
+            
+            $profileStmt = $this->conn->prepare($profileSql);
+            $profileStmt->bindParam(':user_id', $adminId);
+            $profileStmt->bindParam(':name', $name);
+            $profileStmt->bindParam(':email', $email);
+            
+            if (!$profileStmt->execute()) {
+                throw new PDOException("Failed to create admin profile");
+            }
+
+            $this->conn->commit();
+            return true;
+
+        } catch (PDOException $e) {
+            $this->conn->rollBack();
+            error_log("Admin registration error: " . $e->getMessage());
+            return false;
+        }
             // Create admin account
             $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
             $sql = "INSERT INTO admin (name, email, password) VALUES (:name, :email, :password)";
@@ -198,10 +305,53 @@ class Admin {
             error_log("Login error: " . $e->getMessage());
             return false;
         }
+        try {
+            $this->conn->beginTransaction();
+    
+            $query = "SELECT a.*, p.profile_id
+                     FROM admin a
+                     LEFT JOIN user_profiles p ON a.admin_id = p.user_id AND p.user_type = 'admin'
+                     WHERE a.email = :email";
+                     
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute(['email' => $email]);
+            $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+            if ($admin && password_verify($password, $admin['password'])) {
+                // Check if profile exists
+                if (!$admin['profile_id']) {
+                    // Create initial profile if it doesn't exist
+                    $profileSql = "INSERT INTO user_profiles (user_id, user_type, name, email)
+                                 VALUES (:user_id, 'admin', :name, :email)";
+                    
+                    $profileStmt = $this->conn->prepare($profileSql);
+                    $profileStmt->bindParam(':user_id', $admin['admin_id']);
+                    $profileStmt->bindParam(':name', $admin['name']);
+                    $profileStmt->bindParam(':email', $admin['email']);
+                    
+                    if (!$profileStmt->execute()) {
+                        throw new PDOException("Failed to create initial admin profile");
+                    }
+                }
+                
+                $this->conn->commit();
+                return $admin;
+            }
+    
+            $this->conn->commit();
+            return false;
+    
+        } catch (PDOException $e) {
+            $this->conn->rollBack();
+            error_log("Login error: " . $e->getMessage());
+            return false;
+        }
     }
 
     public function validateToken($token) {
         try {
+            $query = "SELECT * FROM admin_tokens WHERE token = :token";
+            $stmt = $this->conn->prepare($query);
             $query = "SELECT a.admin_id, a.name FROM admin_tokens at
                       JOIN admin a ON at.admin_id = a.admin_id
                       WHERE at.token = :token";
@@ -209,7 +359,10 @@ class Admin {
             $stmt->bindParam(':token', $token);
             $stmt->execute();
             return $stmt->fetch(PDO::FETCH_ASSOC);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
+            error_log("Token validation error: " . $e->getMessage());
             error_log("Token validation error: " . $e->getMessage());
             return false;
         }
@@ -218,14 +371,18 @@ class Admin {
     public function logout($token) {
         try {
             $query = "DELETE FROM admin_tokens WHERE token = :token";
+            $query = "DELETE FROM admin_tokens WHERE token = :token";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':token', $token);
+            return $stmt->execute();
             return $stmt->execute();
         } catch (PDOException $e) {
             error_log("Logout error: " . $e->getMessage());
             return false;
         }
     }
+
+    public function verifyOTP($email, $otp) {
 
     public function verifyOTP($email, $otp) {
         if (isset($_SESSION['otp']) && $_SESSION['otp'] == $otp && time() < $_SESSION['otp_expiry']) {
@@ -240,9 +397,13 @@ class Admin {
                 $otp = rand(100000, 999999);
                 $_SESSION['otp'] = $otp;
                 $_SESSION['otp_expiry'] = time() + 300;
+                $otp = rand(100000, 999999);
+                $_SESSION['otp'] = $otp;
+                $_SESSION['otp_expiry'] = time() + 300;
                 $this->sendEmail($email, $otp);
                 return true;
             }
+            return false;
             return false;
         } catch (PDOException $e) {
             error_log("OTP request error: " . $e->getMessage());
@@ -278,6 +439,8 @@ class Admin {
         $stmt->bindParam(':password', $hashedPassword);
         $stmt->bindParam(':email', $email);
         return $stmt->execute();
+        return $stmt->execute();
     }
+}
 }
 ?>

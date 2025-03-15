@@ -1,3 +1,4 @@
+
 <?php
 namespace Models;
 
@@ -53,8 +54,10 @@ class Profile {
 
     public function createOrUpdateProfile($userId, $userType, $data) {
         try {
+            // First, get existing profile data
             $existingProfile = $this->getProfile($userId, $userType);
             
+            // Check if profile exists
             $query = "SELECT profile_id FROM user_profiles WHERE user_id = :user_id AND user_type = :user_type";
             $stmt = $this->conn->prepare($query);
             $stmt->execute([
@@ -65,6 +68,7 @@ class Profile {
             $exists = $stmt->fetch(PDO::FETCH_ASSOC);
             
             if ($exists) {
+                // Update existing profile
                 $query = "UPDATE user_profiles SET 
                     name = :name,
                     email = :email,
@@ -79,6 +83,7 @@ class Profile {
                     profile_picture_url = :profile_picture_url
                     WHERE user_id = :user_id AND user_type = :user_type";
             } else {
+                // Create new profile
                 $query = "INSERT INTO user_profiles 
                     (user_id, user_type, name, email, department, department_others,
                     student_number, college_program, year_level, scholarship_type, 
@@ -112,7 +117,7 @@ class Profile {
                 ':college_program' => $userType === 'student' ? ($data['college_program'] ?? ($existingProfile['college_program'] ?? null)) : null,
                 ':year_level' => $userType === 'student' ? ($data['year_level'] ?? ($existingProfile['year_level'] ?? null)) : null,
                 ':scholarship_type' => $userType === 'student' ? ($data['scholarship_type'] ?? ($existingProfile['scholarship_type'] ?? null)) : null,
-                ':position' => in_array($userType, ['admin', 'staff']) ? ($data['position'] ?? ($existingProfile['position'] ?? null)) : null,
+                ':position' => $userType === 'admin' ? ($data['position'] ?? ($existingProfile['position'] ?? null)) : null,
                 ':contact_number' => $data['contact_number'] ?? ($existingProfile['contact_number'] ?? null),
                 ':profile_picture_url' => $data['profile_picture_url'] ?? ($existingProfile['profile_picture_url'] ?? null)
             ]);
@@ -167,3 +172,4 @@ class Profile {
     }
 }
 ?>
+
