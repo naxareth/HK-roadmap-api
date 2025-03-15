@@ -90,7 +90,7 @@ function showTab(tabId) {
 
 function showSection(section) {
     const sectionToShow = document.getElementById(section + '-section');
-    const sectionsToHide = ['home-section', 'admin-section', 'announce-section'];
+    const sectionsToHide = ['home-section', 'admin-section', 'announce-section', 'profile-section'];
 
     sectionsToHide.forEach(sec => {
         const element = document.getElementById(sec);
@@ -1591,6 +1591,78 @@ const createRefreshControls = (fetchCallback, interval = 30000) => {
 };
 
 
+// profile 
+
+function enableProfileEditing(inputs, editButton, saveButton) {
+    inputs.forEach(input => {
+        input.disabled = false;
+        input.style.backgroundColor = '#fff'; // Reset background color
+    });
+    editButton.style.display = 'none';
+    saveButton.style.display = 'block';
+}
+
+// Async function to save profile data
+async function saveProfile(inputs, editButton, saveButton) {
+    const profileData = {
+        name: document.getElementById('adminName').value,
+        age: document.getElementById('adminAge').value,
+        contact: document.getElementById('adminContact').value,
+        school: document.getElementById('adminSchool').value,
+        degree: document.getElementById('adminDegree').value
+    };
+
+    try {
+        const response = await fetch('/hk-roadmap/profile/update', {
+            method: 'PUT',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(profileData)
+        });
+
+        if (response.ok) {
+            alert('Profile updated successfully!');
+            disableProfileEditing(inputs, editButton, saveButton);
+        } else {
+            throw new Error('Failed to update profile');
+        }
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        alert('Failed to update profile');
+    }
+}
+
+// Function to disable editing of profile inputs
+function disableProfileEditing(inputs, editButton, saveButton) {
+    inputs.forEach(input => {
+        input.disabled = true;
+        input.style.backgroundColor = '#f0f0f0'; // Grey out inputs
+    });
+    editButton.style.display = 'block';
+    saveButton.style.display = 'none';
+}
+
+// Async function to fetch admin profile data
+async function fetchAdminProfile() {
+    try {
+        const response = await fetch('/hk-roadmap/profile/get', {
+            headers: getAuthHeaders()
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            document.getElementById('adminName').value = data.name || '';
+            document.getElementById('adminAge').value = data.age || '';
+            document.getElementById('adminContact').value = data.contact || '';
+            document.getElementById('adminSchool').value = data.school || '';
+            document.getElementById('adminDegree').value = data.degree || '';
+        } else {
+            throw new Error('Failed to fetch profile');
+        }
+    } catch (error) {
+        console.error('Error fetching profile:', error);
+    }
+}
+
 
 // frontend listeners
 document.addEventListener('DOMContentLoaded', initializeYearDropdown);
@@ -1861,4 +1933,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('announce-section')) {
         fetchAnnouncements();
     }
+
+    const editButton = document.getElementById('editProfileButton');
+    const saveButton = document.getElementById('saveProfileButton');
+    const inputs = document.querySelectorAll('#profile-section input');
+
+    editButton.addEventListener('click', function() {
+        enableProfileEditing(inputs, editButton, saveButton);
+    });
+
+    saveButton.addEventListener('click', function() {
+        saveProfile(inputs, editButton, saveButton);
+    });
 });

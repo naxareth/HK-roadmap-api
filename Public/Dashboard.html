@@ -42,6 +42,7 @@
                 <li><a href="#" onclick="showSection('home')" id="showHomeButton">Home</a></li>
                 <li><a href="#" onclick="showSection('announce')" id="showAnnounceButton">Announcement</a></li>
                 <li><a href="#" onclick="showSection('admin')" id="showAdminButton">Admin</a></li>
+                <li><a href="#" onclick="showSection('profile')" id="showProfileButton">Profile</a></li>
             </ul>
         </aside>
         <main class="content">
@@ -186,6 +187,37 @@
                 <div id="announcementContainer" class="announcement-cards">
                     <!-- Announcements will be inserted here -->
                 </div>
+            </section>
+            <section id="profile-section" class="profile-container" style="display: none;">
+                <h2>Admin Profile</h2>
+                <div class="profile-category">
+                    <h3>General Information</h3>
+                    <div class="profile-field">
+                        <label for="adminName">Name:</label>
+                        <input type="text" id="adminName" disabled>
+                    </div>
+                    <div class="profile-field">
+                        <label for="adminAge">Age:</label>
+                        <input type="number" id="adminAge" disabled>
+                    </div>
+                    <div class="profile-field">
+                        <label for="adminContact">Contact:</label>
+                        <input type="text" id="adminContact" disabled>
+                    </div>
+                </div>
+                <div class="profile-category">
+                    <h3>Academic Information</h3>
+                    <div class="profile-field">
+                        <label for="adminSchool">School:</label>
+                        <input type="text" id="adminSchool" disabled>
+                    </div>
+                    <div class="profile-field">
+                        <label for="adminDegree">Degree:</label>
+                        <input type="text" id="adminDegree" disabled>
+                    </div>
+                </div>
+                <button id="editProfileButton">Edit Profile</button>
+                <button id="saveProfileButton" style="display: none;">Save Changes</button>
             </section>
 
             <div id="eventPopup" class="popup" style="display: none;">
