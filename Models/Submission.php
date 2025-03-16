@@ -47,27 +47,39 @@ class Submission {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getSubmissionsBySubId($submissionId) {
-        $query = "SELECT 
-                    s.*, 
-                    d.file_path,
-                    d.link_url,
-                    d.document_type,
-                    e.event_name,
-                    r.requirement_name,
-                    st.name AS student_name
-                  FROM submission s
-                  JOIN document d ON s.document_id = d.document_id
-                  JOIN event e ON s.event_id = e.event_id
-                  JOIN requirement r ON s.requirement_id = r.requirement_id
-                  JOIN student st ON s.student_id = st.student_id
-                  WHERE s.submission_id = :submission_id";
-        
-        $stmt = $this->db->prepare($query);
-        $stmt->bindParam(':submission_id', $submissionId);
-        $stmt->execute();
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+    public function getSubmissionById($submissionId) {
+        try {
+            $query = "SELECT s.*, d.document_type 
+                     FROM submission s
+                     LEFT JOIN document d ON s.document_id = d.document_id
+                     WHERE s.submission_id = :submission_id";
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':submission_id', $submissionId, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Database error in getSubmissionById: " . $e->getMessage());
+            return false;
+        }
     }
+
+    public function getSubmissionsBySubId($submissionId) {
+        try {
+            $query = "SELECT * FROM submission WHERE submission_id = :submission_id";
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':submission_id', $submissionId, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Database error in getSubmissionById: " . $e->getMessage());
+            return false;
+        }
+    }
+
     public function updateSubmissionStatus($submissionId, $status, $approvedBy) {
         try {
             $this->db->beginTransaction();

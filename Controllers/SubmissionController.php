@@ -5,6 +5,7 @@ namespace Controllers;
 use Models\Submission;
 use Controllers\AdminController;
 use Controllers\StaffController;
+use Models\Notification;
 
 use PDOException;
 use Exception;
@@ -12,16 +13,19 @@ use Exception;
 require_once '../models/Submission.php';
 require_once 'AdminController.php';
 require_once 'StaffController.php';
+require_once '../models/Notification.php';
 
 class SubmissionController {
     private $submissionModel;
     private $adminController;
     private $staffController;
+    private $notificationModel;
 
     public function __construct($db) {
         $this->submissionModel = new Submission($db);
         $this->adminController = new AdminController($db);
         $this->staffController = new StaffController($db);
+        $this->notificationModel = new Notification($db); 
     }
 
     public function getSubmissionsByEventId($eventId) {
@@ -49,10 +53,9 @@ class SubmissionController {
     }
 
     public function updateSubmissionStatus() {
-        header('Content-Type: application/json'); // Force JSON response
+        header('Content-Type: application/json');
         
         try {
-            // Validate either admin or staff token
             $userData = $this->validateSubmissionToken(getallheaders()['Authorization'] ?? '');
             
             if (!$userData || (!isset($userData['admin_id']) && !isset($userData['staff_id']))) {
@@ -63,7 +66,6 @@ class SubmissionController {
     
             $input = json_decode(file_get_contents('php://input'), true);
             
-            // Rest of the method remains the same
             if (json_last_error() !== JSON_ERROR_NONE) {
                 http_response_code(400);
                 echo json_encode(["success" => false, "message" => "Invalid JSON"]);
@@ -76,17 +78,40 @@ class SubmissionController {
                 return;
             }
     
-            // Determine approver type
             $approvedBy = isset($userData['admin_id']) 
                 ? "Admin: " . $userData['name']
                 : "Staff: " . $userData['name'];
     
-            // Update submission
             $success = $this->submissionModel->updateSubmissionStatus(
                 $input['submission_id'],
                 $input['status'],
                 $approvedBy
             );
+    
+            if ($success) {
+                $submission = $this->submissionModel->getSubmissionById($input['submission_id']);
+                
+                if ($submission) {
+                    // Create notification message using document_type instead of file_name
+                    $message = sprintf(
+                        "Your %s submission has been %s by %s",
+                        $submission['document_type'],
+                        strtolower($input['status']),
+                        $approvedBy
+                    );
+    
+                    $notificationSuccess = $this->notificationModel->create(
+                        $message,
+                        'student',
+                        $submission['student_id'],
+                        isset($userData['admin_id']) ? $userData['admin_id'] : $userData['staff_id']
+                    );
+    
+                    if (!$notificationSuccess) {
+                        error_log("Failed to create notification for submission status update");
+                    }
+                }
+            }
     
             echo json_encode([
                 "success" => $success,

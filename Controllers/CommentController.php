@@ -6,6 +6,7 @@ use Models\Document;
 use Models\Comment;
 use Models\Admin;
 use Models\Student;
+use Models\Staff;
 use Exception;
 use PDOException;
 use PDO;
@@ -15,12 +16,52 @@ class CommentController {
     private $comment;
     private $adminModel;
     private $studentModel;
+    private $staffModel;
 
     public function __construct($db) {
         $this->db = $db;
         $this->comment = new Comment($db);
         $this->adminModel = new Admin($db);
         $this->studentModel = new Student($db);
+        $this->staffModel = new Staff($db);
+    }
+
+    public function getAllComments() {
+        try {
+            // Get staff token from headers
+            $token = $this->getBearerToken();
+            
+            // Validate staff token
+            $staff = $this->staffModel->validateToken($token);
+            if (!$staff) {
+                http_response_code(401);
+                echo json_encode(["message" => "Unauthorized: Invalid or missing staff token"]);
+                return;
+            }
+    
+            // Get all comments from the model
+            $result = $this->comment->getAllComments();
+            
+            if ($result === false) {
+                http_response_code(500);
+                echo json_encode(["message" => "Failed to retrieve comments"]);
+                return;
+            }
+    
+            // Format and return comments
+            $comments = $result->fetchAll(PDO::FETCH_ASSOC);
+            http_response_code(200);
+
+            return json_encode($comments);
+    
+        } catch (PDOException $e) {
+            error_log("Error in getAllComments: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
+                "success" => false,
+                "message" => "Server error while retrieving comments"
+            ]);
+        }
     }
 
     private function getBearerToken() {

@@ -38,6 +38,7 @@
         <aside class="sidebar">
             <ul>
                 <li><a href="#" onclick="showSection('home')">Home</a></li>
+                <li><a href="#" onclick="showSection('comments')">Comments</a></li>
                 <li><a href="#" onclick="showSection('profile')">Profile</a></li>
             </ul>
         </aside>
@@ -172,6 +173,19 @@
                 </form>
             </div>
         </main>
+
+        <section id="comments-section" class="comment-dashboard" style="display: none;">
+            <div class="section-header">
+                <h2>Comment Management</h2>
+                <div class="comment-controls">
+                    <input type="text" id="commentSearch" placeholder="Search by requirement ID, student ID, or content...">
+                    <button class="sort-btn" onclick="toggleSortOrder()">
+                        <i class="fas fa-sort"></i> Toggle Sort
+                    </button>
+                </div>
+            </div>
+            <div class="comment-groups-container"></div>
+        </section>
 
         <div id="documentPopup" class="popup" style="display: none;">
             <span class="close-popup" onclick="closeDocumentPopup()">×</span>

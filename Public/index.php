@@ -437,6 +437,12 @@ if (empty($path[0])) {
                         "comment_id" => "integer (required)"
                     ],
                     "authentication" => "Bearer token required"
+                ],
+                "all" => [
+                    "method" => "GET",
+                    "url" => "/comments/all",
+                    "description" => "Specifically made for staff",
+                    "authentication" => "Bearer token required"
                 ]
             ],
             // Requirement endpoints

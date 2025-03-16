@@ -245,7 +245,7 @@ function fetchSubmissions() {
         });
 }
 
-//view documents and search for submission
+//view documents and functions for submissions
 
 let currentDocIndex = 0;
 let docItems = [];
@@ -453,7 +453,6 @@ async function initializeYearDropdown() {
 }
 
 //cards
-
 async function fetchCardEvents(selectedFilter) {
     const authToken = localStorage.getItem('authToken');
     const eventSection = document.getElementById('event-section');
@@ -1066,8 +1065,6 @@ async function deleteRequirement(requirementId) {
 }
 
 //sub-CRUD requirements, comments
-
-
 function filterComments() {
     const searchTerm = document.getElementById('search-input').value.toLowerCase();
     const commentCards = document.querySelectorAll('.comment-card');
@@ -1112,12 +1109,16 @@ async function showComments(requirementId) {
             groups[key].push(comment);
             return groups;
         }, {});
+
+        const commentsContainer = document.createElement('div');
+        commentsContainer.className = 'student-comments';
  
  
         // Create sections for each student
         Object.entries(commentsByStudent).forEach(([studentId, studentComments]) => {
             const studentSection = document.createElement('div');
             studentSection.className = 'student-comment-group';
+            studentSection.dataset.studentId = studentId;
  
  
             // Student header
@@ -1162,7 +1163,17 @@ async function showComments(requirementId) {
                     </div>`;
                 commentsContainer.insertAdjacentHTML('beforeend', commentCard);
             });
- 
+            
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'comment-button-container';
+
+            const addButton = document.createElement('button');
+            addButton.className = 'add-comment-button';
+            addButton.textContent = 'Add Comment';
+            addButton.onclick = () => openCommentPopup(studentId, requirementId);
+
+            buttonContainer.appendChild(addButton);
+            commentsContainer.appendChild(buttonContainer);
  
             studentSection.appendChild(studentHeader);
             studentSection.appendChild(commentsContainer);
@@ -1178,7 +1189,7 @@ async function showComments(requirementId) {
         console.error('Error loading comments:', error);
         alert('Failed to load comments');
     }
- }
+}
  
 
 function toggleCommentMenu(button) {
@@ -1257,6 +1268,53 @@ function closeEditModal() {
     document.getElementById('editCommentText').value = '';
 }
 
+function openCommentPopup(studentId, requirementId) {
+    const popup = document.getElementById('commentPopup');
+    popup.dataset.studentId = studentId;
+    popup.dataset.requirementId = requirementId;
+    popup.style.display = 'block';
+}
+  
+function closeCommentPopup() {
+    const popup = document.getElementById('commentPopup');
+    popup.style.display = 'none';
+    popup.dataset.studentId = '';
+    document.getElementById('commentInput').value = '';
+}
+  
+function submitComment() {
+    const popup = document.getElementById('commentPopup');
+    const studentId = popup.dataset.studentId;
+    const requirementId = popup.dataset.requirementId;
+    const commentText = document.getElementById('commentInput').value.trim();
+
+    if (commentText) {
+        fetch('/hk-roadmap/comments/add', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+                requirement_id: requirementId,
+                student_id: studentId,
+                body: commentText
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showComments(requirementId); // Refresh comments
+            } else {
+                alert('Failed to add comment: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to add comment');
+        });
+    }
+
+    closeCommentPopup();
+}
+
 // Close modal when clicking outside
 window.onclick = function(event) {
     const modal = document.getElementById('editCommentModal');
@@ -1291,9 +1349,7 @@ async function handleDeleteComment(commentId) {
     }
 }
 
-
 //notifications
-
 function formatDateTime(timestamp) {
     try {
         const date = new Date(timestamp);
@@ -1577,7 +1633,6 @@ async function handleAnnouncementEdit(event) {
 }
 
 // frontend systems and etc
-
 const createRefreshControls = (fetchCallback, interval = 30000) => {
     let isRefreshing = false;
     let refreshInterval = null;
@@ -1974,6 +2029,11 @@ document.addEventListener('DOMContentLoaded', () => {
     saveButton.addEventListener('click', function() {
         saveProfile(inputs, editButton, saveButton);
     });
+
+    
+    document.getElementById('submitCommentButton').addEventListener('click', submitComment);
+
+    document.getElementById('closeCommentPopupButton').addEventListener('click', closeCommentPopup);
 
     fetchAdminProfile();
 });

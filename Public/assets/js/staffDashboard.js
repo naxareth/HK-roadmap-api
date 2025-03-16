@@ -98,7 +98,7 @@ function showTab(tabId) {
 
 function showSection(section) {
     const sectionToShow = document.getElementById(section + '-section');
-    const sectionsToHide = ['home-section', 'profile-section'];
+    const sectionsToHide = ['home-section', 'profile-section', 'comments-section'];
 
     sectionsToHide.forEach(sec => {
         const element = document.getElementById(sec);
@@ -711,81 +711,298 @@ function disableProfileEditing(inputs, editButton, saveButton) {
     saveButton.style.display = 'none';
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    badgeRefresher.init();
-    const refreshControls = createRefreshControls(fetchNotifications, 10000);
-    refreshControls.start();
-    showSection('home'); 
-    showTab('documents');
-    fetchDocuments();
+//comments
 
-    getAuthHeaders();
+let allComments = [];
+let currentSortOrder = 'desc';
 
-    document.querySelectorAll('.view-document-button').forEach(button => {
-        button.addEventListener('click', () => viewDocument(button.getAttribute('data-id')));
-    });
-    document.querySelectorAll('.approve-button').forEach(button => {
-        button.addEventListener('click', handleStatusUpdate);
-    });
-    document.querySelectorAll('.reject-button').forEach(button => {
-        button.addEventListener('click', handleStatusUpdate);
-    });
-
-    document.querySelector('#submissionsTable tbody').addEventListener('click', (e) => {
-        if (e.target.classList.contains('view-docs-btn')) {
-            const submissionIds = e.target.dataset.ids.split(',');
-            viewDocuments(submissionIds);
-        }
-    });
-
-    document.getElementById('searchInput').addEventListener('input', function(e) {
-        const searchTerm = e.target.value.toLowerCase().trim();
+function filterComments(searchTerm) {
+    return allComments.filter(comment => {
+        const searchString = [
+            comment.requirement_id.toString(),
+            comment.student_id.toString(),
+            comment.body.toLowerCase(),
+            comment.user_name.toLowerCase()
+        ].join(' ');
         
-        const filtered = allSubmissions.filter(group => {
-            const searchString = [
-                group.event_name,
-                group.requirement_name,
-                group.student_name,
-                group.status,
-                new Date(group.submission_date).toLocaleDateString()
-            ].join(' ').toLowerCase();
+        return searchString.includes(searchTerm.toLowerCase());
+    });
+}
+
+function renderCommentDashboard(comments = allComments) {
+    const container = document.querySelector('.comment-groups-container');
+    if (!container) return;
+
+    container.innerHTML = '';
+    
+    const grouped = groupComments(comments);
+    Object.entries(grouped).forEach(([reqId, students]) => {
+        const requirementGroup = document.createElement('div');
+        requirementGroup.className = 'requirement-group';
+        requirementGroup.innerHTML = `
+            <h3>Requirement ID: ${reqId}</h3>
+            <div class="student-groups"></div>
+        `;
+        
+        const studentGroups = requirementGroup.querySelector('.student-groups');
+        renderStudentGroups(studentGroups, students);
+        container.appendChild(requirementGroup);
+    });
+}
+
+function renderStudentGroups(container, students) {
+    container.innerHTML = '';
+    
+    Object.entries(students).forEach(([studentId, comments]) => {
+        const studentGroup = document.createElement('div');
+        studentGroup.className = 'student-group collapsed'; // Start collapsed
+        
+        // Create collapsible header
+        const header = document.createElement('div');
+        header.className = 'student-header';
+        header.innerHTML = `
+            <div class="header-content">
+                <span class="chevron">▶</span>
+                <h4>Student ID: ${studentId}</h4>
+                <span class="comment-count">(${comments.length} comments)</span>
+            </div>
+        `;
+        
+        // Create comments list container
+        const commentsList = document.createElement('div');
+        commentsList.className = 'comments-list';
+        commentsList.style.display = 'none'; // Start hidden
+        
+        // Add click handler for toggling
+        header.addEventListener('click', function(e) {
+            const isCollapsed = studentGroup.classList.contains('collapsed');
             
-            return searchString.includes(searchTerm);
+            // Toggle collapsed class
+            studentGroup.classList.toggle('collapsed');
+            
+            // Update chevron
+            const chevron = this.querySelector('.chevron');
+            chevron.textContent = isCollapsed ? '▼' : '▶';
+            
+            // Toggle comments visibility with smooth animation
+            commentsList.style.display = isCollapsed ? 'block' : 'none';
+            
+            // Store collapse state
+            currentCollapseStates.set(studentId, !isCollapsed);
+            
+            e.stopPropagation(); // Prevent event bubbling
         });
         
-        renderTable(filtered);
-    });
-
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.notifications-container')) {
-            document.getElementById('notificationPopup').style.display = 'none';
+        // Populate comments
+        comments.forEach(comment => {
+            const commentCard = document.createElement('div');
+            commentCard.className = 'comment-card';
+            commentCard.innerHTML = `
+                <div class="comment-header">
+                    <span class="commenter-name">${comment.user_name}</span>
+                    <span class="comment-date">${new Date(comment.created_at).toLocaleDateString()}</span>
+                </div>
+                <p class="comment-body">${comment.body}</p>
+            `;
+            commentsList.appendChild(commentCard);
+        });
+        
+        // Restore previous collapse state if exists
+        if (currentCollapseStates.has(studentId)) {
+            const isCollapsed = currentCollapseStates.get(studentId);
+            studentGroup.classList.toggle('collapsed', isCollapsed);
+            commentsList.style.display = isCollapsed ? 'none' : 'block';
+            header.querySelector('.chevron').textContent = isCollapsed ? '▶' : '▼';
         }
-        if (!e.target.closest('.profile-container')) {
-            document.getElementById('profileMenu').style.display = 'none';
+        
+        // Assemble elements
+        studentGroup.appendChild(header);
+        studentGroup.appendChild(commentsList);
+        container.appendChild(studentGroup);
+    });
+}
+
+async function initCommentManagement() {
+    try {
+        if (allComments.length === 0) {
+            await fetchAllComments();
         }
-    });
-
-    const accountButton = document.querySelector('.account-button');
-    if (accountButton) {
-        accountButton.addEventListener('click', toggleAccountPopup);
+        renderCommentDashboard(allComments);
+    } catch (error) {
+        console.error('Comment init error:', error);
     }
-
-    const logoutButton = document.querySelector('.popup-button');
-    if (logoutButton) {
-        logoutButton.addEventListener('click', logout);
+}
+async function fetchAllComments() {
+    try {
+        const response = await fetch('/hk-roadmap/comments/all', {
+            headers: getAuthHeaders()
+        });
+        
+        if (!response.ok) throw new Error('Failed to fetch comments');
+        
+        allComments = await response.json();
+        sortComments(currentSortOrder);
+    } catch (error) {
+        console.error('Error fetching comments:', error);
+        showError('Failed to load comments');
     }
+}
 
-    const editButton = document.getElementById('editProfileButton');
-    const saveButton = document.getElementById('saveProfileButton');
-    const inputs = document.querySelectorAll('#profile-section input');
-
-    editButton.addEventListener('click', function() {
-        enableProfileEditing(inputs, editButton, saveButton);
+function sortComments(order) {
+    allComments.sort((a, b) => {
+        const dateA = new Date(a.created_at);
+        const dateB = new Date(b.created_at);
+        return order === 'asc' ? dateA - dateB : dateB - dateA;
     });
+}
 
-    saveButton.addEventListener('click', function() {
-        saveStaffProfile(inputs, editButton, saveButton);
-    });
+function toggleSortOrder() {
+    currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+    sortComments(currentSortOrder);
+    renderCommentDashboard();
+}
 
-    fetchStaffProfile();
+function groupComments(comments) {
+    return comments.reduce((acc, comment) => {
+        const reqId = comment.requirement_id;
+        const studentId = comment.student_id;
+        
+        if (!acc[reqId]) acc[reqId] = {};
+        if (!acc[reqId][studentId]) acc[reqId][studentId] = [];
+        
+        acc[reqId][studentId].push(comment);
+        return acc;
+    }, {});
+}
+
+let currentCollapseStates = new Map();
+
+//safe add event listener
+
+function safeAddEventListener(selector, event, handler) {
+    const element = document.querySelector(selector);
+    if (element) {
+        element.addEventListener(event, handler);
+    } else {
+        console.warn(`Element with selector "${selector}" not found`);
+    }
+}
+
+// Utility function to safely add multiple event listeners
+function safeAddEventListeners(selector, event, handler) {
+    const elements = document.querySelectorAll(selector);
+    if (elements.length > 0) {
+        elements.forEach(element => element.addEventListener(event, handler));
+    } else {
+        console.warn(`No elements found with selector "${selector}"`);
+    }
+}
+
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    try {
+        // Initialize core functionality
+        badgeRefresher.init();
+        const refreshControls = createRefreshControls(fetchNotifications, 10000);
+        refreshControls.start();
+        showSection('home'); 
+        showTab('documents');
+        fetchDocuments();
+
+        // Safe event listener attachments
+        safeAddEventListener('#searchInput', 'input', function(e) {
+            const searchTerm = e.target.value.toLowerCase().trim();
+            const filtered = allSubmissions.filter(group => {
+                const searchString = [
+                    group.event_name,
+                    group.requirement_name,
+                    group.student_name,
+                    group.status,
+                    new Date(group.submission_date).toLocaleDateString()
+                ].join(' ').toLowerCase();
+                return searchString.includes(searchTerm);
+            });
+            renderTable(filtered);
+        });
+
+        // Document click handler for popups
+        document.addEventListener('click', (e) => {
+            const notificationPopup = document.getElementById('notificationPopup');
+            const profileMenu = document.getElementById('profileMenu');
+
+            if (!e.target.closest('.notifications-container') && notificationPopup) {
+                notificationPopup.style.display = 'none';
+            }
+            if (!e.target.closest('.profile-container') && profileMenu) {
+                profileMenu.style.display = 'none';
+            }
+        });
+
+
+        const submissionsTable = document.querySelector('#submissionsTable');
+        if (submissionsTable) {
+            submissionsTable.addEventListener('click', (e) => {
+                const reviewButton = e.target.closest('.view-docs-btn');
+                if (reviewButton) {
+                    const submissionIds = reviewButton.dataset.ids.split(',').map(id => parseInt(id.trim()));
+                    viewDocuments(submissionIds);
+                }
+            });
+        }
+
+        // Safe button event listeners
+        safeAddEventListener('.account-button', 'click', toggleAccountPopup);
+        safeAddEventListener('.popup-button', 'click', logout);
+        
+        // Profile section handlers
+        const editButton = document.getElementById('editProfileButton');
+        const saveButton = document.getElementById('saveProfileButton');
+        const inputs = document.querySelectorAll('#profile-section input');
+
+        if (editButton && saveButton) {
+            editButton.addEventListener('click', () => enableProfileEditing(inputs, editButton, saveButton));
+            saveButton.addEventListener('click', () => saveStaffProfile(inputs, editButton, saveButton));
+        }
+
+        // Comments section initialization
+        const commentSearch = document.getElementById('commentSearch');
+        if (commentSearch) {
+            commentSearch.addEventListener('input', function(e) {
+                const currentStates = new Map();
+                document.querySelectorAll('.student-group').forEach(group => {
+                    const studentId = group.querySelector('h4')?.textContent.split(': ')[1];
+                    if (studentId) {
+                        currentStates.set(studentId, group.classList.contains('collapsed'));
+                    }
+                });
+
+                const searchTerm = e.target.value.trim().toLowerCase();
+                const filtered = searchTerm ? filterComments(searchTerm) : allComments;
+                renderCommentDashboard(filtered);
+
+                // Re-apply collapse states
+                setTimeout(() => {
+                    document.querySelectorAll('.student-group').forEach(group => {
+                        const studentId = group.querySelector('h4')?.textContent.split(': ')[1];
+                        if (studentId && currentStates.has(studentId)) {
+                            group.classList.toggle('collapsed', currentStates.get(studentId));
+                        }
+                    });
+                }, 0);
+            });
+        }
+
+        // Initialize profiles and comments
+        fetchStaffProfile();
+        initCommentManagement();
+
+    } catch (error) {
+        console.error('Error initializing dashboard:', error);
+        // Show user-friendly error message
+        const errorMessage = document.createElement('div');
+        errorMessage.className = 'error-message';
+        errorMessage.textContent = 'Failed to initialize dashboard. Please refresh the page.';
+        document.body.prepend(errorMessage);
+    }
 });

@@ -236,6 +236,13 @@ class Api {
                 }
                 break;
 
+            case 'comments/all':
+                if ($method === 'GET') {
+                    echo $this->commentController->getAllComments();
+                    return;
+                }
+                break;
+                
             case 'comments/get':
                 if ($method === 'GET') {
                     $requirement_id = isset($_GET['requirement_id']) ? $_GET['requirement_id'] : null;

@@ -48,6 +48,25 @@ class Comment {
         }
     }
 
+    public function getAllComments() {
+        try {
+            $query = "SELECT 
+                    c.*,
+                    DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') as created_at,
+                    DATE_FORMAT(c.updated_at, '%Y-%m-%d %H:%i:%s') as updated_at
+                    FROM " . $this->table . " c
+                    ORDER BY c.created_at DESC";
+    
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute();
+    
+            return $stmt;
+        } catch (PDOException $e) {
+            error_log("Error in getAllComments: " . $e->getMessage());
+            return false;
+        }
+    }
+
     public function create() {
         try {
             $query = "INSERT INTO " . $this->table . "
