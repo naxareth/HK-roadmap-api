@@ -148,38 +148,76 @@ class NotificationController {
                 echo json_encode(["success" => false, "message" => "Unauthorized"]);
                 return;
             }
-
+    
             $notifications = $this->notificationModel->getUnreadAdminNotifications();
+            
+            // Debug log
+            error_log("Processing notifications: " . print_r($notifications, true));
+            
+            if (empty($notifications)) {
+                echo json_encode([
+                    "success" => true,
+                    "message" => "No unread notifications to process"
+                ]);
+                return;
+            }
+    
             $success = true;
-
+            $processedCount = 0;
+            $failedCount = 0;
+    
             foreach ($notifications as $notification) {
+                error_log("Processing notification: " . print_r($notification, true));
+                
                 $updated = $this->notificationModel->editAdminNotification(
                     $notification['notification_id'],
                     true,
                     $admin['admin_id']
                 );
-
+    
                 if ($updated) {
-                    $this->notificationModel->create(
-                        "Admin {$admin['name']} viewed your document",
-                        'student',
-                        $notification['related_user_id'],
-                        $admin['admin_id']
-                    );
+                    if (!empty($notification['related_user_id'])) {
+                        $notificationCreated = $this->notificationModel->create(
+                            "Admin {$admin['name']} viewed your document",
+                            'student',
+                            $notification['related_user_id'],
+                            $admin['admin_id']
+                        );
+                        
+                        if ($notificationCreated) {
+                            $processedCount++;
+                        } else {
+                            error_log("Failed to create student notification for notification_id: " 
+                                . $notification['notification_id']);
+                            $failedCount++;
+                        }
+                    } else {
+                        error_log("Missing related_user_id for notification_id: " 
+                            . $notification['notification_id']);
+                        $failedCount++;
+                    }
                 } else {
+                    error_log("Failed to update notification_id: " . $notification['notification_id']);
                     $success = false;
                 }
             }
-
+    
             echo json_encode([
                 "success" => $success,
-                "message" => $success ? 
-                    "All admin notifications marked as read" : 
-                    "Partial updates failed"
+                "message" => sprintf(
+                    "Processed %d notifications. %d failed. %s",
+                    $processedCount,
+                    $failedCount,
+                    $success ? "All updates completed" : "Some updates failed"
+                )
             ]);
         } catch (\Exception $e) {
+            error_log("Error in markAllAdminRead: " . $e->getMessage());
             http_response_code(500);
-            echo json_encode(["success" => false, "message" => $e->getMessage()]);
+            echo json_encode([
+                "success" => false,
+                "message" => "Error processing notifications: " . $e->getMessage()
+            ]);
         }
     }
 
@@ -273,43 +311,77 @@ class NotificationController {
     public function toggleStaffNotification() {
         header('Content-Type: application/json');
         
-        $input = json_decode(file_get_contents('php://input'), true);
-        if (empty($input['notification_id']) || !isset($input['read'])) {
-            http_response_code(400);
-            echo json_encode(["message" => "Missing required fields"]);
-            return;
-        }
+        try {
+            // Validate input
+            $input = json_decode(file_get_contents('php://input'), true);
+            if (empty($input['notification_id']) || !isset($input['read'])) {
+                http_response_code(400);
+                echo json_encode(["success" => false, "message" => "Missing required fields"]);
+                return;
+            }
+        
+            // Authenticate staff
+            $staff = $this->validateAuthStaff();
+            if (!$staff) {
+                http_response_code(401);
+                echo json_encode(["success" => false, "message" => "Unauthorized"]);
+                return;
+            }
+        
+            // Get original notification
+            $notification = $this->notificationModel->getNotificationById($input['notification_id']);
+            if (!$notification) {
+                http_response_code(404);
+                echo json_encode(["success" => false, "message" => "Notification not found"]);
+                return;
+            }
     
-        $staff = $this->validateAuthStaff();
-        if (!$staff) {
-            http_response_code(401);
-            echo json_encode(["message" => "Unauthorized"]);
-            return;
-        }
-    
-        $notification = $this->notificationModel->getNotificationById($input['notification_id']);
-        if (!$notification) {
-            http_response_code(404);
-            echo json_encode(["message" => "Notification not found"]);
-            return;
-        }
-    
-        $success = $this->notificationModel->editStaffNotification(
-            $input['notification_id'],
-            (bool)$input['read'],
-            $staff['staff_id']
-        );
-    
-        if ($success && $input['read']) {
-            $this->notificationModel->createStaffNotification(
-                "Staff {$staff['name']} viewed your document",
-                $notification['related_user_id'], // Ensure this is the correct student ID
+            // Debug log
+            error_log("Processing staff notification toggle: " . print_r($notification, true));
+        
+            // Update notification
+            $success = $this->notificationModel->editStaffNotification(
+                $input['notification_id'],
+                (bool)$input['read'],
                 $staff['staff_id']
             );
+        
+            if ($success && $input['read']) {
+                // Only create student notification if there's a related_user_id
+                if (!empty($notification['related_user_id'])) {
+                    $notificationCreated = $this->notificationModel->createStaffNotification(
+                        "Staff {$staff['name']} viewed your document",
+                        $notification['related_user_id'],
+                        $staff['staff_id']
+                    );
+                    
+                    if (!$notificationCreated) {
+                        error_log("Failed to create student notification for staff view");
+                    }
+                } else {
+                    error_log("No related_user_id found for notification {$input['notification_id']}");
+                }
+            }
+        
+            // Get updated notification for response
+            $updatedNotification = $this->notificationModel->getNotificationById($input['notification_id']);
+        
+            echo json_encode([
+                "success" => $success,
+                "notification" => $updatedNotification,
+                "message" => $success ? "Notification updated successfully" : "Failed to update notification"
+            ]);
+            
+        } catch (\Exception $e) {
+            error_log("Error in toggleStaffNotification: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
+                "success" => false,
+                "message" => "Error processing notification: " . $e->getMessage()
+            ]);
         }
-    
-        echo json_encode(["success" => $success]);
     }
+    
     // Get staff unread count
     public function getStaffUnreadCount() {
         try {
@@ -336,9 +408,18 @@ class NotificationController {
                 return;
             }
     
-            // Fetch all unread staff notifications
-            $notifications = $this->notificationModel->getUnreadStaffNotifications($staff['staff_id']);
+            $notifications = $this->notificationModel->getUnreadStaffNotifications();
+            
+            if (empty($notifications)) {
+                echo json_encode([
+                    "success" => true,
+                    "message" => "No unread notifications to process"
+                ]);
+                return;
+            }
+    
             $success = true;
+            $processedCount = 0;
     
             foreach ($notifications as $notification) {
                 $updated = $this->notificationModel->editStaffNotification(
@@ -348,26 +429,36 @@ class NotificationController {
                 );
     
                 if ($updated) {
-                    $this->notificationModel->create(
-                        "Staff {$staff['name']} viewed your document",
-                        'student',
-                        $notification['related_user_id'],
-                        $staff['staff_id']
-                    );
+                    // Only create student notification if related_user_id exists
+                    if (!empty($notification['related_user_id'])) {
+                        $this->notificationModel->createStaffNotification(
+                            "Staff {$staff['name']} viewed your document",
+                            $notification['related_user_id'],
+                            $staff['staff_id']
+                        );
+                    }
+                    $processedCount++;
                 } else {
+                    error_log("Failed to update notification_id: " . $notification['notification_id']);
                     $success = false;
                 }
             }
     
             echo json_encode([
                 "success" => $success,
-                "message" => $success ? 
-                    "All staff notifications marked as read" : 
-                    "Partial updates failed"
+                "message" => sprintf(
+                    "Processed %d notifications. %s",
+                    $processedCount,
+                    $success ? "All updates completed" : "Some updates failed"
+                )
             ]);
         } catch (\Exception $e) {
+            error_log("Error in markAllStaffRead: " . $e->getMessage());
             http_response_code(500);
-            echo json_encode(["success" => false, "message" => $e->getMessage()]);
+            echo json_encode([
+                "success" => false,
+                "message" => "Error processing notifications: " . $e->getMessage()
+            ]);
         }
     }
 }

@@ -767,11 +767,19 @@ class Document {
         // Create notification body
         $notificationBody = "{$studentName} has submitted a document for {$eventName} in regards to {$requirementName}";
     
-        // Insert into notification table
-        $query = "INSERT INTO notification (notification_body, read_notif) VALUES (:notification_body, false)";
+        // Insert into notification table with all required fields
+        $query = "INSERT INTO notification 
+                 (notification_body, notification_type, related_user_id, read_notif) 
+                 VALUES (:notification_body, 'admin', :student_id, 0)";
+        
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(':notification_body', $notificationBody);
-        $stmt->execute();
+        $stmt->bindParam(':student_id', $studentId, PDO::PARAM_INT);
+        
+        if (!$stmt->execute()) {
+            error_log("Error creating notification: " . implode(" - ", $stmt->errorInfo()));
+            throw new Exception("Failed to create notification");
+        }
     }
 
     private function getStudentName($studentId) {

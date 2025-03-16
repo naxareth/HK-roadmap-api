@@ -203,25 +203,30 @@ class Notification {
                      SET read_notif = :read_status,
                          staff_recipient_id = :staff_id
                      WHERE notification_id = :id
-                     AND notification_type = 'admin'"; // Changed to 'admin'
+                     AND notification_type = 'admin'";
             
             $stmt = $this->db->prepare($query);
             $stmt->bindValue(':id', $notificationId, PDO::PARAM_INT);
             $stmt->bindValue(':read_status', $readStatus, PDO::PARAM_BOOL);
-            $stmt->bindValue(':staff_id', $readStatus ? $staffId : null, 
-                $readStatus ? PDO::PARAM_INT : PDO::PARAM_NULL);
+            $stmt->bindValue(':staff_id', $staffId, PDO::PARAM_INT);
             
-            return $stmt->execute();
+            $result = $stmt->execute();
+            
+            if ($result) {
+                error_log("Successfully updated notification {$notificationId} for staff {$staffId}");
+            } else {
+                error_log("Failed to update notification {$notificationId} for staff {$staffId}");
+            }
+            
+            return $result;
         } catch (PDOException $e) {
             error_log("Staff notification update error: " . $e->getMessage());
             return false;
         }
     }
-
     
     public function createStaffNotification($message, $userRelatedId, $staffRecipientId) {
         try {
-            // Ensure the notification type is set to 'student' for student notifications
             $query = "INSERT INTO notification 
                     (notification_body, notification_type, related_user_id, staff_recipient_id) 
                     VALUES (:message, 'student', :related_user_id, :staff_recipient_id)";
@@ -231,7 +236,13 @@ class Notification {
             $stmt->bindValue(':related_user_id', $userRelatedId, PDO::PARAM_INT);
             $stmt->bindValue(':staff_recipient_id', $staffRecipientId, PDO::PARAM_INT);
             
-            return $stmt->execute();
+            $result = $stmt->execute();
+            
+            if (!$result) {
+                error_log("Failed to create staff notification. Message: $message, Related User: $userRelatedId, Staff: $staffRecipientId");
+            }
+            
+            return $result;
         } catch (PDOException $e) {
             error_log("Error creating staff notification: " . $e->getMessage());
             return false;
@@ -240,16 +251,14 @@ class Notification {
         
     
     // Add missing method to fetch unread staff notifications
-    public function getStaffUnreadCount($staffId) {
+    public function getStaffUnreadCount() {
         try {
             $query = "SELECT COUNT(*) AS unread_count 
                      FROM notification 
-                     WHERE notification_type = 'admin'
-                       AND staff_recipient_id = :staff_id 
+                     WHERE notification_type = 'admin' 
                        AND read_notif = 0";
             
             $stmt = $this->db->prepare($query);
-            $stmt->bindValue(':staff_id', $staffId, PDO::PARAM_INT);
             $stmt->execute();
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
             return (int)($result['unread_count'] ?? 0);
@@ -278,6 +287,51 @@ class Notification {
             $this->db->rollBack();
             error_log("Error marking all staff notifications as read: " . $e->getMessage());
             return false;
+        }
+    }
+
+    public function getUnreadAdminNotifications() {
+        try {
+            // Let's log the query result for debugging
+            error_log("Fetching unread admin notifications");
+            
+            $query = "SELECT notification_id, notification_body, notification_type, 
+                            recipient_id, related_user_id, read_notif, created_at 
+                     FROM notification 
+                     WHERE notification_type = 'admin' 
+                       AND read_notif = 0
+                     ORDER BY created_at DESC";
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Debug log
+            error_log("Unread admin notifications: " . print_r($results, true));
+            
+            return $results;
+        } catch (PDOException $e) {
+            error_log("Error fetching unread admin notifications: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    public function getUnreadStaffNotifications() {
+        try {
+            // Same query as admin since staff should see all admin notifications
+            $query = "SELECT notification_id, notification_body, notification_type, 
+                            recipient_id, related_user_id, read_notif, created_at 
+                     FROM notification 
+                     WHERE notification_type = 'admin' 
+                       AND read_notif = 0
+                     ORDER BY created_at DESC";
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error fetching unread staff notifications: " . $e->getMessage());
+            return [];
         }
     }
 }
