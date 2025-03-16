@@ -43,14 +43,13 @@ class NotificationController {
 
     private function validateAuthStudent() {
         $headers = getallheaders();
-        if (!isset($headers['Authorization'])) {
-            http_response_code(401);
-            echo json_encode(["message" => "Authorization header missing"]);
-            return null;
-        }
-        $token = str_replace('Bearer ', '', $headers['Authorization']);
-        $studentData = $this->studentModel->validateToken($token);
-        return $studentData ? ['student_id' => $studentData['id']] : null;
+    if (!isset($headers['Authorization'])) {
+        http_response_code(401);
+        echo json_encode(["message" => "Authorization header missing"]);
+        return null;
+    }
+    $token = str_replace('Bearer ', '', $headers['Authorization']);
+    return $this->studentModel->validateToken($token);
     }
 
     public function getAdminNotifications() {
@@ -62,8 +61,6 @@ class NotificationController {
     }
 
     public function getStudentNotifications() {
-        header('Content-Type: application/json');
-        
         $student = $this->validateAuthStudent();
         if (!$student) {
             http_response_code(401);
@@ -71,16 +68,8 @@ class NotificationController {
             return;
         }
 
-        $input = json_decode(file_get_contents('php://input'), true);
-        $studentId = $input['student_id'] ?? null;
-
-        if ($studentId != $student['id']) {
-            http_response_code(403);
-            echo json_encode(["message" => "Forbidden"]);
-            return;
-        }
-
-        $notifications = $this->notificationModel->getNotificationsByStudentId($studentId);
+        // Use the student ID from the validated token
+        $notifications = $this->notificationModel->getNotificationsByStudentId($student['student_id']);
         echo json_encode($notifications);
     }
 

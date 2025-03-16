@@ -1067,6 +1067,23 @@ async function deleteRequirement(requirementId) {
 
 //sub-CRUD requirements, comments
 
+
+function filterComments() {
+    const searchTerm = document.getElementById('search-input').value.toLowerCase();
+    const commentCards = document.querySelectorAll('.comment-card');
+
+    commentCards.forEach(card => {
+        const commentBody = card.querySelector('.comment-body').textContent.toLowerCase();
+        const commentAuthor = card.querySelector('.comment-author').textContent.toLowerCase();
+
+        if (commentBody.includes(searchTerm) || commentAuthor.includes(searchTerm)) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
 async function showComments(requirementId) {
     try {
         currentRequirementId = requirementId;
@@ -1074,18 +1091,18 @@ async function showComments(requirementId) {
         const response = await fetch(`/hk-roadmap/comments/admin?requirement_id=${requirementId}`, {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
-        
         if (!response.ok) throw new Error('Failed to fetch comments');
         const comments = await response.json();
-
+ 
+ 
         const commentsList = document.getElementById('comments-list');
         commentsList.innerHTML = '';
-
         if (comments.length === 0) {
             commentsList.innerHTML = '<p class="no-comments">No comments found</p>';
             return;
         }
-
+ 
+ 
         // Group comments by student_id
         const commentsByStudent = comments.reduce((groups, comment) => {
             const key = comment.student_id;
@@ -1095,23 +1112,25 @@ async function showComments(requirementId) {
             groups[key].push(comment);
             return groups;
         }, {});
-
+ 
+ 
         // Create sections for each student
         Object.entries(commentsByStudent).forEach(([studentId, studentComments]) => {
             const studentSection = document.createElement('div');
             studentSection.className = 'student-comment-group';
-            
+ 
+ 
             // Student header
             const studentHeader = document.createElement('div');
             studentHeader.className = 'student-header';
             studentHeader.innerHTML = `
                 <h4>${studentComments[0].user_name} (ID: ${studentId})</h4>
             `;
-            
+ 
+ 
             // Comments list
             const commentsContainer = document.createElement('div');
             commentsContainer.className = 'student-comments';
-            
             studentComments.forEach(comment => {
                 const commentDate = new Date(comment.created_at).toLocaleDateString('en-US', {
                     year: 'numeric',
@@ -1120,9 +1139,8 @@ async function showComments(requirementId) {
                     hour: '2-digit',
                     minute: '2-digit'
                 });
-
                 const commentCard = `
-                    <div class="card comment-card">
+                    <div class="card comment-card" data-comment-id="${comment.comment_id}">
                         <div class="comment-header">
                             <div class="comment-meta">
                                 <div class="comment-author-header">
@@ -1144,22 +1162,24 @@ async function showComments(requirementId) {
                     </div>`;
                 commentsContainer.insertAdjacentHTML('beforeend', commentCard);
             });
-
+ 
+ 
             studentSection.appendChild(studentHeader);
             studentSection.appendChild(commentsContainer);
             commentsList.appendChild(studentSection);
         });
-
+ 
+ 
         document.getElementById('requirements-section').style.display = 'none';
         document.getElementById('backToEventsButton').style.display = 'none';
         document.getElementById('comment-section').style.display = 'grid';
         document.getElementById('backtoRequirements').style.display = 'block';
-
     } catch (error) {
         console.error('Error loading comments:', error);
         alert('Failed to load comments');
     }
-}
+ }
+ 
 
 function toggleCommentMenu(button) {
     const menu = button.closest('.comment-actions').querySelector('.action-menu');
@@ -1624,7 +1644,7 @@ async function saveProfile(inputs, editButton, saveButton) {
 
     try {
         const response = await fetch('/hk-roadmap/profile/update', {
-            method: 'PUT',
+            method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify(profileData)
         });
@@ -1928,6 +1948,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('announce-section')) {
         fetchAnnouncements();
     }
+
+    document.getElementById('searchInput').addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const commentGroups = document.querySelectorAll('.student-comment-group');
+        commentGroups.forEach(group => {
+            const userName = group.querySelector('.student-header h4').textContent.toLowerCase();
+            if (userName.includes(searchTerm)) {
+                group.style.display = 'block';
+            } else {
+                group.style.display = 'none';
+            }
+        });
+    });
+ 
 
     const editButton = document.getElementById('editProfileButton');
     const saveButton = document.getElementById('saveProfileButton');

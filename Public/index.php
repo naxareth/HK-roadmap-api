@@ -154,7 +154,7 @@ if (empty($path[0])) {
                     ]
                 ],
                 "update" => [
-                    "method" => "PUT",
+                    "method" => "POST",
                     "url" => "/profile/update",
                     "description" => "Update user profile",
                     "authentication" => "Bearer token required",
@@ -485,7 +485,7 @@ if (empty($path[0])) {
                 "add" => "POST /announcements/add",
                 "update" => "PUT /announcements/update",
                 "delete" => "DELETE /announcements/delete",
-                "students" => "GET /announcements/student"
+                "get" => "GET /announcements/get"
             ]
         ],
         "documentation" => [

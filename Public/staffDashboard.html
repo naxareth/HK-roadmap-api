@@ -37,12 +37,11 @@
     <div class="container">
         <aside class="sidebar">
             <ul>
-                <!-- Removed "Announcement" link -->
                 <li><a href="#" onclick="showSection('home')">Home</a></li>
+                <li><a href="#" onclick="showSection('profile')">Profile</a></li>
             </ul>
         </aside>
         <main class="content">
-            <!-- Staff Section (Renamed and Adjusted) -->
             <section id="home-section" class="staff-container">
                 <div class="tab-container">
                     <button class="tab-button" onclick="showTab('documents')">Documents</button>
@@ -125,7 +124,55 @@
                     </table>
                 </div>
             </section>
+            <div id="profile-section" class="profile-container">
+                <h2>Profile Information</h2>
+                <form id="profileForm">
+                    <div class="form-group">
+                        <label for="staffName">Name:</label>
+                        <input type="text" id="staffName" name="name" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label for="staffEmail">Email:</label>
+                        <input type="email" id="staffEmail" name="email" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label for="staffDepartment">Department:</label>
+                        <input type="text" id="staffDepartment" name="department" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label for="staffPosition">Position:</label>
+                        <input type="text" id="staffPosition" name="position" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label for="staffContact">Contact Number:</label>
+                        <input type="text" id="staffContact" name="contact_number" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label for="studentNumber">Student Number:</label>
+                        <input type="text" id="studentNumber" name="student_number" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label for="collegeProgram">College Program:</label>
+                        <input type="text" id="collegeProgram" name="college_program" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label for="yearLevel">Year Level:</label>
+                        <input type="text" id="yearLevel" name="year_level" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label for="scholarshipType">Scholarship Type:</label>
+                        <input type="text" id="scholarshipType" name="scholarship_type" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label for="staffProfilePicture">Profile Picture:</label>
+                        <img id="staffProfilePicture" src="" alt="Profile Picture" class="profile-picture">
+                    </div>
+                    <button type="button" id="editProfileButton">Edit</button>
+                    <button type="button" id="saveProfileButton" style="display:none;">Save</button>
+                </form>
+            </div>
         </main>
+
         <div id="documentPopup" class="popup" style="display: none;">
             <span class="close-popup" onclick="closeDocumentPopup()">×</span>
             <div class="popup-content">

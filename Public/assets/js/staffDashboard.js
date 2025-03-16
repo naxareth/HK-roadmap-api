@@ -98,7 +98,7 @@ function showTab(tabId) {
 
 function showSection(section) {
     const sectionToShow = document.getElementById(section + '-section');
-    const sectionsToHide = ['home-section'];
+    const sectionsToHide = ['home-section', 'profile-section'];
 
     sectionsToHide.forEach(sec => {
         const element = document.getElementById(sec);
@@ -632,6 +632,85 @@ const badgeRefresher = {
     }
   };
 
+//profile
+async function fetchStaffProfile() {
+    try {
+        const response = await fetch('/hk-roadmap/profile/get', {
+            headers: getAuthHeaders()
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            document.getElementById('staffName').value = data.name || '';
+            document.getElementById('staffEmail').value = data.email || '';
+            document.getElementById('staffDepartment').value = data.department || '';
+            document.getElementById('staffPosition').value = data.position || '';
+            document.getElementById('staffContact').value = data.contact_number || '';
+            document.getElementById('staffProfilePicture').src = data.profile_picture_url || '';
+            // Populate new fields for student information
+            document.getElementById('studentNumber').value = data.student_number || '';
+            document.getElementById('collegeProgram').value = data.college_program || '';
+            document.getElementById('yearLevel').value = data.year_level || '';
+            document.getElementById('scholarshipType').value = data.scholarship_type || '';
+        } else {
+            throw new Error('Failed to fetch profile');
+        }
+    } catch (error) {
+        console.error('Error fetching profile:', error);
+    }
+}
+
+async function saveStaffProfile(inputs, editButton, saveButton) {
+    const profileData = {
+        name: document.getElementById('staffName').value,
+        email: document.getElementById('staffEmail').value,
+        department: document.getElementById('staffDepartment').value,
+        position: document.getElementById('staffPosition').value,
+        contact_number: document.getElementById('staffContact').value,
+        // Collect new fields for student information
+        student_number: document.getElementById('studentNumber').value,
+        college_program: document.getElementById('collegeProgram').value,
+        year_level: document.getElementById('yearLevel').value,
+        scholarship_type: document.getElementById('scholarshipType').value
+    };
+
+    try {
+        const response = await fetch('/hk-roadmap/profile/update', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(profileData)
+        });
+
+        if (response.ok) {
+            alert('Profile updated successfully!');
+            disableProfileEditing(inputs, editButton, saveButton);
+        } else {
+            throw new Error('Failed to update profile');
+        }
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        alert('Failed to update profile');
+    }
+}
+
+function enableProfileEditing(inputs, editButton, saveButton) {
+    inputs.forEach(input => {
+        input.disabled = false;
+        input.style.backgroundColor = '#fff';
+    });
+    editButton.style.display = 'none';
+    saveButton.style.display = 'block';
+}
+
+function disableProfileEditing(inputs, editButton, saveButton) {
+    inputs.forEach(input => {
+        input.disabled = true;
+        input.style.backgroundColor = '#f0f0f0';
+    });
+    editButton.style.display = 'block';
+    saveButton.style.display = 'none';
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     badgeRefresher.init();
     const refreshControls = createRefreshControls(fetchNotifications, 10000);
@@ -695,4 +774,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (logoutButton) {
         logoutButton.addEventListener('click', logout);
     }
+
+    const editButton = document.getElementById('editProfileButton');
+    const saveButton = document.getElementById('saveProfileButton');
+    const inputs = document.querySelectorAll('#profile-section input');
+
+    editButton.addEventListener('click', function() {
+        enableProfileEditing(inputs, editButton, saveButton);
+    });
+
+    saveButton.addEventListener('click', function() {
+        saveStaffProfile(inputs, editButton, saveButton);
+    });
+
+    fetchStaffProfile();
 });
