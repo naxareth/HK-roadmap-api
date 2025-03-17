@@ -78,26 +78,29 @@ class SubmissionController {
                 return;
             }
     
-            $approvedBy = isset($userData['admin_id']) 
-                ? "Admin: " . $userData['name']
-                : "Staff: " . $userData['name'];
+            $approverType = isset($userData['admin_id']) ? "Admin" : "Staff";
+            $approverName = $userData['name'];
     
             $success = $this->submissionModel->updateSubmissionStatus(
                 $input['submission_id'],
                 $input['status'],
-                $approvedBy
+                "$approverType: " . $approverName
             );
     
             if ($success) {
                 $submission = $this->submissionModel->getSubmissionById($input['submission_id']);
                 
                 if ($submission) {
-                    // Create notification message using document_type instead of file_name
+                    // Get the requirement name from the submission
+                    $requirementName = $this->submissionModel->getRequirementName($submission['requirement_id']);
+                    
+                    // Updated notification message format with requirement name
                     $message = sprintf(
-                        "Your %s submission has been %s by %s",
-                        $submission['document_type'],
+                        "Your submission for the requirement for %s has been %s by %s %s",
+                        $requirementName ?? 'Unknown Requirement', // Fallback if name not found
                         strtolower($input['status']),
-                        $approvedBy
+                        $approverType,
+                        $approverName
                     );
     
                     $notificationSuccess = $this->notificationModel->create(

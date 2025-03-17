@@ -359,7 +359,7 @@ class Api {
                     return $this->submissionController->getSubmissionsBySubId();
                 }
                 break;
-
+            // Notification Routes
             case 'notification/get':
                 if ($method === 'GET') {
                     return $this->notificationController->getAdminNotifications();

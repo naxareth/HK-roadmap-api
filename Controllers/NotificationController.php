@@ -5,6 +5,7 @@ use Models\Notification;
 use Models\Admin;
 use Models\Student;
 use Models\Staff;
+use Exception;
 
 class NotificationController {
     private $notificationModel;
@@ -75,18 +76,18 @@ class NotificationController {
 
     public function toggleAdminNotification() {
         $input = json_decode(file_get_contents('php://input'), true);
-        
+    
         // Validate input
-        if (empty($input['notification_id']) || !isset($input['read'])) {
+        if (empty($input['notification_id']) || !isset($input['read']) || empty($input['status']) || empty($input['requirement_name'])) {
             http_response_code(400);
             echo json_encode(["message" => "Missing required fields"]);
             return;
         }
-
+    
         // Authenticate admin
         $admin = $this->validateAuthAdmin();
         if (!$admin) return;
-
+    
         // Get original notification
         $notification = $this->notificationModel->getNotificationById($input['notification_id']);
         if (!$notification || $notification['notification_type'] !== 'admin') {
@@ -94,27 +95,31 @@ class NotificationController {
             echo json_encode(["message" => "Admin notification not found"]);
             return;
         }
-
+    
         // Update notification with admin's ID
         $success = $this->notificationModel->editAdminNotification(
             $input['notification_id'],
             (bool)$input['read'],
             $admin['admin_id']
         );
-
+    
         if ($success) {
             $updatedNotification = $this->notificationModel->getNotificationById($input['notification_id']);
             
             // Create student notification if marked as read
             if ($updatedNotification['read_notif'] == 1) {
+                $statusMessage = "Your submission for the requirement for {$input['requirement_name']} has been " . 
+                               ($input['status'] === 'approved' ? "approved" : "rejected") . 
+                               " by Admin {$admin['name']}";
+                
                 $this->notificationModel->create(
-                    "Admin {$admin['name']} has viewed your document",
+                    $statusMessage,
                     'student',
-                    $updatedNotification['related_user_id'], // Student ID
+                    $updatedNotification['related_user_id'],
                     $admin['admin_id']
                 );
             }
-
+    
             echo json_encode([
                 "success" => true,
                 "notification" => $updatedNotification
@@ -310,16 +315,16 @@ class NotificationController {
 
     public function toggleStaffNotification() {
         header('Content-Type: application/json');
-        
         try {
-            // Validate input
             $input = json_decode(file_get_contents('php://input'), true);
-            if (empty($input['notification_id']) || !isset($input['read'])) {
+            
+            // Validate input
+            if (empty($input['notification_id']) || !isset($input['read']) || empty($input['status']) || empty($input['requirement_name'])) {
                 http_response_code(400);
                 echo json_encode(["success" => false, "message" => "Missing required fields"]);
                 return;
             }
-        
+    
             // Authenticate staff
             $staff = $this->validateAuthStaff();
             if (!$staff) {
@@ -327,7 +332,7 @@ class NotificationController {
                 echo json_encode(["success" => false, "message" => "Unauthorized"]);
                 return;
             }
-        
+    
             // Get original notification
             $notification = $this->notificationModel->getNotificationById($input['notification_id']);
             if (!$notification) {
@@ -336,43 +341,39 @@ class NotificationController {
                 return;
             }
     
-            // Debug log
-            error_log("Processing staff notification toggle: " . print_r($notification, true));
-        
             // Update notification
             $success = $this->notificationModel->editStaffNotification(
                 $input['notification_id'],
                 (bool)$input['read'],
                 $staff['staff_id']
             );
-        
+    
             if ($success && $input['read']) {
-                // Only create student notification if there's a related_user_id
                 if (!empty($notification['related_user_id'])) {
+                    $statusMessage = "Your submission for the requirement for {$input['requirement_name']} has been " . 
+                                   ($input['status'] === 'approved' ? "approved" : "rejected") . 
+                                   " by Staff {$staff['name']}";
+                    
                     $notificationCreated = $this->notificationModel->createStaffNotification(
-                        "Staff {$staff['name']} viewed your document",
+                        $statusMessage,
                         $notification['related_user_id'],
                         $staff['staff_id']
                     );
-                    
+    
                     if (!$notificationCreated) {
-                        error_log("Failed to create student notification for staff view");
+                        error_log("Failed to create student notification for staff response");
                     }
-                } else {
-                    error_log("No related_user_id found for notification {$input['notification_id']}");
                 }
             }
-        
-            // Get updated notification for response
+    
             $updatedNotification = $this->notificationModel->getNotificationById($input['notification_id']);
-        
             echo json_encode([
                 "success" => $success,
                 "notification" => $updatedNotification,
                 "message" => $success ? "Notification updated successfully" : "Failed to update notification"
             ]);
-            
-        } catch (\Exception $e) {
+    
+        } catch (Exception $e) {
             error_log("Error in toggleStaffNotification: " . $e->getMessage());
             http_response_code(500);
             echo json_encode([
