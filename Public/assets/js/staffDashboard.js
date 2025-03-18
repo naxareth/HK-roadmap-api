@@ -1,6 +1,20 @@
+//global variables
+let currentDocIndex = 0;
+let docItems = [];
+let allComments = [];
+let allStudents = [];
 let allSubmissions = [];
+let currentSortOrder = 'desc';
+let currentCollapseStates = new Map();
+let requirementMap = new Map();
+let eventMap = new Map();
+let studentMap = new Map();
+let userProfile = null;
+let departmentMapping = {};
+let reverseDepartmentMapping = {};
 
-//Checking token
+
+//Checking token and logouts
 function checkTokenAndRedirect() {
     const token = localStorage.getItem('authToken');
     if (!token) {
@@ -14,7 +28,7 @@ function getAuthHeaders() {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     };
-  }
+}
 
 function logout() {
     alert('Logging out...');
@@ -49,19 +63,10 @@ async function staffLogout() {
 }
 
 //popups
-
-function toggleAccountPopup() {
-    const popup = document.getElementById('accountPopup');
-    if (popup) {
-        popup.style.display = popup.style.display === 'block' ? 'none' : 'block';
-    }
-}
-
 function closeCommentPopup() { 
     const popup = document.getElementById('commentPopup'); 
         if (popup) { popup.style.display = 'none'; } 
 }
-
 
 function toggleNotifPopup() {
     const popup = document.getElementById('notificationPopup');
@@ -83,7 +88,14 @@ function toggleProfileMenu() {
     menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
 }
 
-// Tabs for the tables and tabs
+function closeEditPopup() {
+    const popup = document.getElementById('editCommentPopup');
+    if (popup) {
+        popup.style.display = 'none';
+    }
+}
+
+// Tabs and sections
 function showTab(tabId) {
     const tabContents = document.querySelectorAll('.tab-content');
     tabContents.forEach(content => content.style.display = 'none');
@@ -121,8 +133,19 @@ function showSection(section) {
     }
 }
 
-//table fetches
+function showError(message) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-message';
+    errorDiv.textContent = message;
+    
+    const container = document.querySelector('.staff-container');
+    if (container) {
+        container.prepend(errorDiv);
+        setTimeout(() => errorDiv.remove(), 5000);
+    }
+}
 
+//table fetches in tabs, from api
 async function fetchProfiles(type) {
     try {
         const response = await fetch(`/hk-roadmap/profile/all?type=${type}`, {
@@ -136,6 +159,8 @@ async function fetchProfiles(type) {
         }
         
         const data = await response.json();
+        allStudents = data; // Store in global variable
+        renderStudents(data);
         return data;
     } catch (error) {
         console.error(`Error fetching ${type} profiles:`, error);
@@ -144,10 +169,48 @@ async function fetchProfiles(type) {
     }
 }
 
+async function fetchAllEvents() {
+    try {
+        const response = await fetch('/hk-roadmap/event/get', {
+            headers: getAuthHeaders()
+        });
+        
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        
+        const data = await response.json();
+        
+        // Handle different response formats
+        const events = Array.isArray(data) ? data : data.events || [];
+        
+        if (events.length === 0) {
+            console.warn('No events found in response');
+            return;
+        }
+        
+        eventMap = new Map(
+            events.map(event => [
+                Number(event.event_id), 
+                event.event_name || `Unnamed Event (${event.event_id})`
+            ])
+        );
+    } catch (error) {
+        console.error('Error fetching events:', error);
+        showError('Failed to load event names');
+        // Initialize empty map to prevent errors
+        eventMap = new Map();
+    }
+}
+
+
 async function fetchStudent() {
     const data = await fetchProfiles('student');
     const tableBody = document.querySelector('#studentsTable tbody');
     tableBody.innerHTML = '';
+
+    studentMap = new Map(data.map(student => [
+        Number(student.student_id),  // key: student_id as number
+        student.name || `Student ${student.student_id}`  // value: student name
+    ]));
     
     data.forEach(student => {
         const row = document.createElement('tr');
@@ -215,21 +278,27 @@ function showProfileDetails(type, profile) {
     };
 }
 
-function showError(message) {
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'error-message';
-    errorDiv.textContent = message;
-    
-    const container = document.querySelector('.staff-container');
-    if (container) {
-        container.prepend(errorDiv);
-        setTimeout(() => errorDiv.remove(), 5000);
+async function fetchSubmissions() {
+    try {
+      const response = await fetch('/hk-roadmap/submission/update', {
+        headers: getAuthHeaders()
+      });
+      const data = await response.json();
+      allSubmissions = data; // Store fetched data <-- ADD THIS LINE
+      renderTable(data);
+    } catch (error) {
+      console.error('Fetch error:', error);
+      showError('Failed to load submissions.');
+      renderTable([]);
     }
 }
 
-//view documents and search for submission
-let currentDocIndex = 0;
-let docItems = [];
+//view documents and search for submission ans students, locally got after get api
+async function fetchDocument(id) {
+    return fetch(`/hk-roadmap/submission/detail?submission_id=${id}`)
+        .then(res => res.json())
+        .catch(() => null);
+}
 
 function viewDocuments(submissionIds) {
     const popup = document.getElementById('documentPopup');
@@ -252,12 +321,6 @@ function viewDocuments(submissionIds) {
             renderDocuments();
             popup.style.display = 'block';
         });
-}
-
-async function fetchDocument(id) {
-    return fetch(`/hk-roadmap/submission/detail?submission_id=${id}`)
-        .then(res => res.json())
-        .catch(() => null);
 }
 
 function renderDocuments() {
@@ -296,6 +359,27 @@ function renderDocuments() {
         }
         
         contentContainer.appendChild(docItem);
+    });
+}
+
+function renderStudents(students) {
+    const tableBody = document.querySelector('#studentsTable tbody');
+    tableBody.innerHTML = '';
+    
+    students.forEach(student => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${student.student_number || '-'}</td>
+            <td>${student.name || '-'}</td>
+            <td>${student.department || '-'}</td>
+            <td>${student.year_level || '-'}</td>
+            <td>
+                <button class="view-details-btn" onclick="showProfileDetails('student', ${JSON.stringify(student).replace(/"/g, '&quot;')})">
+                    View Details
+                </button>
+            </td>
+        `;
+        tableBody.appendChild(row);
     });
 }
 
@@ -360,23 +444,6 @@ function closeDocumentPopup() {
     docItems = [];
 }
 
-//submissions
-async function fetchSubmissions() {
-  try {
-    const response = await fetch('/hk-roadmap/submission/update', {
-      headers: getAuthHeaders()
-    });
-    const data = await response.json();
-    allSubmissions = data; // Store fetched data <-- ADD THIS LINE
-    renderTable(data);
-  } catch (error) {
-    console.error('Fetch error:', error);
-    showError('Failed to load submissions.');
-    renderTable([]);
-  }
-}
-
-// Modified render function
 function renderTable(data) {
     const tableBody = document.querySelector('#submissionsTable tbody');
     tableBody.innerHTML = '';
@@ -409,6 +476,61 @@ function renderTable(data) {
 }
 
 //notification
+async function fetchNotifications() {
+    try {
+        notificationList.innerHTML = '<div class="loading">Loading...</div>';
+        
+        const response = await fetch('/hk-roadmap/notification/staff', {
+            headers: getAuthHeaders(),
+            cache: 'no-cache'
+        });
+
+        if (!response.ok) throw new Error(`HTTP error! ${response.status}`);
+        
+        const notifications = await response.json();
+        
+        let unreadCount = 0;
+        notificationList.innerHTML = '';
+
+        if (notifications.length === 0) {
+            notificationList.innerHTML = '<div class="empty">No new notifications</div>';
+            updateNotificationBadge(0);
+            return;
+        }
+
+        const sortedNotifications = notifications.sort((a, b) => {
+            const dateA = new Date(a.created_at);
+            const dateB = new Date(b.created_at);
+            return dateB - dateA;
+        });
+
+        sortedNotifications.forEach(notification => {
+            const notificationItem = document.createElement('div');
+            notificationItem.className = `notification-item ${notification.read_notif ? '' : 'unread'}`;
+            notificationItem.innerHTML = `
+                <div class="notification-content">
+                    <p>${notification.notification_body}</p>
+                    <small>${formatDateTime(notification.created_at)}</small>
+                    <button class="mark-read-btn" 
+                            onclick="toggleReadStatus(${notification.notification_id}, this)"
+                            data-read="${notification.read_notif ? 1 : 0}">
+                        ${notification.read_notif ? 'Mark Unread' : 'Mark Read'}
+                    </button>
+                </div>
+            `;
+            notificationItem.ondblclick = () => navigateToSubmission(notification.submission_id);
+            notificationList.appendChild(notificationItem);
+            if (!notification.read_notif) unreadCount++;
+        });
+
+        updateNotificationBadge(unreadCount);
+        
+    } catch (error) {
+        console.error('Notification error:', error);
+        notificationList.innerHTML = '<div class="error">Failed to load notifications</div>';
+    }
+}
+
 const createRefreshControls = (fetchCallback, interval = 30000) => {
     let isRefreshing = false;
     let refreshInterval = null;
@@ -454,63 +576,6 @@ function formatDateTime(timestamp) {
         });
     } catch (e) {
         return '--';
-    }
-}
-
-async function fetchNotifications() {
-    try {
-        notificationList.innerHTML = '<div class="loading">Loading...</div>';
-        
-        const response = await fetch('/hk-roadmap/notification/staff', {
-            headers: getAuthHeaders(),
-            cache: 'no-cache' // Prevent browser caching
-        });
-
-        if (!response.ok) throw new Error(`HTTP error! ${response.status}`);
-        
-        const notifications = await response.json();
-        
-        // Clear existing content
-        let unreadCount = 0;
-        notificationList.innerHTML = '';
-
-        if (notifications.length === 0) {
-            notificationList.innerHTML = '<div class="empty">No new notifications</div>';
-            updateNotificationBadge(0);
-            return;
-        }
-
-        // Sort notifications by date (newest first)
-        const sortedNotifications = notifications.sort((a, b) => {
-            const dateA = new Date(a.created_at);
-            const dateB = new Date(b.created_at);
-            return dateB - dateA; // Descending order
-        });
-
-        sortedNotifications.forEach(notification => {
-            const notificationItem = document.createElement('div');
-            notificationItem.className = `notification-item ${notification.read_notif ? '' : 'unread'}`;
-            notificationItem.innerHTML = `
-                <div class="notification-content">
-                    <p>${notification.notification_body}</p>
-                    <small>${formatDateTime(notification.created_at)}</small>
-                    <button class="mark-read-btn" 
-                            onclick="toggleReadStatus(${notification.notification_id}, this)"
-                            data-read="${notification.read_notif ? 1 : 0}">
-                        ${notification.read_notif ? 'Mark Unread' : 'Mark Read'}
-                    </button>
-                </div>
-            `;
-            notificationItem.ondblclick = () => navigateToSubmission(notification.submission_id);
-            notificationList.appendChild(notificationItem);
-            if (!notification.read_notif) unreadCount++;
-        });
-
-        updateNotificationBadge(unreadCount);
-        
-    } catch (error) {
-        console.error('Notification error:', error);
-        notificationList.innerHTML = '<div class="error">Failed to load notifications</div>';
     }
 }
 
@@ -609,7 +674,6 @@ async function markAllAsRead() {
 
         if (!response.ok) throw new Error('Failed to mark all as read');
         
-        // Update UI
         document.querySelectorAll('.notification-item').forEach(item => {
             item.classList.remove('unread');
             const button = item.querySelector('.mark-read-btn');
@@ -635,15 +699,10 @@ const badgeRefresher = {
         if (badge) badge.textContent = parseInt(badge.textContent) || 0;
       }, 30000);
     }
-  };
+};
 
 //profile
-let userProfile = null;
-let departmentMapping = {};
-let reverseDepartmentMapping = {};
-
 function updateNavProfile(profileData) {
-    // Update navigation bar profile elements
     const navProfileName = document.getElementById('navProfileName');
     const navProfileImage = document.querySelector('.profile-container .profile-pic');
     
@@ -680,6 +739,7 @@ async function fetchStaffProfile() {
             
             updateProfileUI();
             updateNavProfile(profileData);
+            disableProfileEditing();
         } else {
             throw new Error('Failed to fetch profile');
         }
@@ -748,11 +808,18 @@ function enableProfileEditing() {
 
 function disableProfileEditing() {
     const inputs = document.querySelectorAll('#profileForm input, #profileForm select');
-    inputs.forEach(input => input.disabled = true);
+    inputs.forEach(input => {
+        input.disabled = true;
+        input.style.cursor = 'not-allowed';
+    });
     
     document.getElementById('editProfileButton').style.display = 'block';
     document.getElementById('saveProfileButton').style.display = 'none';
     document.getElementById('cancelEditButton').style.display = 'none';
+    
+    // Reset file input
+    const fileInput = document.querySelector('input[type="file"]');
+    if (fileInput) fileInput.value = '';
 }
 
 function populateDepartmentSelect() {
@@ -760,10 +827,9 @@ function populateDepartmentSelect() {
     departmentSelect.innerHTML = '<option value="">Select Department</option>';
     
     if (departments) {
-        // Use full names in the dropdown
         Object.entries(departments).forEach(([abbr, name]) => {
             const option = document.createElement('option');
-            option.value = name; // Use full name as value
+            option.value = name;
             option.textContent = name;
             departmentSelect.appendChild(option);
         });
@@ -1006,61 +1072,125 @@ async function updateProfileUI() {
         
         // Update navigation profile
         updateNavProfile(userProfile);
+        disableProfileEditing();
     }
 }
 
+function populateDepartmentSelect() {
+    const staffSelect = document.getElementById('staffDepartment');
+    
+    [staffSelect].forEach(select => {
+        if (select) {
+            select.innerHTML = Object.values(departmentMapping)
+                .map(name => `<option value="${name}">${name}</option>`)
+                .join('');
+        }
+    });
+}
+
 //comments
-let allComments = [];
-let currentSortOrder = 'desc';
+async function fetchAllRequirements() {
+    try {
+        const response = await fetch('/hk-roadmap/requirements/get', {
+            headers: getAuthHeaders()
+        });
+        
+        if (!response.ok) throw new Error('Failed to fetch requirements');
+        
+        const requirements = await response.json();
+        requirementMap = new Map(
+            requirements.map(req => [
+                req.requirement_id,
+                {
+                    name: req.requirement_name,
+                    event_id: req.event_id // Store event ID with requirement
+                }
+            ])
+        );
+    } catch (error) {
+        console.error('Error fetching requirements:', error);
+        showError('Failed to load requirement names');
+    }
+}
 
 function filterComments(searchTerm) {
     return allComments.filter(comment => {
+        // Get student name
+        const studentName = studentMap.get(comment.student_id)?.toLowerCase() || '';
+        
+        // Get requirement details
+        const requirement = requirementMap.get(comment.requirement_id) || {};
+        const requirementName = requirement.name?.toLowerCase() || '';
+        
+        // Get event name
+        const eventId = requirement.event_id;
+        const eventName = eventMap.get(eventId)?.toLowerCase() || '';
+
+        // Create search string
         const searchString = [
-            comment.requirement_id.toString(),
-            comment.student_id.toString(),
+            eventName,
+            requirementName,
+            studentName,
             comment.body.toLowerCase(),
             comment.user_name.toLowerCase()
         ].join(' ');
-        
+
         return searchString.includes(searchTerm.toLowerCase());
     });
 }
 
-function renderCommentDashboard(comments = allComments) {
+async function renderCommentDashboard(comments = allComments) {
     const container = document.querySelector('.comment-groups-container');
     if (!container) return;
 
     container.innerHTML = '';
     
     const grouped = groupComments(comments);
-    Object.entries(grouped).forEach(([reqId, students]) => {
+    
+    for (const [reqId, groupData] of Object.entries(grouped)) {
+        const { event_id, students } = groupData;
+        const numericReqId = Number(reqId); // Define numericReqId here
+        const numericEventId = Number(event_id);
+        
+        const requirement = requirementMap.get(numericReqId) || { name: `Requirement ${numericReqId}` };
+        const eventName = eventMap.get(numericEventId) || `Event #${numericEventId}`;
+        
         const requirementGroup = document.createElement('div');
         requirementGroup.className = 'requirement-group';
         requirementGroup.innerHTML = `
-            <h3>Requirement ID: ${reqId}</h3>
+            <h3>${eventName} - ${requirement.name}</h3>
             <div class="student-groups"></div>
         `;
-        
+
         const studentGroups = requirementGroup.querySelector('.student-groups');
-        renderStudentGroups(studentGroups, students);
+        renderStudentGroups(studentGroups, students, numericReqId);
         container.appendChild(requirementGroup);
-    });
+    }
 }
 
-function renderStudentGroups(container, students) {
+
+function renderStudentGroups(container, students, requirementId) {
     container.innerHTML = '';
 
     Object.entries(students).forEach(([studentId, comments]) => {
+        
         const studentGroup = document.createElement('div');
         studentGroup.className = 'student-group collapsed';
 
-        // Create collapsible header
+        const sortedComments = [...comments].sort((a, b) => 
+            new Date(a.created_at) - new Date(b.created_at)
+        );
+
+        // Get the oldest comment's user_name
+        const oldestComment = sortedComments[0];
+        const studentName = oldestComment?.user_name || `Student ${studentId}`;
+
         const header = document.createElement('div');
         header.className = 'student-header';
         header.innerHTML = `
             <div class="header-content">
                 <span class="chevron">▶</span>
-                <h4>Student ID: ${studentId}</h4>
+                <h4>${studentName}</h4>
                 <span class="comment-count">(${comments.length} comments)</span>
             </div>
         `;
@@ -1100,7 +1230,7 @@ function renderStudentGroups(container, students) {
             commentsList.appendChild(commentCard);
         });
 
-        // Toggle collapse functionality
+
         header.addEventListener('click', function(e) {
             const isCollapsed = studentGroup.classList.contains('collapsed');
             studentGroup.classList.toggle('collapsed');
@@ -1111,13 +1241,18 @@ function renderStudentGroups(container, students) {
             e.stopPropagation();
         });
 
+        const addCommentBtn = document.createElement('button');
+        addCommentBtn.className = 'add-comment-btn';
+        addCommentBtn.innerHTML = '<i class="fas fa-plus"></i> Add Comment';
+        addCommentBtn.onclick = () => openCommentDialog(studentId, requirementId);
+        
+        commentsList.appendChild(addCommentBtn);
         studentGroup.appendChild(header);
         studentGroup.appendChild(commentsList);
         container.appendChild(studentGroup);
     });
 }
 
-// Toggle action menu
 function toggleActionMenu(event, button) {
     event.stopPropagation();
     
@@ -1135,9 +1270,11 @@ function toggleActionMenu(event, button) {
 
 async function initCommentManagement() {
     try {
-        if (allComments.length === 0) {
-            await fetchAllComments();
-        }
+        if (allComments.length === 0) await fetchAllComments();
+        await Promise.all([
+            fetchAllRequirements(),
+            fetchAllEvents()
+        ]);
         renderCommentDashboard(allComments);
     } catch (error) {
         console.error('Comment init error:', error);
@@ -1175,44 +1312,33 @@ function toggleSortOrder() {
 }
 
 function groupComments(comments) {
-    if (!Array.isArray(comments)) {
-        console.error('Invalid comments data:', comments);
-        return {};
-    }
-
     return comments.reduce((acc, comment) => {
         try {
-            // Validate comment structure
-            if (!comment || typeof comment !== 'object') {
-                console.warn('Skipping invalid comment format');
-                return acc;
-            }
-
-            // Validate required fields
             const reqId = Number(comment.requirement_id);
             const studentId = Number(comment.student_id);
-            const body = comment.body?.toString().trim();
             
-            if (!reqId || !studentId || !body) {
-                console.warn('Skipping incomplete comment:', comment);
+            if (!reqId || !studentId) {
+                console.warn('Skipping comment with invalid IDs:', comment);
                 return acc;
             }
-
-            // Initialize structure
-            acc[reqId] = acc[reqId] || {};
-            acc[reqId][studentId] = acc[reqId][studentId] || [];
             
-            // Add valid comment
-            acc[reqId][studentId].push({
-                ...comment,
-                requirement_id: reqId,
-                student_id: studentId,
-                body: body
-            });
+            // Get event ID from requirement map
+            const requirement = requirementMap.get(reqId);
+            const eventId = requirement?.event_id || 0;
+            
+            acc[reqId] = acc[reqId] || {
+                event_id: eventId,
+                students: {}
+            };
+            
+            acc[reqId].students[studentId] = acc[reqId].students[studentId] || [];
+            acc[reqId].students[studentId].push(comment);
+            
+            return acc;
         } catch (error) {
-            console.error('Error processing comment:', error);
+            console.error('Error processing comment:', error, comment);
+            return acc;
         }
-        return acc;
     }, {});
 }
 
@@ -1246,23 +1372,6 @@ async function fetchAllComments() {
         showError('Failed to load comments');
         return false;
     }
-}
-
-function openCommentDialog(studentId, requirementId) {
-    const popup = document.getElementById('commentPopup') || createCommentPopup();
-    
-    // Set data attributes for reference
-    popup.dataset.studentId = studentId;
-    popup.dataset.requirementId = requirementId;
-    
-    // Clear previous input
-    const commentInput = document.getElementById('commentInput');
-    if (commentInput) {
-        commentInput.value = '';
-    }
-    
-    popup.style.display = 'block';
-
 }
 
 async function submitComment() {
@@ -1365,15 +1474,6 @@ function editComment(commentId, commentBody) {
     editPopup.style.display = 'block';
 }
 
-// Close edit popup
-function closeEditPopup() {
-    const popup = document.getElementById('editCommentPopup');
-    if (popup) {
-        popup.style.display = 'none';
-    }
-}
-
-// Update comment
 async function updateComment(commentId) {
     const newText = document.getElementById('editCommentText').value.trim();
     if (!newText) {
@@ -1403,11 +1503,10 @@ async function updateComment(commentId) {
         }
     } catch (error) {
         console.error('Error updating comment:', error);
-        alert('Failed to update comment');
+        alert('You can only edit your own comment');
     }
 }
 
-// Delete comment
 async function deleteComment(commentId) {
     if (!confirm('Are you sure you want to delete this comment?')) {
         return;
@@ -1433,59 +1532,24 @@ async function deleteComment(commentId) {
         }
     } catch (error) {
         console.error('Error deleting comment:', error);
-        alert('Failed to delete comment');
+        alert('You can only delete your own comments');
     }
 }
 
-let currentCollapseStates = new Map();
-
-//safe add event listener
-
-function safeAddEventListener(selector, event, handler) {
-    const element = document.querySelector(selector);
-    if (element) {
-        element.addEventListener(event, handler);
-    } else {
-        console.warn(`Element with selector "${selector}" not found`);
-    }
-}
-
-// Utility function to safely add multiple event listeners
-function safeAddEventListeners(selector, event, handler) {
-    const elements = document.querySelectorAll(selector);
-    if (elements.length > 0) {
-        elements.forEach(element => element.addEventListener(event, handler));
-    } else {
-        console.warn(`No elements found with selector "${selector}"`);
-    }
-}
-
-// Add missing populateDepartmentSelect function
-function populateDepartmentSelect() {
-    const staffSelect = document.getElementById('staffDepartment');
-    
-    [staffSelect].forEach(select => {
-        if (select) {
-            select.innerHTML = Object.values(departmentMapping)
-                .map(name => `<option value="${name}">${name}</option>`)
-                .join('');
-        }
-    });
-}
 
 document.addEventListener('DOMContentLoaded', () => {
     try {
-        // Initialize core functionality
         badgeRefresher.init();
         const refreshControls = createRefreshControls(fetchNotifications, 10000);
         refreshControls.start();
+        
         showSection('home'); 
         showTab('submissions');
         fetchSubmissions();
         populateDepartmentSelect();
 
-        // Safe event listener attachments
-        safeAddEventListener('#searchInput', 'input', function(e) {
+        // Search Input
+        document.querySelector('#searchInput')?.addEventListener('input', function(e) {
             const searchTerm = e.target.value.toLowerCase().trim();
             const filtered = allSubmissions.filter(group => {
                 const searchString = [
@@ -1500,61 +1564,76 @@ document.addEventListener('DOMContentLoaded', () => {
             renderTable(filtered);
         });
 
-        // Document click handler for popups
+        document.querySelector('.account-button')?.addEventListener('click', toggleAccountPopup);
+        document.querySelector('.popup-button')?.addEventListener('click', logout);
+
         document.addEventListener('click', (e) => {
             const notificationPopup = document.getElementById('notificationPopup');
             const profileMenu = document.getElementById('profileMenu');
-
-            if (!e.target.closest('.notifications-container') && notificationPopup) {
-                notificationPopup.style.display = 'none';
-            }
-            if (!e.target.closest('.profile-container') && profileMenu) {
-                profileMenu.style.display = 'none';
-            }
+            if (!e.target.closest('.notifications-container') && notificationPopup) notificationPopup.style.display = 'none';
+            if (!e.target.closest('.profile-container') && profileMenu) profileMenu.style.display = 'none';
         });
 
-        // Comments section initialization
         const commentSearch = document.getElementById('commentSearch');
         if (commentSearch) {
             commentSearch.addEventListener('input', function(e) {
                 const currentStates = new Map();
+                
+                // Store current collapse states using student names
                 document.querySelectorAll('.student-group').forEach(group => {
-                    const studentId = group.querySelector('h4')?.textContent.split(': ')[1];
-                    if (studentId) {
-                        currentStates.set(studentId, group.classList.contains('collapsed'));
-                    }
+                    const studentName = group.querySelector('h4')?.textContent;
+                    if (studentName) currentStates.set(studentName, group.classList.contains('collapsed'));
                 });
 
                 const searchTerm = e.target.value.trim().toLowerCase();
                 const filtered = searchTerm ? filterComments(searchTerm) : allComments;
                 renderCommentDashboard(filtered);
 
-                // Re-apply collapse states
+                // Restore collapse states using student names
                 setTimeout(() => {
                     document.querySelectorAll('.student-group').forEach(group => {
-                        const studentId = group.querySelector('h4')?.textContent.split(': ')[1];
-                        if (studentId && currentStates.has(studentId)) {
-                            group.classList.toggle('collapsed', currentStates.get(studentId));
+                        const studentName = group.querySelector('h4')?.textContent;
+                        if (studentName && currentStates.has(studentName)) {
+                            group.classList.toggle('collapsed', currentStates.get(studentName));
                         }
                     });
                 }, 0);
             });
         }
 
-        // Initialize profiles and comments
-        initCommentManagement();
+        const studentSearch = document.getElementById('studentSearch');
+        if (studentSearch) {
+            studentSearch.addEventListener('input', function(e) {
+                const searchTerm = e.target.value.toLowerCase().trim();
+                const filtered = searchTerm ? 
+                    allStudents.filter(student => {
+                        const searchString = [
+                            student.student_number || '',
+                            student.name || '',
+                            student.department || '',
+                            student.year_level || ''
+                        ].join(' ').toLowerCase();
+                        return searchString.includes(searchTerm);
+                    }) : 
+                    allStudents;
+                    
+                renderStudents(filtered);
+            });
+        }
 
         const editButton = document.getElementById('editProfileButton');
         const saveButton = document.getElementById('saveProfileButton');
         const inputs = document.querySelectorAll('#profile-section input');
-
-        editButton.addEventListener('click', function() {
-            enableProfileEditing(inputs, editButton, saveButton);
-        });
-
-        saveButton.addEventListener('click', function() {
-            saveProfile(inputs, editButton, saveButton);
-        });
+        
+        if (editButton && saveButton) {
+            editButton.addEventListener('click', function() {
+                enableProfileEditing(inputs, editButton, saveButton);
+            });
+            
+            saveButton.addEventListener('click', function() {
+                saveProfile(inputs, editButton, saveButton);
+            });
+        }
 
         const submissionsTable = document.querySelector('#submissionsTable');
         if (submissionsTable) {
@@ -1567,22 +1646,16 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Safe button event listeners
-        safeAddEventListener('.account-button', 'click', toggleAccountPopup);
-        safeAddEventListener('.popup-button', 'click', logout);
-
+        initCommentManagement();
+        fetchDepartments().then(populateDepartmentSelect);
+        fetchStaffProfile();
+        setupProfilePictureUpload();
 
     } catch (error) {
         console.error('Error initializing dashboard:', error);
-        // Show user-friendly error message
         const errorMessage = document.createElement('div');
         errorMessage.className = 'error-message';
         errorMessage.textContent = 'Failed to initialize dashboard. Please refresh the page.';
         document.body.prepend(errorMessage);
     }
-
-    
-    fetchDepartments().then(populateDepartmentSelect);
-    fetchStaffProfile();
-    setupProfilePictureUpload();
 });

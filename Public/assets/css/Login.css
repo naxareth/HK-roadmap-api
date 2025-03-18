@@ -164,3 +164,79 @@ a:link {
 .form-input label{
     text-align: left;
 }
+
+.design, .wrapper {
+    position: relative;
+    right: auto;
+    left: auto;
+    width: 100%;
+    max-width: 700px; /* Adjust as needed */
+    margin: 0 auto;
+    padding: 20px;
+}
+
+@media (min-width: 768px) {
+    /* Desktop layout */
+    .section {
+        flex-direction: row;
+        justify-content: space-around;
+        align-items: center;
+    }
+    
+    .design {
+        width: 45%;
+        margin-right: 5%;
+    }
+    
+    .wrapper {
+        width: 45%;
+        margin-left: 5%;
+    }
+}
+
+@media (max-width: 767px) {
+    /* Mobile layout */
+    .section {
+        flex-direction: column;
+    }
+    
+    body {
+        height: auto;
+        min-height: 100vh;
+    }
+    
+    .design, .wrapper {
+        width: 100%;
+        max-width: 500px;
+        padding: 20px;
+    }
+    
+    .design {
+        order: 1;
+        margin-top: 50px;
+    }
+    
+    .wrapper {
+        order: 2;
+        margin-top: 30px;
+    }
+    
+    .school-desc .logo {
+        width: 300px;
+        height: auto;
+    }
+}
+
+@media (max-width: 480px) {
+    .design, .wrapper {
+        padding: 10px;
+    }
+    
+    .school-desc .logo {
+        width: 250px;
+    }
+    
+    .login-box {
+        padding: 20px;
+    }
+}

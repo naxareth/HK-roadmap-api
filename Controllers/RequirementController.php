@@ -6,24 +6,28 @@ use Models\Requirement;
 use Controllers\AdminController;
 use Controllers\StudentController;
 use PhpMailer\MailService;
+use Controllers\StaffController;
 
 require_once '../models/Requirement.php';
 require_once 'AdminController.php';
 require_once 'StudentController.php';
 require_once '../PhpMailer/MailService.php';
 require_once '../Controllers/MailController.php';
+require_once 'StaffController.php';
 
 class RequirementController {
     private $requirementModel;
     private $adminController;
     private $studentController;
     private $mailService;
+    private $staffController;
 
     public function __construct($db) {
         $this->requirementModel = new Requirement($db);
         $this->adminController = new AdminController($db);
         $this->studentController = new StudentController($db);
         $this->mailService = new MailService();
+        $this->staffController = new StaffController($db);
     }
 
     public function getRequirementsByEventId() {
@@ -62,7 +66,7 @@ class RequirementController {
         }
     
         $token = str_replace('Bearer ', '', $headers['Authorization']);
-        if (!$this->adminController->validateToken($token) && !$this->studentController->validateToken($token)) {
+        if (!$this->adminController->validateToken($token) && !$this->studentController->validateToken($token) && !$this->staffController->validateToken($token)) {
             echo json_encode(["message" => "Invalid token."]);
             return;
         }
@@ -123,7 +127,7 @@ class RequirementController {
         }
 
         $token = str_replace('Bearer ', '', $headers['Authorization']);
-        if (!$this->adminController->validateToken($token) && !$this->studentController->validateToken($token)) {
+        if (!$this->adminController->validateToken($token) && !$this->studentController->validateToken($token) && !$this->staffController->validateToken($token)) {
             echo json_encode(["message" => "Invalid token."]);
             return;
         }

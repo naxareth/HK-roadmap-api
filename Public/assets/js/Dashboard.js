@@ -1,3 +1,8 @@
+//store global variables
+let allAdmins = [];
+let allStudents = [];
+let allStaff = [];
+
 //Checking token
 function checkTokenAndRedirect() {
     const token = localStorage.getItem('authToken');
@@ -159,10 +164,15 @@ async function fetchProfiles(type) {
 
 async function fetchStudents() {
     const data = await fetchProfiles('student');
+    allStudents = data;
+    renderStudents(data);
+}
+
+function renderStudents(students) {
     const tableBody = document.querySelector('#studentsTable tbody');
     tableBody.innerHTML = '';
     
-    data.forEach(student => {
+    students.forEach(student => {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${student.student_number || '-'}</td>
@@ -181,10 +191,15 @@ async function fetchStudents() {
 
 async function fetchStaff() {
     const data = await fetchProfiles('staff');
+    allStaff = data;
+    renderStaff(data);
+}
+
+function renderStaff(staff) {
     const tableBody = document.querySelector('#staffsTable tbody');
     tableBody.innerHTML = '';
     
-    data.forEach(staff => {
+    staff.forEach(staff => {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${staff.name || '-'}</td>
@@ -202,10 +217,15 @@ async function fetchStaff() {
 
 async function fetchAdmins() {
     const data = await fetchProfiles('admin');
+    allAdmins = data;
+    renderAdmins(data);
+}
+
+function renderAdmins(admins) {
     const tableBody = document.querySelector('#adminsTable tbody');
     tableBody.innerHTML = '';
     
-    data.forEach(admin => {
+    admins.forEach(admin => {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${admin.name || '-'}</td>
@@ -236,17 +256,50 @@ function showProfileDetails(type, profile) {
                  alt="Profile Picture" 
                  class="profile-picture">
             <div class="details-grid">
-                <p><strong>Name:</strong> ${profile.name || '-'}</p>
-                <p><strong>Email:</strong> ${profile.email || '-'}</p>
-                <p><strong>Department:</strong> ${profile.department || '-'}</p>
-                <p><strong>Contact Number:</strong> ${profile.contact_number || '-'}</p>
-                <p><strong>Student Number:</strong> ${profile.student_number || '-'}</p>
-                <p><strong>Year Level:</strong> ${profile.year_level || '-'}</p>
-                <p><strong>College Program:</strong> ${profile.college_program || '-'}</p>
-                <p><strong>Scholarship Type:</strong> ${profile.scholarship_type || '-'}</p>
+                <div class="details-section">
+                    <h3>Personal Information</h3>
+                    <p><strong>Name:</strong> ${profile.name || '-'}</p>
+                    <p><strong>Email:</strong> ${profile.email || '-'}</p>
+                    <p><strong>Contact:</strong> ${profile.contact_number || '-'}</p>
     `;
 
-    // Add department_others if exists
+    if (type === 'admin') {
+        content += `
+                    <p><strong>Position:</strong> ${profile.position || '-'}</p>
+                    <p><strong>Department:</strong> ${profile.department || '-'}</p>
+        `;
+    }
+
+    if (type === 'student') {
+        content += `
+                    <p><strong>Department:</strong> ${profile.department || '-'}</p>
+                </div>
+                <div class="details-section">
+                    <h3>Academic Information</h3>
+                    <p><strong>Student Number:</strong> ${profile.student_number || '-'}</p>
+                    <p><strong>Year Level:</strong> ${profile.year_level || '-'}</p>
+                    <p><strong>Program:</strong> ${profile.college_program || '-'}</p>
+                    <p><strong>Scholarship:</strong> ${profile.scholarship_type || 'None'}</p>
+        `;
+    }
+
+    if (type === 'staff') {
+        content += `
+                    <p><strong>Position:</strong> ${profile.position || '-'}</p>
+                    <p><strong>Department:</strong> ${profile.department || '-'}</p>
+                </div>
+                <div class="details-section">
+                    <h3>Additional Information</h3>
+                    <p><strong>Student Number:</strong> ${profile.student_number || '-'}</p>
+                    <p><strong>Year Level:</strong> ${profile.year_level || '-'}</p>
+                    <p><strong>Program:</strong> ${profile.college_program || '-'}</p>
+                    <p><strong>Scholarship:</strong> ${profile.scholarship_type || 'N/A'}</p>
+                    <div class="scholarship-note">
+                        Note: Scholarship information is optional for staff members
+                    </div>
+        `;
+    }
+
     if (profile.department_others) {
         content += `
                 <p><strong>Other Department:</strong> ${profile.department_others}</p>
@@ -254,12 +307,13 @@ function showProfileDetails(type, profile) {
     }
 
     content += `
+                </div>
             </div>
         </div>
     `;
 
     popupContent.innerHTML = content;
-    popup.style.display = "block";
+    popup.style.display = "flex";
 
     // Close popup handlers
     closeBtn.onclick = () => popup.style.display = "none";
@@ -1124,21 +1178,33 @@ async function deleteRequirement(requirementId) {
 
 //sub-CRUD requirements, comments
 function filterComments() {
-    const searchTerm = document.getElementById('search-input').value.toLowerCase();
-    const commentCards = document.querySelectorAll('.comment-card');
+    const searchTerm = document.getElementById('search-input').value.toLowerCase().trim();
+    const studentGroups = document.querySelectorAll('.student-comment-group');
 
-    commentCards.forEach(card => {
-        const commentBody = card.querySelector('.comment-body').textContent.toLowerCase();
-        const commentAuthor = card.querySelector('.comment-author').textContent.toLowerCase();
+    studentGroups.forEach(group => {
+        const comments = group.querySelectorAll('.comment-card');
+        let hasVisibleComments = false;
 
-        if (commentBody.includes(searchTerm) || commentAuthor.includes(searchTerm)) {
-            card.style.display = 'block';
-        } else {
-            card.style.display = 'none';
+        comments.forEach(comment => {
+            const body = comment.querySelector('.comment-body').textContent.toLowerCase();
+            const author = comment.querySelector('.comment-author').textContent.toLowerCase();
+            const matches = body.includes(searchTerm) || author.includes(searchTerm);
+            
+            comment.style.display = matches ? 'block' : 'none';
+            if (matches) hasVisibleComments = true;
+        });
+
+        // Hide entire group if no matches
+        group.style.display = hasVisibleComments ? 'block' : 'none';
+        
+        // Automatically expand matching groups
+        const container = group.querySelector('.comments-container');
+        if (hasVisibleComments) {
+            container.style.display = 'block';
+            group.querySelector('.toggle-icon').textContent = '▼';
         }
     });
 }
-
 const commentCollapseStates = new Map();
 
 async function showComments(requirementId) {
@@ -1254,6 +1320,7 @@ async function showComments(requirementId) {
         document.getElementById('requirements-section').style.display = 'none';
         document.getElementById('comment-section').style.display = 'grid';
         document.getElementById('backtoRequirements').style.display = 'block';
+        document.getElementById('backToEventsButton').style.display = 'none';
 
     } catch (error) {
         console.error('Error loading comments:', error);
@@ -2366,6 +2433,54 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+
+    const studentSearch = document.getElementById('studentSearch');
+    studentSearch?.addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase().trim();
+        const filtered = allStudents.filter(student => {
+            const searchString = [
+                student.student_number,
+                student.name,
+                student.department,
+                student.year_level,
+                student.college_program
+            ].join(' ').toLowerCase();
+            return searchString.includes(searchTerm);
+        });
+        renderStudents(filtered);
+    });
+
+    const adminSearch = document.getElementById('adminSearch');
+    adminSearch?.addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase().trim();
+        const filtered = allAdmins.filter(admin => {
+            const searchString = [
+                admin.name,
+                admin.position,
+                admin.department,
+                admin.email
+            ].join(' ').toLowerCase();
+            return searchString.includes(searchTerm);
+        });
+        renderAdmins(filtered);
+    });
+
+    const staffSearch = document.getElementById('staffSearch');
+    if (staffSearch) {
+        staffSearch.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase().trim();
+            const filtered = allStaff.filter(staffMember => {
+                const searchString = [
+                    staffMember.name || '',
+                    staffMember.position || '',
+                    staffMember.department || '',
+                    staffMember.contact_number || ''
+                ].join(' ').toLowerCase();
+                return searchString.includes(searchTerm);
+            });
+            renderStaff(filtered);
+        });
+    }
  
 
     const editButton = document.getElementById('editProfileButton');

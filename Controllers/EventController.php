@@ -5,10 +5,13 @@ namespace Controllers;
 use Models\Event;
 use Controllers\AdminController;
 use PhpMailer\MailService;
+use Controllers\StaffController;
 
 require_once '../models/Event.php';
 require_once 'AdminController.php';
 require_once '../PhpMailer/MailService.php';
+require_once 'StaffController.php';
+
 
 class EventController {
 
@@ -17,12 +20,14 @@ class EventController {
     private $adminController;
     private $studentController;
     private $mailService;
+    private $staffController;
 
     public function __construct($db) {
         $this->eventModel = new Event($db);
         $this->adminController = new AdminController($db);
         $this->studentController = new StudentController($db);
         $this->mailService = new MailService();
+        $this->staffController = new StaffController($db);
     }
 
     public function getEventById() {
@@ -62,7 +67,7 @@ class EventController {
         }
     
         $token = str_replace('Bearer ', '', $headers['Authorization']);
-        if (!$this->adminController->validateToken($token) && !$this->studentController->validateToken($token)) {
+        if (!$this->adminController->validateToken($token) && !$this->studentController->validateToken($token) && !$this->staffController->validateToken($token)) {
             echo json_encode(["message" => "Invalid token."]);
             return;
         }

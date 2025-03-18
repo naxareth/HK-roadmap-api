@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Staff Dashboard</title>
-    <link rel="stylesheet" href="/assets/css/Dashboard.css">
+    <link rel="stylesheet" href="/assets/css/staffDashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
@@ -70,6 +70,9 @@
                 </div>
                 <div id="students" class="tab-content" style="display: none;">
                     <h2>Student Table</h2>
+                    <div class="search-container">
+                        <input type="text" id="studentSearch" placeholder="Search students..." class="search-input">
+                    </div>
                     <table id="studentsTable">
                         <thead>
                             <tr>
@@ -81,7 +84,6 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Data will be populated here -->
                         </tbody>
                     </table>
                 </div>
@@ -89,7 +91,6 @@
             <section id="profile-section" class="profile-container">
                 <h2>Profile Information</h2>
                 <form id="profileForm" class="profile-form">
-                    <!-- Profile Picture Section -->
                     <div class="profile-picture-container">
                         <img id="staffProfilePicture" src="/assets/jpg/default-profile.png" alt="Profile Picture" class="profile-picture">
                         <div class="profile-picture-overlay" style="display: none;">

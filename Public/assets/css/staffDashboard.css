@@ -1037,6 +1037,22 @@ button {
     margin-bottom: 1rem;
 }
 
+.comment-controls {
+    display: grid; 
+    grid-template-columns: 1fr; 
+    gap: 20px; 
+    padding: 20px; 
+    min-width: 1050px;
+}
+
+.comment-groups-container {
+    display: grid; 
+    grid-template-columns: 1fr; 
+    gap: 20px; 
+    padding: 20px; 
+    min-width: 1050px;
+}
+
 #comment-section {
     display: grid; 
     grid-template-columns: 1fr; 
