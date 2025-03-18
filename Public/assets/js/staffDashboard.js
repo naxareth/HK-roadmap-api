@@ -57,6 +57,11 @@ function toggleAccountPopup() {
     }
 }
 
+function closeCommentPopup() { 
+    const popup = document.getElementById('commentPopup'); 
+        if (popup) { popup.style.display = 'none'; } 
+}
+
 
 function toggleNotifPopup() {
     const popup = document.getElementById('notificationPopup');
@@ -115,96 +120,99 @@ function showSection(section) {
         console.error(`Section "${section}-section" not found.`);
     }
 }
+
 //table fetches
 
-function fetchStudent() {
-    fetch('/hk-roadmap/student/profile')
-        .then(response => response.json())
-        .then(data => {
-            const tableBody = document.querySelector('#studentsTable tbody');
-            tableBody.innerHTML = ''; 
-            data.forEach(doc => {
-                const row = `<tr>
-                    <td>${doc.name}</td>
-                    <td>${doc.email}</td>
-                    <td>${doc.password}</td>
-                </tr>`;
-                tableBody.innerHTML += row;
-            });
-        })
-        .catch(error => console.error('Error fetching documents:', error));
-}
-
-function fetchStaff() {
-    fetch('/hk-roadmap/staff/profile', {
-        headers: getAuthHeaders() // Add this line
-    })
-    .then(response => {
-        if (response.status === 401) {
-            localStorage.removeItem('authToken');
-            window.location.href = '/login.html';
-            return;
-        }
-        return response.json();
-    })
-    .then(data => {
-        const tableBody = document.querySelector('#staffsTable tbody');
-        if (!tableBody) {
-            console.error('Staff table body not found');
-            return;
-        }
-        
-        tableBody.innerHTML = '';
-        data.forEach(doc => {
-            const row = `<tr>
-                <td>${doc.staff_id}</td>
-                <td>${doc.name}</td>
-                <td>${doc.email}</td>
-                <td>${doc.password}</td>
-            </tr>`;
-            tableBody.innerHTML += row;
-        });
-    })
-    .catch(error => console.error('Error fetching staff:', error));
-}
-
-async function fetchDocuments() {
-    const authToken = localStorage.getItem('authToken');
+async function fetchProfiles(type) {
     try {
-        const response = await fetch('/hk-roadmap/documents/staff', {
-            method: 'GET',
+        const response = await fetch(`/hk-roadmap/profile/all?type=${type}`, {
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
             }
         });
         
-        const data = await response.json();
-        const tableBody = document.querySelector('#documentsTable tbody');
-        tableBody.innerHTML = ''; 
-        if (Array.isArray(data.documents)) {
-            data.documents.forEach(doc => {
-                const row = `
-                    <tr>
-                        <td>${doc.document_id}</td>
-                        <td>${doc.event_id}</td>
-                        <td>${doc.requirement_id}</td>
-                        <td>${doc.student_id}</td>
-                        <td>${doc.file_path}</td>
-                        <td>${doc.upload_at}</td>
-                        <td>${doc.status}</td>
-                        <td>${doc.is_submitted}</td>
-                        <td>${doc.submitted_at}</td>
-                    </tr>`;
-                tableBody.innerHTML += row;
-            });
-        } else {
-            console.warn('No documents found in the response');
-            tableBody.innerHTML = '<tr><td colspan="12">No documents found.</td></tr>';
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
+        
+        const data = await response.json();
+        return data;
     } catch (error) {
-        console.error('Error fetching documents:', error);
+        console.error(`Error fetching ${type} profiles:`, error);
+        alert(`Failed to load ${type} data`);
+        return [];
     }
+}
+
+async function fetchStudent() {
+    const data = await fetchProfiles('student');
+    const tableBody = document.querySelector('#studentsTable tbody');
+    tableBody.innerHTML = '';
+    
+    data.forEach(student => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${student.student_number || '-'}</td>
+            <td>${student.name || '-'}</td>
+            <td>${student.department || '-'}</td>
+            <td>${student.year_level || '-'}</td>
+            <td>
+                <button class="view-details-btn" onclick="showProfileDetails('student', ${JSON.stringify(student).replace(/"/g, '&quot;')})">
+                    View Details
+                </button>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+}
+
+function showProfileDetails(type, profile) {
+    const popup = document.getElementById('profilePopup');
+    const popupContent = document.getElementById('popupContent');
+    const popupTitle = document.getElementById('popupTitle');
+    const closeBtn = popup.querySelector('.close');
+
+    popupTitle.textContent = `${type.charAt(0).toUpperCase() + type.slice(1)} Profile: ${profile.name}`;
+
+    let content = `
+        <div class="profile-details">
+            <img src="${profile.profile_picture_url || '/assets/jpg/default-profile.png'}" 
+                 alt="Profile Picture" 
+                 class="profile-picture">
+            <div class="details-grid">
+                <p><strong>Name:</strong> ${profile.name || '-'}</p>
+                <p><strong>Email:</strong> ${profile.email || '-'}</p>
+                <p><strong>Department:</strong> ${profile.department || '-'}</p>
+                <p><strong>Contact Number:</strong> ${profile.contact_number || '-'}</p>
+                <p><strong>Student Number:</strong> ${profile.student_number || '-'}</p>
+                <p><strong>Year Level:</strong> ${profile.year_level || '-'}</p>
+                <p><strong>College Program:</strong> ${profile.college_program || '-'}</p>
+                <p><strong>Scholarship Type:</strong> ${profile.scholarship_type || '-'}</p>
+    `;
+
+    // Add department_others if exists
+    if (profile.department_others) {
+        content += `
+                <p><strong>Other Department:</strong> ${profile.department_others}</p>
+        `;
+    }
+
+    content += `
+            </div>
+        </div>
+    `;
+
+    popupContent.innerHTML = content;
+    popup.style.display = "block";
+
+    // Close popup handlers
+    closeBtn.onclick = () => popup.style.display = "none";
+    
+    window.onclick = (event) => {
+        if (event.target === popup) {
+            popup.style.display = "none";
+        }
+    };
 }
 
 function showError(message) {
@@ -220,7 +228,6 @@ function showError(message) {
 }
 
 //view documents and search for submission
-
 let currentDocIndex = 0;
 let docItems = [];
 
@@ -352,8 +359,8 @@ function closeDocumentPopup() {
     currentDocIndex = 0;
     docItems = [];
 }
-//submissions
 
+//submissions
 async function fetchSubmissions() {
   try {
     const response = await fetch('/hk-roadmap/submission/update', {
@@ -368,7 +375,6 @@ async function fetchSubmissions() {
     renderTable([]);
   }
 }
-
 
 // Modified render function
 function renderTable(data) {
@@ -403,7 +409,6 @@ function renderTable(data) {
 }
 
 //notification
-
 const createRefreshControls = (fetchCallback, interval = 30000) => {
     let isRefreshing = false;
     let refreshInterval = null;
@@ -633,6 +638,24 @@ const badgeRefresher = {
   };
 
 //profile
+let userProfile = null;
+let departmentMapping = {};
+let reverseDepartmentMapping = {};
+
+function updateNavProfile(profileData) {
+    // Update navigation bar profile elements
+    const navProfileName = document.getElementById('navProfileName');
+    const navProfileImage = document.querySelector('.profile-container .profile-pic');
+    
+    if (navProfileName && profileData.name) {
+        navProfileName.textContent = profileData.name;
+    }
+    
+    if (navProfileImage && profileData.profile_picture_url) {
+        navProfileImage.src = '/' + profileData.profile_picture_url;
+    }
+}
+
 async function fetchStaffProfile() {
     try {
         const response = await fetch('/hk-roadmap/profile/get', {
@@ -640,18 +663,23 @@ async function fetchStaffProfile() {
         });
 
         if (response.ok) {
-            const data = await response.json();
-            document.getElementById('staffName').value = data.name || '';
-            document.getElementById('staffEmail').value = data.email || '';
-            document.getElementById('staffDepartment').value = data.department || '';
-            document.getElementById('staffPosition').value = data.position || '';
-            document.getElementById('staffContact').value = data.contact_number || '';
-            document.getElementById('staffProfilePicture').src = data.profile_picture_url || '';
-            // Populate new fields for student information
-            document.getElementById('studentNumber').value = data.student_number || '';
-            document.getElementById('collegeProgram').value = data.college_program || '';
-            document.getElementById('yearLevel').value = data.year_level || '';
-            document.getElementById('scholarshipType').value = data.scholarship_type || '';
+            const profileData = await response.json();
+            // Staff fields
+            document.getElementById('staffName').value = profileData.name || '';
+            document.getElementById('staffEmail').value = profileData.email || '';
+            document.getElementById('staffDepartment').value = profileData.department || '';
+            document.getElementById('staffPosition').value = profileData.position || '';
+            document.getElementById('staffContact').value = profileData.contact_number || '';
+            document.getElementById('staffProfilePicture').src = profileData.profile_picture_url || '';
+                
+            // Student-specific fields
+            document.getElementById('studentNumber').value = profileData.student_number || '';
+            document.getElementById('collegeProgram').value = profileData.college_program || '';
+            document.getElementById('yearLevel').value = profileData.year_level || '';
+            document.getElementById('scholarshipType').value = profileData.scholarship_type || '';
+            
+            updateProfileUI();
+            updateNavProfile(profileData);
         } else {
             throw new Error('Failed to fetch profile');
         }
@@ -660,59 +688,328 @@ async function fetchStaffProfile() {
     }
 }
 
-async function saveStaffProfile(inputs, editButton, saveButton) {
-    const profileData = {
-        name: document.getElementById('staffName').value,
-        email: document.getElementById('staffEmail').value,
-        department: document.getElementById('staffDepartment').value,
-        position: document.getElementById('staffPosition').value,
-        contact_number: document.getElementById('staffContact').value,
-        // Collect new fields for student information
-        student_number: document.getElementById('studentNumber').value,
-        college_program: document.getElementById('collegeProgram').value,
-        year_level: document.getElementById('yearLevel').value,
-        scholarship_type: document.getElementById('scholarshipType').value
-    };
+async function saveProfile(inputs, editButton, saveButton) {
+    const formData = new FormData();
+    const fileInput = document.querySelector('input[type="file"]');
+
+    const selectedDepartmentName = document.getElementById('staffDepartment').value;
+
+    // Department handling
+    const departmentAbbr = reverseDepartmentMapping[selectedDepartmentName] || 'OTH';
+
+    // Common fields
+    formData.append('name', document.getElementById('staffName').value);
+    formData.append('email', document.getElementById('staffEmail').value);
+    formData.append('department', departmentAbbr);
+    formData.append('position', document.getElementById('staffPosition').value);
+    formData.append('contact_number', document.getElementById('staffContact').value);
+    formData.append('student_number', document.getElementById('studentNumber').value);
+    formData.append('college_program', document.getElementById('collegeProgram').value);
+    formData.append('year_level', document.getElementById('yearLevel').value);
+    formData.append('scholarship_type', document.getElementById('scholarshipType').value);
+
+    if (selectedDepartmentName === 'Others') {
+        formData.append('department_others', document.getElementById('departmentOthers').value);
+    }
+
+    if (fileInput.files[0]) {
+        formData.append('profile_picture', fileInput.files[0]);
+    }
 
     try {
         const response = await fetch('/hk-roadmap/profile/update', {
             method: 'POST',
             headers: getAuthHeaders(),
-            body: JSON.stringify(profileData)
+            body: formData
         });
 
+        const data = await response.json();
         if (response.ok) {
             alert('Profile updated successfully!');
             disableProfileEditing(inputs, editButton, saveButton);
+            await fetchStaffProfile();
         } else {
-            throw new Error('Failed to update profile');
+            throw new Error(data.message || 'Failed to update profile');
         }
     } catch (error) {
         console.error('Error updating profile:', error);
-        alert('Failed to update profile');
+        alert(error.message);
     }
 }
 
-function enableProfileEditing(inputs, editButton, saveButton) {
-    inputs.forEach(input => {
-        input.disabled = false;
-        input.style.backgroundColor = '#fff';
-    });
-    editButton.style.display = 'none';
-    saveButton.style.display = 'block';
+function enableProfileEditing() {
+    const inputs = document.querySelectorAll('#profileForm input, #profileForm select');
+    inputs.forEach(input => input.disabled = false);
+    
+    document.getElementById('editProfileButton').style.display = 'none';
+    document.getElementById('saveProfileButton').style.display = 'block';
+    document.getElementById('cancelEditButton').style.display = 'block';
 }
 
-function disableProfileEditing(inputs, editButton, saveButton) {
-    inputs.forEach(input => {
-        input.disabled = true;
-        input.style.backgroundColor = '#f0f0f0';
+function disableProfileEditing() {
+    const inputs = document.querySelectorAll('#profileForm input, #profileForm select');
+    inputs.forEach(input => input.disabled = true);
+    
+    document.getElementById('editProfileButton').style.display = 'block';
+    document.getElementById('saveProfileButton').style.display = 'none';
+    document.getElementById('cancelEditButton').style.display = 'none';
+}
+
+function populateDepartmentSelect() {
+    const departmentSelect = document.getElementById('staffDepartment');
+    departmentSelect.innerHTML = '<option value="">Select Department</option>';
+    
+    if (departments) {
+        // Use full names in the dropdown
+        Object.entries(departments).forEach(([abbr, name]) => {
+            const option = document.createElement('option');
+            option.value = name; // Use full name as value
+            option.textContent = name;
+            departmentSelect.appendChild(option);
+        });
+    }
+}
+
+function handleDepartmentChange() {
+    const departmentSelect = document.getElementById('staffDepartment');
+    const departmentOthersGroup = document.getElementById('departmentOthersGroup');
+    const departmentOthers = document.getElementById('departmentOthers');
+
+    if (departmentSelect.value === 'Others') {
+        departmentOthersGroup.style.display = 'block';
+        departmentOthers.disabled = departmentSelect.disabled;
+        departmentOthers.required = true;
+    } else {
+        departmentOthersGroup.style.display = 'none';
+        departmentOthers.required = false;
+    }
+}
+
+async function fetchDepartments() {
+    try {
+        const response = await fetch('/hk-roadmap/profile/departments', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+            }
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to fetch departments: ${errorText}`);
+        }
+
+        const data = await response.json();
+        departments = data.departments;
+
+        // Create mappings
+        departmentMapping = departments; // abbreviation -> full name
+        reverseDepartmentMapping = Object.entries(departments).reduce((acc, [abbr, name]) => {
+            acc[name] = abbr;
+            return acc;
+        }, {});
+
+        return departments;
+    } catch (error) {
+        console.error('Error fetching departments:', error);
+        return null;
+    }
+}
+
+function updateNavProfile(profileData) {
+    const staffNameElement = document.getElementById('navProfileName');
+    const staffPicElement = document.querySelector('.profile-container .profile-pic');
+    
+    if (staffNameElement && profileData.name) {
+        staffNameElement.textContent = profileData.name;
+    }
+
+    if (staffPicElement && profileData.profile_picture_url) {
+        staffPicElement.src = '/' + profileData.profile_picture_url;
+    }
+}
+
+function setupProfilePictureUpload() {
+    const profilePicture = document.getElementById('staffProfilePicture');
+    const editButton = document.getElementById('editProfileButton');
+    const saveButton = document.getElementById('saveProfileButton');
+    const cancelButton = document.getElementById('cancelEditButton');
+    const departmentSelect = document.getElementById('staffDepartment');
+
+    // Create file input element
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.style.display = 'none';
+    document.body.appendChild(fileInput);
+
+    let isEditMode = false;
+
+    // Edit button click handler
+    editButton.addEventListener('click', () => {
+        isEditMode = true;
+        profilePicture.style.cursor = 'pointer';
+        document.querySelectorAll('#profileForm input, #profileForm select').forEach(input => {
+            input.disabled = false;
+        });
+        editButton.style.display = 'none';
+        saveButton.style.display = 'block';
+        cancelButton.style.display = 'block';
     });
-    editButton.style.display = 'block';
-    saveButton.style.display = 'none';
+
+    // Cancel button click handler
+    cancelButton.addEventListener('click', () => {
+        isEditMode = false;
+        profilePicture.style.cursor = 'default';
+        document.querySelectorAll('#profileForm input, #profileForm select').forEach(input => {
+            input.disabled = true;
+        });
+        editButton.style.display = 'block';
+        saveButton.style.display = 'none';
+        cancelButton.style.display = 'none';
+        updateProfileUI(); 
+    });
+
+    profilePicture.addEventListener('click', () => {
+        if (isEditMode) {
+            fileInput.click();
+        }
+    });
+
+    // Department change handler
+    departmentSelect.addEventListener('change', handleDepartmentChange);
+
+    // File selection handler
+    fileInput.addEventListener('change', async (e) => {
+        if (e.target.files && e.target.files?.[0]) {
+            const file = e.target.files[0];
+            
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file');
+                return;
+            }
+
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            if (file.size > maxSize) {
+                alert('File size should be less than 5MB');
+                return;
+            }
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                profilePicture.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+
+            // Store for upload
+            saveButton._fileToUpload = file;
+        }
+    });
+
+    // Save button click handler
+    saveButton.addEventListener('click', async () => {
+        try {
+            const formData = new FormData();
+            
+            if (saveButton._fileToUpload) {
+                formData.append('profile_picture', saveButton._fileToUpload);
+            }
+
+            // Add form data
+            formData.append('name', document.getElementById('staffName').value);
+            formData.append('email', document.getElementById('staffEmail').value);
+            formData.append('department', document.getElementById('staffDepartment').value);
+            formData.append('position', document.getElementById('staffPosition').value);
+            formData.append('contact_number', document.getElementById('staffContact').value);
+            formData.append('student_number', document.getElementById('studentNumber').value);
+            formData.append('college_program', document.getElementById('collegeProgram').value);
+            formData.append('year_level', document.getElementById('yearLevel').value);
+            formData.append('scholarship_type', document.getElementById('scholarshipType').value);
+            
+            if (document.getElementById('staffDepartment').value === 'Others') {
+                formData.append('department_others', document.getElementById('departmentOthers').value);
+            }
+
+            const response = await fetch('/hk-roadmap/profile/update', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                },
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update profile');
+            }
+
+            // Reset edit mode
+            isEditMode = false;
+            profilePicture.style.cursor = 'default';
+            document.querySelectorAll('#profileForm input, #profileForm select').forEach(input => {
+                input.disabled = true;
+            });
+            editButton.style.display = 'block';
+            saveButton.style.display = 'none';
+            cancelButton.style.display = 'none';
+            saveButton._fileToUpload = null;
+
+            // Refresh profile data
+            await fetchStaffProfile();
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            alert('Failed to update profile. Please try again.');
+        }
+    });
+}
+
+function getProfilePictureUrl(profilePicturePath) {
+    if (!profilePicturePath) {
+        return '/assets/jpg/default-profile.png';
+    }
+    return '/' + profilePicturePath;
+}
+
+async function updateProfileUI() {
+    if (!departments) {
+        await fetchDepartments();
+        populateDepartmentSelect();
+    }
+
+    if (userProfile) {
+        // Update form fields
+        document.getElementById('staffName').value = userProfile.name || '';
+        document.getElementById('staffEmail').value = userProfile.email || '';
+        document.getElementById('staffPosition').value = userProfile.position || '';
+        document.getElementById('staffContact').value = userProfile.contact_number || '';
+        document.getElementById('studentNumber').value = userProfile.student_number || '';
+        document.getElementById('collegeProgram').value = userProfile.college_program || '';
+        document.getElementById('yearLevel').value = userProfile.year_level || '';
+        document.getElementById('scholarshipType').value = userProfile.scholarship_type || '';
+
+        // Department handling
+        const departmentSelect = document.getElementById('staffDepartment');
+        const departmentFullName = departmentMapping[userProfile.department] || 'Others';
+        departmentSelect.value = departmentFullName;
+
+        const departmentOthersGroup = document.getElementById('departmentOthersGroup');
+        const departmentOthers = document.getElementById('departmentOthers');
+        if (departmentFullName === 'Others') {
+            departmentOthersGroup.style.display = 'block';
+            departmentOthers.value = userProfile.department_others || '';
+        }
+
+        // Update profile pictures
+        const profilePictureUrl = getProfilePictureUrl(userProfile.profile_picture_url);
+        document.getElementById('staffProfilePicture').src = profilePictureUrl;
+        document.getElementById('headerProfilePic').src = profilePictureUrl;
+        
+        // Update navigation profile
+        updateNavProfile(userProfile);
+    }
 }
 
 //comments
-
 let allComments = [];
 let currentSortOrder = 'desc';
 
@@ -752,11 +1049,11 @@ function renderCommentDashboard(comments = allComments) {
 
 function renderStudentGroups(container, students) {
     container.innerHTML = '';
-    
+
     Object.entries(students).forEach(([studentId, comments]) => {
         const studentGroup = document.createElement('div');
-        studentGroup.className = 'student-group collapsed'; // Start collapsed
-        
+        studentGroup.className = 'student-group collapsed';
+
         // Create collapsible header
         const header = document.createElement('div');
         header.className = 'student-header';
@@ -767,59 +1064,73 @@ function renderStudentGroups(container, students) {
                 <span class="comment-count">(${comments.length} comments)</span>
             </div>
         `;
-        
+
         // Create comments list container
         const commentsList = document.createElement('div');
         commentsList.className = 'comments-list';
-        commentsList.style.display = 'none'; // Start hidden
-        
-        // Add click handler for toggling
-        header.addEventListener('click', function(e) {
-            const isCollapsed = studentGroup.classList.contains('collapsed');
-            
-            // Toggle collapsed class
-            studentGroup.classList.toggle('collapsed');
-            
-            // Update chevron
-            const chevron = this.querySelector('.chevron');
-            chevron.textContent = isCollapsed ? '▼' : '▶';
-            
-            // Toggle comments visibility with smooth animation
-            commentsList.style.display = isCollapsed ? 'block' : 'none';
-            
-            // Store collapse state
-            currentCollapseStates.set(studentId, !isCollapsed);
-            
-            e.stopPropagation(); // Prevent event bubbling
-        });
-        
-        // Populate comments
+        commentsList.style.display = 'none';
+
+        // Populate existing comments with action menu
         comments.forEach(comment => {
             const commentCard = document.createElement('div');
             commentCard.className = 'comment-card';
+            commentCard.dataset.commentId = comment.comment_id;
             commentCard.innerHTML = `
                 <div class="comment-header">
-                    <span class="commenter-name">${comment.user_name}</span>
-                    <span class="comment-date">${new Date(comment.created_at).toLocaleDateString()}</span>
+                    <div class="comment-info">
+                        <span class="commenter-name">${comment.user_name}</span>
+                        <span class="comment-date">${new Date(comment.created_at).toLocaleDateString()}</span>
+                    </div>
+                    <div class="comment-actions">
+                        <button class="action-menu-btn" onclick="toggleActionMenu(event, this)">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <div class="action-menu">
+                            <button onclick="editComment(${comment.comment_id}, '${comment.body}')">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button onclick="deleteComment(${comment.comment_id})">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 <p class="comment-body">${comment.body}</p>
             `;
             commentsList.appendChild(commentCard);
         });
-        
-        // Restore previous collapse state if exists
-        if (currentCollapseStates.has(studentId)) {
-            const isCollapsed = currentCollapseStates.get(studentId);
-            studentGroup.classList.toggle('collapsed', isCollapsed);
-            commentsList.style.display = isCollapsed ? 'none' : 'block';
-            header.querySelector('.chevron').textContent = isCollapsed ? '▶' : '▼';
-        }
-        
-        // Assemble elements
+
+        // Toggle collapse functionality
+        header.addEventListener('click', function(e) {
+            const isCollapsed = studentGroup.classList.contains('collapsed');
+            studentGroup.classList.toggle('collapsed');
+            const chevron = this.querySelector('.chevron');
+            chevron.textContent = isCollapsed ? '▼' : '▶';
+            commentsList.style.display = isCollapsed ? 'block' : 'none';
+            currentCollapseStates.set(studentId, !isCollapsed);
+            e.stopPropagation();
+        });
+
         studentGroup.appendChild(header);
         studentGroup.appendChild(commentsList);
         container.appendChild(studentGroup);
     });
+}
+
+// Toggle action menu
+function toggleActionMenu(event, button) {
+    event.stopPropagation();
+    
+    // Close all other menus first
+    document.querySelectorAll('.action-menu').forEach(menu => {
+        if (menu !== button.nextElementSibling) {
+            menu.style.display = 'none';
+        }
+    });
+    
+    // Toggle this menu
+    const menu = button.nextElementSibling;
+    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
 }
 
 async function initCommentManagement() {
@@ -832,6 +1143,7 @@ async function initCommentManagement() {
         console.error('Comment init error:', error);
     }
 }
+
 async function fetchAllComments() {
     try {
         const response = await fetch('/hk-roadmap/comments/all', {
@@ -863,16 +1175,266 @@ function toggleSortOrder() {
 }
 
 function groupComments(comments) {
+    if (!Array.isArray(comments)) {
+        console.error('Invalid comments data:', comments);
+        return {};
+    }
+
     return comments.reduce((acc, comment) => {
-        const reqId = comment.requirement_id;
-        const studentId = comment.student_id;
-        
-        if (!acc[reqId]) acc[reqId] = {};
-        if (!acc[reqId][studentId]) acc[reqId][studentId] = [];
-        
-        acc[reqId][studentId].push(comment);
+        try {
+            // Validate comment structure
+            if (!comment || typeof comment !== 'object') {
+                console.warn('Skipping invalid comment format');
+                return acc;
+            }
+
+            // Validate required fields
+            const reqId = Number(comment.requirement_id);
+            const studentId = Number(comment.student_id);
+            const body = comment.body?.toString().trim();
+            
+            if (!reqId || !studentId || !body) {
+                console.warn('Skipping incomplete comment:', comment);
+                return acc;
+            }
+
+            // Initialize structure
+            acc[reqId] = acc[reqId] || {};
+            acc[reqId][studentId] = acc[reqId][studentId] || [];
+            
+            // Add valid comment
+            acc[reqId][studentId].push({
+                ...comment,
+                requirement_id: reqId,
+                student_id: studentId,
+                body: body
+            });
+        } catch (error) {
+            console.error('Error processing comment:', error);
+        }
         return acc;
     }, {});
+}
+
+async function fetchAllComments() {
+    try {
+        const response = await fetch('/hk-roadmap/comments/all', {
+            headers: getAuthHeaders(),
+            cache: 'no-cache'
+        });
+
+        if (!response.ok) throw new Error('Failed to fetch comments');
+        
+        const data = await response.json();
+        
+        // Validate response format
+        if (!Array.isArray(data)) {
+            throw new Error('Invalid comments response format');
+        }
+
+        // Filter valid comments
+        allComments = data.filter(comment => 
+            comment?.requirement_id &&
+            comment?.student_id &&
+            comment?.body
+        );
+        
+        sortComments(currentSortOrder);
+        return true;
+    } catch (error) {
+        console.error('Error fetching comments:', error);
+        showError('Failed to load comments');
+        return false;
+    }
+}
+
+function openCommentDialog(studentId, requirementId) {
+    const popup = document.getElementById('commentPopup') || createCommentPopup();
+    
+    // Set data attributes for reference
+    popup.dataset.studentId = studentId;
+    popup.dataset.requirementId = requirementId;
+    
+    // Clear previous input
+    const commentInput = document.getElementById('commentInput');
+    if (commentInput) {
+        commentInput.value = '';
+    }
+    
+    popup.style.display = 'block';
+
+}
+
+async function submitComment() {
+    const popup = document.getElementById('commentPopup');
+    const commentInput = document.getElementById('commentInput');
+    const submitButton = document.getElementById('submitCommentButton');
+    
+    if (!popup || !commentInput || !submitButton) {
+        console.error('Required elements missing');
+        return;
+    }
+
+    const originalText = submitButton.innerHTML;
+    submitButton.innerHTML = '<div class="spinner"></div> Submitting...';
+    submitButton.disabled = true;
+
+    try {
+        const commentText = commentInput.value.trim();
+        if (!commentText) {
+            throw new Error('Please enter a comment');
+        }
+
+        const response = await fetch('/hk-roadmap/comments/add', {
+            method: 'POST',
+            headers: {
+                ...getAuthHeaders(),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                requirement_id: parseInt(popup.dataset.requirementId),
+                student_id: parseInt(popup.dataset.studentId),
+                body: commentText
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to add comment');
+        }
+
+        // Refresh comments from server
+        await fetchAllComments();
+        renderCommentDashboard();
+        closeCommentPopup();
+
+    } catch (error) {
+        console.error('Submit error:', error);
+        alert(`Error: ${error.message}`);
+    } finally {
+        submitButton.disabled = false;
+        submitButton.innerHTML = originalText;
+    }
+}
+
+function openCommentDialog(studentId, requirementId) {
+    const popup = document.getElementById('commentPopup');
+    if (!popup) return;
+
+    // Clear previous input
+    const commentInput = document.getElementById('commentInput');
+    if (commentInput) commentInput.value = '';
+
+    // Set current IDs
+    popup.dataset.studentId = studentId;
+    popup.dataset.requirementId = requirementId;
+    
+    // Show popup
+    popup.style.display = 'block';
+}
+
+function editComment(commentId, commentBody) {
+    // Create edit popup if it doesn't exist
+    let editPopup = document.getElementById('editCommentPopup');
+    if (!editPopup) {
+        editPopup = document.createElement('div');
+        editPopup.id = 'editCommentPopup';
+        editPopup.className = 'popup';
+        editPopup.innerHTML = `
+            <div class="popup-content">
+                <span class="close">&times;</span>
+                <h3>Edit Comment</h3>
+                <textarea id="editCommentText" 
+                    placeholder="Enter your comment here..." 
+                    rows="4" 
+                    maxlength="500"></textarea>
+                <div class="popup-buttons">
+                    <button onclick="updateComment(${commentId})" class="submit-btn">Save</button>
+                    <button onclick="closeEditPopup()" class="cancel-btn">Cancel</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(editPopup);
+        
+        // Add close button functionality
+        editPopup.querySelector('.close').onclick = closeEditPopup;
+    }
+
+    // Set the comment text in the textarea
+    document.getElementById('editCommentText').value = decodeURIComponent(commentBody);
+    editPopup.style.display = 'block';
+}
+
+// Close edit popup
+function closeEditPopup() {
+    const popup = document.getElementById('editCommentPopup');
+    if (popup) {
+        popup.style.display = 'none';
+    }
+}
+
+// Update comment
+async function updateComment(commentId) {
+    const newText = document.getElementById('editCommentText').value.trim();
+    if (!newText) {
+        alert('Comment cannot be empty');
+        return;
+    }
+
+    try {
+        const response = await fetch('/hk-roadmap/comments/update', {
+            method: 'PUT',
+            headers: {
+                ...getAuthHeaders(),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                comment_id: commentId,
+                body: newText
+            })
+        });
+
+        if (response.ok) {
+            closeEditPopup();
+            await fetchAllComments();
+            renderCommentDashboard();
+        } else {
+            throw new Error('Failed to update comment');
+        }
+    } catch (error) {
+        console.error('Error updating comment:', error);
+        alert('Failed to update comment');
+    }
+}
+
+// Delete comment
+async function deleteComment(commentId) {
+    if (!confirm('Are you sure you want to delete this comment?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/hk-roadmap/comments/delete', {
+            method: 'DELETE',
+            headers: {
+                ...getAuthHeaders(),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                comment_id: commentId
+            })
+        });
+
+        if (response.ok) {
+            await fetchAllComments();
+            renderCommentDashboard();
+        } else {
+            throw new Error('Failed to delete comment');
+        }
+    } catch (error) {
+        console.error('Error deleting comment:', error);
+        alert('Failed to delete comment');
+    }
 }
 
 let currentCollapseStates = new Map();
@@ -898,7 +1460,18 @@ function safeAddEventListeners(selector, event, handler) {
     }
 }
 
-
+// Add missing populateDepartmentSelect function
+function populateDepartmentSelect() {
+    const staffSelect = document.getElementById('staffDepartment');
+    
+    [staffSelect].forEach(select => {
+        if (select) {
+            select.innerHTML = Object.values(departmentMapping)
+                .map(name => `<option value="${name}">${name}</option>`)
+                .join('');
+        }
+    });
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     try {
@@ -907,8 +1480,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const refreshControls = createRefreshControls(fetchNotifications, 10000);
         refreshControls.start();
         showSection('home'); 
-        showTab('documents');
-        fetchDocuments();
+        showTab('submissions');
+        fetchSubmissions();
+        populateDepartmentSelect();
 
         // Safe event listener attachments
         safeAddEventListener('#searchInput', 'input', function(e) {
@@ -939,32 +1513,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-
-        const submissionsTable = document.querySelector('#submissionsTable');
-        if (submissionsTable) {
-            submissionsTable.addEventListener('click', (e) => {
-                const reviewButton = e.target.closest('.view-docs-btn');
-                if (reviewButton) {
-                    const submissionIds = reviewButton.dataset.ids.split(',').map(id => parseInt(id.trim()));
-                    viewDocuments(submissionIds);
-                }
-            });
-        }
-
-        // Safe button event listeners
-        safeAddEventListener('.account-button', 'click', toggleAccountPopup);
-        safeAddEventListener('.popup-button', 'click', logout);
-        
-        // Profile section handlers
-        const editButton = document.getElementById('editProfileButton');
-        const saveButton = document.getElementById('saveProfileButton');
-        const inputs = document.querySelectorAll('#profile-section input');
-
-        if (editButton && saveButton) {
-            editButton.addEventListener('click', () => enableProfileEditing(inputs, editButton, saveButton));
-            saveButton.addEventListener('click', () => saveStaffProfile(inputs, editButton, saveButton));
-        }
-
         // Comments section initialization
         const commentSearch = document.getElementById('commentSearch');
         if (commentSearch) {
@@ -994,8 +1542,35 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Initialize profiles and comments
-        fetchStaffProfile();
         initCommentManagement();
+
+        const editButton = document.getElementById('editProfileButton');
+        const saveButton = document.getElementById('saveProfileButton');
+        const inputs = document.querySelectorAll('#profile-section input');
+
+        editButton.addEventListener('click', function() {
+            enableProfileEditing(inputs, editButton, saveButton);
+        });
+
+        saveButton.addEventListener('click', function() {
+            saveProfile(inputs, editButton, saveButton);
+        });
+
+        const submissionsTable = document.querySelector('#submissionsTable');
+        if (submissionsTable) {
+            submissionsTable.addEventListener('click', (e) => {
+                const reviewButton = e.target.closest('.view-docs-btn');
+                if (reviewButton) {
+                    const submissionIds = reviewButton.dataset.ids.split(',').map(id => parseInt(id.trim()));
+                    viewDocuments(submissionIds);
+                }
+            });
+        }
+
+        // Safe button event listeners
+        safeAddEventListener('.account-button', 'click', toggleAccountPopup);
+        safeAddEventListener('.popup-button', 'click', logout);
+
 
     } catch (error) {
         console.error('Error initializing dashboard:', error);
@@ -1005,4 +1580,9 @@ document.addEventListener('DOMContentLoaded', () => {
         errorMessage.textContent = 'Failed to initialize dashboard. Please refresh the page.';
         document.body.prepend(errorMessage);
     }
+
+    
+    fetchDepartments().then(populateDepartmentSelect);
+    fetchStaffProfile();
+    setupProfilePictureUpload();
 });

@@ -28,11 +28,11 @@
                 </div>
             </div>
             <div class="profile-container" onclick="toggleProfileMenu()">
-                <span class="profile-name" id="profileName">Admin Name</span>
+                <span class="profile-name" id="profileName"></span>
                 <div id="profileMenu" class="profile-menu">
                     <button onclick="logout()">Logout</button>
                 </div>
-                <img src="/assets/images/default-profile.png" class="profile-pic" alt="Profile">
+                <img src="/assets/jpg/default-profile.png" class="profile-pic" alt="Profile">
             </div>
         </div>
     </div>
@@ -82,32 +82,10 @@
             </section>
             <section id="admin-section" class="admin-container">
                 <div class="tab-container">
-                    <button class="tab-button" onclick="showTab('documents')">Documents</button>
                     <button class="tab-button" onclick="showTab('submissions')">Submissions</button>
                     <button class="tab-button" onclick="showTab('students')">Students</button>
                     <button class="tab-button" onclick="showTab('admins')">Admin</button>
-                </div>
-                <div id="documents" class="tab-content">
-                    <h2>Documents Table</h2>
-                    <table id="documentsTable">
-                        <!-- Table headers -->
-                        <thead>
-                            <tr>
-                                <th>Document ID</th>
-                                <th>Event ID</th>
-                                <th>Requirement ID</th>
-                                <th>Student ID</th>
-                                <th>File Path</th>
-                                <th>Upload Date</th>
-                                <th>Status</th>
-                                <th>Is Submitted</th>
-                                <th>Submitted At</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Data will be populated here -->
-                        </tbody>
-                    </table>
+                    <button class="tab-button" onclick="showTab('staffs')">Staffs</button>
                 </div>
             
                 <div id="submissions" class="tab-content" style="display: none;">
@@ -139,9 +117,11 @@
                         <!-- Table headers -->
                         <thead>
                             <tr>
-                                <th>Student ID</th>
-                                <th>Email</th>
-                                <th>Password</th>
+                                <th>Student Number</th>
+                                <th>Name</th>
+                                <th>Department</th>
+                                <th>Year Level</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -156,17 +136,35 @@
                         <!-- Table headers -->
                         <thead>
                             <tr>
-                                <th>Admin ID</th>
                                 <th>Name</th>
-                                <th>Email</th>
-                                <th>Password</th>
+                                <th>Position</th>
+                                <th>Department</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             <!-- Data will be populated here -->
                         </tbody>
                     </table>
-                </div>                            
+                </div> 
+                
+                <div id="staffs" class="tab-content" style="display: none;">
+                    <h2>Staff Table</h2>
+                    <table id="staffsTable">
+                        <!-- Table headers -->
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Position</th>
+                                <th>Department</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be populated here -->
+                        </tbody>
+                    </table>
+                </div> 
             </section>
 
             <section id="announce-section" class="announcement-container" style="display: none;">
@@ -191,37 +189,58 @@
                     <!-- Announcements will be inserted here -->
                 </div>
             </section>
-            <div id="profile-section" class="profile-container">
+            <section id="profile-section" class="profile-container">
                 <h2>Profile Information</h2>
-                <form id="profileForm">
+                <form id="profileForm" class="profile-form">
+                    <div class="profile-picture-container">
+                        <img id="adminProfilePicture" src="/assets/jpg/default-profile.png" alt="Profile Picture" class="profile-picture">
+                        <div class="profile-picture-overlay" style="display: none;">
+                            <i class="fas fa-camera"></i>
+                            <span>Change Photo</span>
+                        </div>
+                    </div>
+                    
                     <div class="form-group">
                         <label for="adminName">Name:</label>
-                        <input type="text" id="adminName" name="name" disabled>
+                        <input type="text" id="adminName" name="name" disabled required>
                     </div>
+                    
                     <div class="form-group">
                         <label for="adminEmail">Email:</label>
-                        <input type="email" id="adminEmail" name="email" disabled>
+                        <input type="email" id="adminEmail" name="email" disabled required>
                     </div>
+                    
                     <div class="form-group">
                         <label for="adminDepartment">Department:</label>
-                        <input type="text" id="adminDepartment" name="department" disabled>
+                        <select id="adminDepartment" name="department" disabled required>
+                            <option value="">Select Department</option>
+                            <!-- Options will be populated dynamically -->
+                        </select>
                     </div>
+                    
+                    <div class="form-group" id="departmentOthersGroup" style="display: none;">
+                        <label for="departmentOthers">Specify Department:</label>
+                        <input type="text" id="departmentOthers" name="department_others" disabled>
+                    </div>
+                    
                     <div class="form-group">
                         <label for="adminPosition">Position:</label>
-                        <input type="text" id="adminPosition" name="position" disabled>
+                        <input type="text" id="adminPosition" name="position" disabled required>
                     </div>
+                    
                     <div class="form-group">
                         <label for="adminContact">Contact Number:</label>
-                        <input type="text" id="adminContact" name="contact_number" disabled>
+                        <input type="tel" id="adminContact" name="contact_number" disabled 
+                               pattern="[0-9]{11}" title="Please enter a valid 11-digit phone number">
                     </div>
-                    <div class="form-group">
-                        <label for="adminProfilePicture">Profile Picture:</label>
-                        <img id="adminProfilePicture" src="" alt="Profile Picture" class="profile-picture">
+                    
+                    <div class="form-actions">
+                        <button type="button" id="editProfileButton" class="btn-edit">Edit Profile</button>
+                        <button type="button" id="saveProfileButton" class="btn-save" style="display:none;">Save Changes</button>
+                        <button type="button" id="cancelEditButton" class="btn-cancel" style="display:none;">Cancel</button>
                     </div>
-                    <button type="button" id="editProfileButton">Edit</button>
-                    <button type="button" id="saveProfileButton" style="display:none;">Save</button>
                 </form>
-            </div>
+            </section>
 
             <div id="eventPopup" class="popup" style="display: none;">
                 <span class="close-popup" onclick="toggleEventPopup()">×</span>
@@ -284,6 +303,13 @@
                 </div>
             </div>
 
+            <div id="profilePopup" class="popup" style="display: none;">
+                <div class="popup-content">
+                    <span class="close">&times;</span>
+                    <h2 id="popupTitle">Profile Details</h2>
+                    <div id="popupContent"></div>
+                </div>
+            </div>
             
             <div id="commentPopup" class="popup" style="display: none;">
                 <div class="popup-content">

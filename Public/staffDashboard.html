@@ -26,7 +26,7 @@
             </div>
             <!-- Notifications container remains unchanged -->
             <div class="profile-container" onclick="toggleProfileMenu()">
-                <span class="profile-name" id="profileName">Staff Name</span>
+                <span class="profile-name" id="navProfileName"></span>
                 <div id="profileMenu" class="profile-menu">
                     <button onclick="logout()">Logout</button>
                 </div>
@@ -45,46 +45,8 @@
         <main class="content">
             <section id="home-section" class="staff-container">
                 <div class="tab-container">
-                    <button class="tab-button" onclick="showTab('documents')">Documents</button>
                     <button class="tab-button" onclick="showTab('submissions')">Submissions</button>
                     <button class="tab-button" onclick="showTab('students')">Students</button>
-                    <button class="tab-button" onclick="showTab('staff')">Staff</button>
-                </div>
-                <div id="documents" class="tab-content">
-                    <h2>Documents Table</h2>
-                    <table id="documentsTable">
-                        <!-- Table headers -->
-                        <thead>
-                            <tr>
-                                <th>Document ID</th>
-                                <th>Event ID</th>
-                                <th>Requirement ID</th>
-                                <th>Student ID</th>
-                                <th>File Path</th>
-                                <th>Upload Date</th>
-                                <th>Status</th>
-                                <th>Is Submitted</th>
-                                <th>Submitted At</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Data will be populated here -->
-                        </tbody>
-                    </table>
-                </div>
-                <div id="staff" class="tab-content" style="display: none;">
-                    <h2>Staff Table</h2>
-                    <table id="staffsTable">
-                        <thead>
-                            <tr>
-                                <th>Staff ID</th>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Password</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
                 </div>
                 <div id="submissions" class="tab-content" style="display: none;">
                     <h2>Submissions Table</h2>
@@ -92,7 +54,6 @@
                         <input type="text" id="searchInput" placeholder="Search by any field...">
                     </div>
                     <table id="submissionsTable">
-                        <!-- Table headers -->
                         <thead>
                             <tr>
                                 <th>Event</th>
@@ -104,19 +65,19 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Data will be populated here -->
                         </tbody>
                     </table>
                 </div>
                 <div id="students" class="tab-content" style="display: none;">
                     <h2>Student Table</h2>
                     <table id="studentsTable">
-                        <!-- Table headers -->
                         <thead>
                             <tr>
-                                <th>Student ID</th>
-                                <th>Email</th>
-                                <th>Password</th>
+                                <th>Student Number</th>
+                                <th>Name</th>
+                                <th>Department</th>
+                                <th>Year Level</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -125,67 +86,103 @@
                     </table>
                 </div>
             </section>
-            <div id="profile-section" class="profile-container">
+            <section id="profile-section" class="profile-container">
                 <h2>Profile Information</h2>
-                <form id="profileForm">
+                <form id="profileForm" class="profile-form">
+                    <!-- Profile Picture Section -->
+                    <div class="profile-picture-container">
+                        <img id="staffProfilePicture" src="/assets/jpg/default-profile.png" alt="Profile Picture" class="profile-picture">
+                        <div class="profile-picture-overlay" style="display: none;">
+                            <i class="fas fa-camera"></i>
+                            <span>Change Photo</span>
+                        </div>
+                    </div>
+            
+                    <!-- Common Fields -->
                     <div class="form-group">
                         <label for="staffName">Name:</label>
-                        <input type="text" id="staffName" name="name" disabled>
+                        <input type="text" id="staffName" name="name"  required>
                     </div>
+            
                     <div class="form-group">
                         <label for="staffEmail">Email:</label>
-                        <input type="email" id="staffEmail" name="email" disabled>
+                        <input type="email" id="staffEmail" name="email"  required>
                     </div>
+            
+                    <!-- Department Selection -->
                     <div class="form-group">
                         <label for="staffDepartment">Department:</label>
-                        <input type="text" id="staffDepartment" name="department" disabled>
+                        <select id="staffDepartment" name="department"  required>
+                            <option value="">Select Department</option>
+                            <!-- Dynamically populated -->
+                        </select>
                     </div>
+            
+                    <!-- Department Others Field -->
+                    <div class="form-group" id="departmentOthersGroup" style="display: none;">
+                        <label for="departmentOthers">Specify Department:</label>
+                        <input type="text" id="departmentOthers" name="department_others" >
+                    </div>
+            
+                    <!-- Position Field -->
                     <div class="form-group">
                         <label for="staffPosition">Position:</label>
-                        <input type="text" id="staffPosition" name="position" disabled>
+                        <input type="text" id="staffPosition" name="position"  required>
                     </div>
+            
+                    <!-- Contact Number -->
                     <div class="form-group">
                         <label for="staffContact">Contact Number:</label>
-                        <input type="text" id="staffContact" name="contact_number" disabled>
+                        <input type="tel" id="staffContact" name="contact_number" 
+                               pattern="[0-9]{11}" title="11-digit phone number">
                     </div>
+
                     <div class="form-group">
                         <label for="studentNumber">Student Number:</label>
-                        <input type="text" id="studentNumber" name="student_number" disabled>
+                        <input type="text" id="studentNumber" name="student_number" >
                     </div>
+
+                    <div class="form-group">
+                        <label for="yearLevel">Year level:</label>
+                        <input type="text" id="yearLevel" name="year_level" >
+                    </div>
+            
                     <div class="form-group">
                         <label for="collegeProgram">College Program:</label>
-                        <input type="text" id="collegeProgram" name="college_program" disabled>
+                        <input type="text" id="collegeProgram" name="college_program" >
                     </div>
-                    <div class="form-group">
-                        <label for="yearLevel">Year Level:</label>
-                        <input type="text" id="yearLevel" name="year_level" disabled>
-                    </div>
+
+            
                     <div class="form-group">
                         <label for="scholarshipType">Scholarship Type:</label>
-                        <input type="text" id="scholarshipType" name="scholarship_type" disabled>
+                        <input id="scholarshipType" name="scholarship_type" >
                     </div>
-                    <div class="form-group">
-                        <label for="staffProfilePicture">Profile Picture:</label>
-                        <img id="staffProfilePicture" src="" alt="Profile Picture" class="profile-picture">
-                    </div>
-                    <button type="button" id="editProfileButton">Edit</button>
-                    <button type="button" id="saveProfileButton" style="display:none;">Save</button>
-                </form>
-            </div>
-        </main>
 
-        <section id="comments-section" class="comment-dashboard" style="display: none;">
-            <div class="section-header">
-                <h2>Comment Management</h2>
-                <div class="comment-controls">
-                    <input type="text" id="commentSearch" placeholder="Search by requirement ID, student ID, or content...">
-                    <button class="sort-btn" onclick="toggleSortOrder()">
-                        <i class="fas fa-sort"></i> Toggle Sort
-                    </button>
+                    <!-- Form Actions -->
+                    <div class="form-actions">
+                        <button type="button" id="editProfileButton" class="btn-edit">Edit Profile</button>
+                        <button type="button" id="saveProfileButton" class="btn-save" style="display:none;">
+                            Save Changes
+                        </button>
+                        <button type="button" id="cancelEditButton" class="btn-cancel" style="display:none;">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </section>
+            <section id="comments-section" class="comment-dashboard" style="display: none;">
+                <div class="section-header">
+                    <h2>Comment Management</h2>
+                    <div class="comment-controls">
+                        <input type="text" id="commentSearch" placeholder="Search by requirement ID, student ID, or content...">
+                        <button class="sort-btn" onclick="toggleSortOrder()">
+                            <i class="fas fa-sort"></i> Toggle Sort
+                        </button>
+                    </div>
                 </div>
-            </div>
-            <div class="comment-groups-container"></div>
-        </section>
+                <div class="comment-groups-container"></div>
+            </section>
+        </main>
 
         <div id="documentPopup" class="popup" style="display: none;">
             <span class="close-popup" onclick="closeDocumentPopup()">×</span>
@@ -199,6 +196,30 @@
                 </div>
             </div>
         </div>
+
+        <div id="profilePopup" class="popup" style="display: none;">
+            <div class="popup-content">
+                <span class="close">&times;</span>
+                <h2 id="popupTitle">Profile Details</h2>
+                <div id="popupContent"></div>
+            </div>
+        </div>
+
+        <div id="commentPopup" class="popup" style="display: none;">
+            <div class="popup-content">
+                <span class="close" onclick="closeCommentPopup()">&times;</span>
+                <h3>Add Comment</h3>
+                <textarea id="commentInput" 
+                        placeholder="Enter your comment here..." 
+                        rows="4"
+                        maxlength="500"></textarea>
+                <div class="popup-buttons">
+                    <button id="submitCommentButton" class="submit-btn" onclick="submitComment()">Submit</button>
+                    <button class="cancel-btn" onclick="closeCommentPopup()">Cancel</button>
+                </div>
+            </div>
+        </div>
+
     </div>
     <script src="/assets/js/staffDashboard.js"></script>
 </body>

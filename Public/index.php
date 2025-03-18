@@ -210,7 +210,7 @@ if (empty($path[0])) {
                             "status" => 200,
                             "data" => [
                                 "user_id" => "integer",
-                                "user_type" => "string (admin|student)",
+                                "user_type" => "string (admin|student|staff)",
                                 "name" => "string",
                                 "email" => "string",
                                 "department" => "string",
@@ -260,7 +260,35 @@ if (empty($path[0])) {
                     "url" => "/profile/programs",
                     "description" => "Get list of college programs",
                     "authentication" => "Not required"
-                ]
+                ],
+                "all" => [
+                    "method" => "GET",
+                    "url" => "/profile/all",
+                    "description" => "Get multiple user profile on a type",
+                    "authentication" => "Bearer token required",
+                    "response" => [
+                        "success" => [
+                            "status" => 200,
+                            "data" => [
+                                "user_id" => "integer",
+                                "user_type" => "string (admin|student|staff)",
+                                "name" => "string",
+                                "email" => "string",
+                                "department" => "string",
+                                "department_others" => "string",
+                                "contact_number" => "string",
+                                "profile_picture_url" => "string",
+                                // Student specific fields
+                                "student_number" => "string (if student|staff)",
+                                "college_program" => "string (if student|staff)",
+                                "year_level" => "string (if student|staff)",
+                                "scholarship_type" => "string (if student|staff)",
+                                // Admin specific fields
+                                "position" => "string (if admin|staff)"
+                            ]
+                        ]
+                    ]
+                ],
             ],
            // Document endpoints
             "documents" => [

@@ -158,6 +158,12 @@ class Api {
                 }
                 break;
 
+            case 'profile/all':
+                if ($method === 'GET') {
+                    return $this->profileController->getAllProfiles();
+                }
+                break;
+
             // Document Routes
             case 'documents/admin':
                 if ($method === 'GET') {

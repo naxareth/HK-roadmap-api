@@ -145,8 +145,16 @@ class ProfileController {
                     'year_level' => $data['year_level'] ?? $existingProfile['year_level'] ?? null,
                     'scholarship_type' => $data['scholarship_type'] ?? $existingProfile['scholarship_type'] ?? null
                 ];
-            } elseif ($userData['type'] === 'admin' || $userData['type'] === 'staff') {
+            } elseif ($userData['type'] === 'admin') {
                 $finalData += [
+                    'position' => $data['position'] ?? $existingProfile['position'] ?? null
+                ];
+            } elseif ($userData['type'] === 'staff') {
+                $finalData += [
+                    'student_number' => $data['student_number'] ?? $existingProfile['student_number'] ?? null,
+                    'college_program' => $data['college_program'] ?? $existingProfile['college_program'] ?? null,
+                    'year_level' => $data['year_level'] ?? $existingProfile['year_level'] ?? null,
+                    'scholarship_type' => $data['scholarship_type'] ?? $existingProfile['scholarship_type'] ?? null,
                     'position' => $data['position'] ?? $existingProfile['position'] ?? null
                 ];
             }
@@ -154,7 +162,9 @@ class ProfileController {
             if ($this->profileModel->createOrUpdateProfile($userData['id'], $userData['type'], $finalData)) {
                 echo json_encode([
                     "message" => "Profile updated successfully",
-                    "profile" => $finalData
+                    "profile" => $finalData,
+                    "id" => $userData['id'],
+                    "type" => $userData['type']
                 ]);
             } else {
                 http_response_code(400);
@@ -173,6 +183,57 @@ class ProfileController {
 
     public function getPrograms() {
         echo json_encode(["programs" => Profile::getPrograms()]);
+    }
+
+    public function getAllProfiles() {
+        try {
+            $userData = $this->validateUserToken();
+            if (!$userData) {
+                return;
+            }
+    
+            $type = $_GET['type'] ?? null;
+    
+            // Validate user permissions and type parameter
+            switch ($userData['type']) {
+                case 'admin':
+                    // Admins can view all profile types
+                    if (!$type || !in_array($type, ['student', 'admin', 'staff'])) {
+                        http_response_code(400);
+                        echo json_encode(["message" => "Invalid or missing type parameter"]);
+                        return;
+                    }
+                    break;
+    
+                case 'staff':
+                    // Staff can only view student profiles
+                    if ($type !== 'student') {
+                        http_response_code(403);
+                        echo json_encode(["message" => "Staff can only view student profiles"]);
+                        return;
+                    }
+                    break;
+    
+                default:
+                    // Other user types are not authorized
+                    http_response_code(403);
+                    echo json_encode(["message" => "Unauthorized to view profiles"]);
+                    return;
+            }
+    
+            $profiles = $this->profileModel->getAllProfiles($type);
+            
+            if ($profiles) {
+                echo json_encode($profiles);
+            } else {
+                http_response_code(404);
+                echo json_encode(["message" => "No profiles found"]);
+            }
+        } catch (PDOException $e) {
+            error_log("Get all profiles error: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(["message" => "Server error"]);
+        }
     }
 }
 ?>

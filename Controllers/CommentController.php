@@ -135,6 +135,23 @@ class CommentController {
             }
         }
 
+        $staffData = $this->staffModel->validateToken($token);
+        if ($staffData) {
+            $query = "SELECT * FROM staff WHERE staff_id = :staff_id";
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':staff_id', $staffData['staff_id']);
+            $stmt->execute();
+            $staff = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($staff) {
+                return [
+                    'user_type' => 'staff',
+                    'user_id' => $staff['staff_id'],
+                    'user_name' => $staff['name']
+                ];
+            }
+        }
+
         // Try student authentication
         $studentData = $this->studentModel->validateToken($token);
         if ($studentData) {
@@ -204,18 +221,17 @@ class CommentController {
         }
     
         try {
-            // For students: use their own student_id
             if ($user['user_type'] === 'student') {
                 $student_id = $user['user_id'];
             } 
-            // For admin: validate student exists
-            else if ($user['user_type'] === 'admin') {
+            // For admin/staff: validate student exists
+            else if ($user['user_type'] === 'admin' || $user['user_type'] === 'staff') {
                 if (!isset($data->student_id)) {
+                    $requiredRole = $user['user_type'] === 'admin' ? 'Admin' : 'Staff';
                     http_response_code(400);
-                    echo json_encode(["message" => "Admin must specify student_id"]);
+                    echo json_encode(["message" => "$requiredRole must specify student_id"]);
                     return;
                 }
-                
                 // Verify student exists
                 $student = new Student($this->db);
                 if (!$student->studentExists($data->student_id)) {
@@ -223,7 +239,6 @@ class CommentController {
                     echo json_encode(["message" => "Student not found"]);
                     return;
                 }
-                
                 $student_id = $data->student_id;
             }
     
@@ -259,12 +274,25 @@ class CommentController {
             $this->comment->user_name = $user['user_name'];
     
             if ($this->comment->create()) {
-                http_response_code(201);
-                echo json_encode([
-                    "message" => "Comment created successfully",
-                    "status" => "success"
-                ]);
-                return;
+                try {
+                    $this->createCommentNotification($user, $data->requirement_id, $student_id);
+                    
+                    http_response_code(201);
+                    echo json_encode([
+                        "message" => "Comment created successfully",
+                        "status" => "success"
+                    ]);
+                    return;
+                } catch (Exception $e) {
+                    // Comment was created but notification failed
+                    error_log("Comment created but notification failed: " . $e->getMessage());
+                    http_response_code(201);
+                    echo json_encode([
+                        "message" => "Comment created successfully, but notification failed",
+                        "status" => "partial_success"
+                    ]);
+                    return;
+                }
             }
     
             http_response_code(500);
@@ -380,6 +408,13 @@ class CommentController {
                     echo json_encode(["message" => "You can only edit your own comments"]);
                     return;
                 }
+            } else if ($user['user_type'] === 'staff') {
+                if ($existingComment['user_type'] !== 'staff' || 
+                    (int)$existingComment['user_id'] !== (int)$user['user_id']) {
+                    http_response_code(403);
+                    echo json_encode(["message" => "You can only edit your own comments"]);
+                    return;
+                }
             }
     
             // For admins, no additional checks needed; they can edit any comment
@@ -445,6 +480,24 @@ class CommentController {
                     ]);
                     return;
                 }
+            } else if ($user['user_type'] === 'staff') {
+                if ($existingComment['user_type'] === 'staff' && 
+                    (int)$existingComment['user_id'] === (int)$user['user_id']) {
+                    $this->comment->user_type = $user['user_type'];
+                    $this->comment->user_id = $user['user_id'];
+                    if ($this->comment->delete()) {
+                        http_response_code(200);
+                        echo json_encode([
+                            "message" => "Comment deleted successfully",
+                            "deleted_by" => "staff"
+                        ]);
+                        return;
+                    }
+                } else {
+                    http_response_code(403);
+                    echo json_encode(["message" => "You can only delete your own comments"]);
+                    return;
+                }
             } else {
                 // For students
                 if ($existingComment['user_type'] === 'student' && 
@@ -478,5 +531,52 @@ class CommentController {
             echo json_encode(["message" => "Failed to delete comment"]);
         }
     }
+
+    private function createCommentNotification($user, $requirementId, $studentId) {
+        try {
+            // Get the requirement details (includes event_id)
+            $query = "SELECT r.requirement_name, r.event_id, e.event_name 
+                     FROM requirement r 
+                     JOIN event e ON r.event_id = e.event_id 
+                     WHERE r.requirement_id = :requirement_id";
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':requirement_id', $requirementId);
+            $stmt->execute();
+            $requirementData = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+            if (!$requirementData) {
+                throw new Exception("Requirement data not found");
+            }
+    
+            // Create notifications based on user type
+            if ($user['user_type'] === 'admin' || $user['user_type'] === 'staff') {
+                $notificationBody = "{$user['user_name']} has commented on {$requirementData['event_name']}, {$requirementData['requirement_name']}";
+                $notificationType = ($user['user_type'] === 'admin') ? 'student' : 'admin';
+                $query = "INSERT INTO notification (notification_body, notification_type, related_user_id, read_notif) 
+                         VALUES (:notification_body, 'student', :student_id, 0)";
+                
+                $stmt = $this->db->prepare($query);
+                $stmt->bindParam(':notification_body', $notificationBody);
+                $stmt->bindParam(':student_id', $studentId);
+                $stmt->execute();
+            } else {
+                // Create notification for admin
+                $notificationBody = "{$user['user_name']} has commented on {$requirementData['event_name']}, {$requirementData['requirement_name']}";
+                
+                $query = "INSERT INTO notification (notification_body, notification_type, related_user_id, read_notif) 
+                         VALUES (:notification_body, 'admin', :student_id, 0)";
+                
+                $stmt = $this->db->prepare($query);
+                $stmt->bindParam(':notification_body', $notificationBody);
+                $stmt->bindParam(':student_id', $studentId);
+                $stmt->execute();
+            }
+        } catch (Exception $e) {
+            error_log("Error creating comment notification: " . $e->getMessage());
+            throw $e;
+        }
+    }
+    
 }
 ?>

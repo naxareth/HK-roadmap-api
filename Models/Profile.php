@@ -112,11 +112,11 @@ class Profile {
                 ':email' => $email,
                 ':department' => $data['department'] ?? ($existingProfile['department'] ?? null),
                 ':department_others' => $departmentOthers,
-                ':student_number' => $userType === 'student' ? ($data['student_number'] ?? ($existingProfile['student_number'] ?? null)) : null,
-                ':college_program' => $userType === 'student' ? ($data['college_program'] ?? ($existingProfile['college_program'] ?? null)) : null,
-                ':year_level' => $userType === 'student' ? ($data['year_level'] ?? ($existingProfile['year_level'] ?? null)) : null,
-                ':scholarship_type' => $userType === 'student' ? ($data['scholarship_type'] ?? ($existingProfile['scholarship_type'] ?? null)) : null,
-                ':position' => $userType === 'admin' ? ($data['position'] ?? ($existingProfile['position'] ?? null)) : null,
+                ':student_number' => in_array($userType, ['student', 'staff']) ? ($data['student_number'] ?? ($existingProfile['student_number'] ?? null)) : null,
+                ':college_program' => in_array($userType, ['student', 'staff']) ? ($data['college_program'] ?? ($existingProfile['college_program'] ?? null)) : null,
+                ':year_level' => in_array($userType, ['student', 'staff']) ? ($data['year_level'] ?? ($existingProfile['year_level'] ?? null)) : null,
+                ':scholarship_type' => in_array($userType, ['student', 'staff']) ? ($data['scholarship_type'] ?? ($existingProfile['scholarship_type'] ?? null)) : null,
+                ':position' => in_array($userType, ['admin', 'staff']) ? ($data['position'] ?? ($existingProfile['position'] ?? null)) : null,
                 ':contact_number' => $data['contact_number'] ?? ($existingProfile['contact_number'] ?? null),
                 ':profile_picture_url' => $data['profile_picture_url'] ?? ($existingProfile['profile_picture_url'] ?? null)
             ]);
@@ -145,7 +145,9 @@ class Profile {
     public function uploadProfilePicture($file) {
         try {
             // Remove the "../" - folder should be in web root
-            $targetDir = "uploads/profile_pictures/";
+
+            
+            $targetDir = $_SERVER['DOCUMENT_ROOT'] . "uploads/profile_pictures/";
             if (!file_exists($targetDir)) {
                 mkdir($targetDir, 0777, true);
             }
@@ -168,6 +170,84 @@ class Profile {
 
     public static function getPrograms() {
         return self::PROGRAMS;
+    }
+
+    public function getAllProfiles($type) {
+        try {
+            // Validate type parameter
+            if (!in_array($type, ['student', 'admin', 'staff'])) {
+                throw new Exception("Invalid profile type");
+            }
+    
+            // Base query to get all profiles of a specific type
+            $query = "SELECT 
+                p.*,
+                CASE 
+                    WHEN p.department = 'Others' THEN p.department_others 
+                    ELSE p.department 
+                END as display_department
+                FROM user_profiles p 
+                WHERE p.user_type = :type";
+    
+            // Add type-specific sorting
+            switch ($type) {
+                case 'student':
+                    $query .= " ORDER BY p.student_number ASC";
+                    break;
+                case 'admin':
+                case 'staff':
+                    $query .= " ORDER BY p.name ASC";
+                    break;
+            }
+    
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute([':type' => $type]);
+            
+            $profiles = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+            // Process the results
+            foreach ($profiles as &$profile) {
+                // Clean up null values
+                foreach ($profile as $key => $value) {
+                    if ($value === null) {
+                        $profile[$key] = '';
+                    }
+                }
+    
+                // Add default profile picture if none exists
+                if (empty($profile['profile_picture_url'])) {
+                    $profile['profile_picture_url'] = '/assets/jpg/default-profile.png';
+                }
+    
+                // Format department display
+                if ($profile['department'] === 'Others') {
+                    $profile['department_display'] = $profile['department_others'];
+                } else {
+                    $profile['department_display'] = self::DEPARTMENTS[$profile['department']] ?? $profile['department'];
+                }
+    
+                // Add type-specific formatting
+                switch ($type) {
+                    case 'student':
+                        // Format student-specific fields
+                        $profile['year_level_display'] = $profile['year_level'] ? $profile['year_level'] . ' Year' : '';
+                        break;
+                    case 'admin':
+                    case 'staff':
+                        // Format position display
+                        $profile['position_display'] = $profile['position'] ?: 'Not specified';
+                        break;
+                }
+            }
+    
+            return $profiles;
+        } catch (PDOException $e) {
+            error_log("Database error in getAllProfiles: " . $e->getMessage());
+            return false;
+        } catch (Exception $e) {
+            error_log("Error in getAllProfiles: " . $e->getMessage());
+            return false;
+        }
     }
 }
 ?>

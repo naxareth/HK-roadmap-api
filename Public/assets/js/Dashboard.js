@@ -77,14 +77,14 @@ function showTab(tabId) {
 
     document.getElementById(tabId).style.display = 'block';
 
-    if (tabId === 'documents') {
-        fetchDocuments();
-    } else if (tabId === 'submissions') {
+    if (tabId === 'submissions') {
         fetchSubmissions();
     } else if (tabId === 'students') {
-        fetchStudent();
+        fetchStudents();
     } else if (tabId === 'admins') {
-        fetchAdmin();
+        fetchAdmins();
+    } else if (tabId === 'staffs') {
+        fetchStaff();
     }
 }
 
@@ -136,81 +136,139 @@ async function adminLogout() {
     }
 }
 
-
-function fetchStudent() {
-    fetch('/hk-roadmap/student/profile')
-        .then(response => response.json())
-        .then(data => {
-            const tableBody = document.querySelector('#studentsTable tbody');
-            tableBody.innerHTML = ''; 
-            data.forEach(doc => {
-                const row = `<tr>
-                    <td>${doc.name}</td>
-                    <td>${doc.email}</td>
-                    <td>${doc.password}</td>
-                </tr>`;
-                tableBody.innerHTML += row;
-            });
-        })
-        .catch(error => console.error('Error fetching documents:', error));
-}
-
-function fetchAdmin() {
-    fetch('/hk-roadmap/admin/profile')
-        .then(response => response.json())
-        .then(data => {
-            const tableBody = document.querySelector('#adminsTable tbody');
-            tableBody.innerHTML = ''; 
-            data.forEach(doc => {
-                const row = `<tr>
-                    <td>${doc.admin_id}</td>
-                    <td>${doc.name}</td>
-                    <td>${doc.email}</td>
-                    <td>${doc.password}</td>
-                </tr>`;
-                tableBody.innerHTML += row;
-            });
-        })
-        .catch(error => console.error('Error fetching documents:', error));
-}
-
-async function fetchDocuments() {
-    const authToken = localStorage.getItem('authToken');
+async function fetchProfiles(type) {
     try {
-        const response = await fetch('/hk-roadmap/documents/admin', {
-            method: 'GET',
+        const response = await fetch(`/hk-roadmap/profile/all?type=${type}`, {
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
             }
         });
         
-        const data = await response.json();
-        const tableBody = document.querySelector('#documentsTable tbody');
-        tableBody.innerHTML = ''; 
-        if (Array.isArray(data.documents)) {
-            data.documents.forEach(doc => {
-                const row = `
-                    <tr>
-                        <td>${doc.document_id}</td>
-                        <td>${doc.event_id}</td>
-                        <td>${doc.requirement_id}</td>
-                        <td>${doc.student_id}</td>
-                        <td>${doc.file_path}</td>
-                        <td>${doc.upload_at}</td>
-                        <td>${doc.status}</td>
-                        <td>${doc.is_submitted}</td>
-                        <td>${doc.submitted_at}</td>
-                    </tr>`;
-                tableBody.innerHTML += row;
-            });
-        } else {
-            console.warn('No documents found in the response');
-            tableBody.innerHTML = '<tr><td colspan="12">No documents found.</td></tr>';
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
+        
+        const data = await response.json();
+        return data;
     } catch (error) {
-        console.error('Error fetching documents:', error);
+        console.error(`Error fetching ${type} profiles:`, error);
+        alert(`Failed to load ${type} data`);
+        return [];
     }
+}
+
+async function fetchStudents() {
+    const data = await fetchProfiles('student');
+    const tableBody = document.querySelector('#studentsTable tbody');
+    tableBody.innerHTML = '';
+    
+    data.forEach(student => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${student.student_number || '-'}</td>
+            <td>${student.name || '-'}</td>
+            <td>${student.department || '-'}</td>
+            <td>${student.year_level || '-'}</td>
+            <td>
+                <button class="view-details-btn" onclick="showProfileDetails('student', ${JSON.stringify(student).replace(/"/g, '&quot;')})">
+                    View Details
+                </button>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+}
+
+async function fetchStaff() {
+    const data = await fetchProfiles('staff');
+    const tableBody = document.querySelector('#staffsTable tbody');
+    tableBody.innerHTML = '';
+    
+    data.forEach(staff => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${staff.name || '-'}</td>
+            <td>${staff.position || '-'}</td>
+            <td>${staff.department || '-'}</td>
+            <td>
+                <button class="view-details-btn" onclick="showProfileDetails('staff', ${JSON.stringify(staff).replace(/"/g, '&quot;')})">
+                    View Details
+                </button>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+}
+
+async function fetchAdmins() {
+    const data = await fetchProfiles('admin');
+    const tableBody = document.querySelector('#adminsTable tbody');
+    tableBody.innerHTML = '';
+    
+    data.forEach(admin => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${admin.name || '-'}</td>
+            <td>${admin.position || '-'}</td>
+            <td>${admin.department || '-'}</td>
+            <td>
+                <button class="view-details-btn" onclick="showProfileDetails('admin', ${JSON.stringify(admin).replace(/"/g, '&quot;')})">
+                    View Details
+                </button>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+}
+
+// Unified profile popup display function
+function showProfileDetails(type, profile) {
+    const popup = document.getElementById('profilePopup');
+    const popupContent = document.getElementById('popupContent');
+    const popupTitle = document.getElementById('popupTitle');
+    const closeBtn = popup.querySelector('.close');
+
+    popupTitle.textContent = `${type.charAt(0).toUpperCase() + type.slice(1)} Profile: ${profile.name}`;
+
+    let content = `
+        <div class="profile-details">
+            <img src="${profile.profile_picture_url || '/assets/jpg/default-profile.png'}" 
+                 alt="Profile Picture" 
+                 class="profile-picture">
+            <div class="details-grid">
+                <p><strong>Name:</strong> ${profile.name || '-'}</p>
+                <p><strong>Email:</strong> ${profile.email || '-'}</p>
+                <p><strong>Department:</strong> ${profile.department || '-'}</p>
+                <p><strong>Contact Number:</strong> ${profile.contact_number || '-'}</p>
+                <p><strong>Student Number:</strong> ${profile.student_number || '-'}</p>
+                <p><strong>Year Level:</strong> ${profile.year_level || '-'}</p>
+                <p><strong>College Program:</strong> ${profile.college_program || '-'}</p>
+                <p><strong>Scholarship Type:</strong> ${profile.scholarship_type || '-'}</p>
+    `;
+
+    // Add department_others if exists
+    if (profile.department_others) {
+        content += `
+                <p><strong>Other Department:</strong> ${profile.department_others}</p>
+        `;
+    }
+
+    content += `
+            </div>
+        </div>
+    `;
+
+    popupContent.innerHTML = content;
+    popup.style.display = "block";
+
+    // Close popup handlers
+    closeBtn.onclick = () => popup.style.display = "none";
+    
+    window.onclick = (event) => {
+        if (event.target === popup) {
+            popup.style.display = "none";
+        }
+    };
 }
 
 function fetchSubmissions() {
@@ -1081,6 +1139,8 @@ function filterComments() {
     });
 }
 
+const commentCollapseStates = new Map();
+
 async function showComments(requirementId) {
     try {
         currentRequirementId = requirementId;
@@ -1088,50 +1148,63 @@ async function showComments(requirementId) {
         const response = await fetch(`/hk-roadmap/comments/admin?requirement_id=${requirementId}`, {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
+        
         if (!response.ok) throw new Error('Failed to fetch comments');
         const comments = await response.json();
- 
- 
+
         const commentsList = document.getElementById('comments-list');
         commentsList.innerHTML = '';
+        
         if (comments.length === 0) {
             commentsList.innerHTML = '<p class="no-comments">No comments found</p>';
             return;
         }
- 
- 
+
         // Group comments by student_id
         const commentsByStudent = comments.reduce((groups, comment) => {
             const key = comment.student_id;
-            if (!groups[key]) {
-                groups[key] = [];
-            }
+            if (!groups[key]) groups[key] = [];
             groups[key].push(comment);
             return groups;
         }, {});
 
-        const commentsContainer = document.createElement('div');
-        commentsContainer.className = 'student-comments';
- 
- 
-        // Create sections for each student
+        // Create student sections
         Object.entries(commentsByStudent).forEach(([studentId, studentComments]) => {
-            const studentSection = document.createElement('div');
-            studentSection.className = 'student-comment-group';
-            studentSection.dataset.studentId = studentId;
- 
- 
-            // Student header
-            const studentHeader = document.createElement('div');
-            studentHeader.className = 'student-header';
-            studentHeader.innerHTML = `
-                <h4>${studentComments[0].user_name} (ID: ${studentId})</h4>
+            const studentGroup = document.createElement('div');
+            studentGroup.className = 'student-comment-group';
+            
+            // Create collapsible header
+            const header = document.createElement('div');
+            header.className = 'student-header';
+            header.innerHTML = `
+                <div class="header-content">
+                    <span class="toggle-icon">▶</span>
+                    <h4>${studentComments[0].user_name} (ID: ${studentId})</h4>
+                    <span class="comment-count">${studentComments.length} comments</span>
+                </div>
             `;
- 
- 
-            // Comments list
+
+            // Create comments container
             const commentsContainer = document.createElement('div');
-            commentsContainer.className = 'student-comments';
+            commentsContainer.className = 'comments-container';
+            commentsContainer.style.display = 'none';
+
+            // Add toggle functionality
+            header.addEventListener('click', () => {
+                const isCollapsed = commentsContainer.style.display === 'none';
+                commentsContainer.style.display = isCollapsed ? 'block' : 'none';
+                header.querySelector('.toggle-icon').textContent = isCollapsed ? '▼' : '▶';
+                commentCollapseStates.set(studentId, !isCollapsed);
+            });
+
+            // Restore previous state
+            if (commentCollapseStates.has(studentId)) {
+                const isExpanded = commentCollapseStates.get(studentId);
+                commentsContainer.style.display = isExpanded ? 'block' : 'none';
+                header.querySelector('.toggle-icon').textContent = isExpanded ? '▼' : '▶';
+            }
+
+            // Populate comments
             studentComments.forEach(comment => {
                 const commentDate = new Date(comment.created_at).toLocaleDateString('en-US', {
                     year: 'numeric',
@@ -1140,6 +1213,7 @@ async function showComments(requirementId) {
                     hour: '2-digit',
                     minute: '2-digit'
                 });
+                
                 const commentCard = `
                     <div class="card comment-card" data-comment-id="${comment.comment_id}">
                         <div class="comment-header">
@@ -1163,34 +1237,29 @@ async function showComments(requirementId) {
                     </div>`;
                 commentsContainer.insertAdjacentHTML('beforeend', commentCard);
             });
-            
-            const buttonContainer = document.createElement('div');
-            buttonContainer.className = 'comment-button-container';
 
+            // Add comment button
             const addButton = document.createElement('button');
             addButton.className = 'add-comment-button';
             addButton.textContent = 'Add Comment';
             addButton.onclick = () => openCommentPopup(studentId, requirementId);
+            commentsContainer.appendChild(addButton);
 
-            buttonContainer.appendChild(addButton);
-            commentsContainer.appendChild(buttonContainer);
- 
-            studentSection.appendChild(studentHeader);
-            studentSection.appendChild(commentsContainer);
-            commentsList.appendChild(studentSection);
+            studentGroup.appendChild(header);
+            studentGroup.appendChild(commentsContainer);
+            commentsList.appendChild(studentGroup);
         });
- 
- 
+
+        // Update UI visibility
         document.getElementById('requirements-section').style.display = 'none';
-        document.getElementById('backToEventsButton').style.display = 'none';
         document.getElementById('comment-section').style.display = 'grid';
         document.getElementById('backtoRequirements').style.display = 'block';
+
     } catch (error) {
         console.error('Error loading comments:', error);
         alert('Failed to load comments');
     }
 }
- 
 
 function toggleCommentMenu(button) {
     const menu = button.closest('.comment-actions').querySelector('.action-menu');
@@ -1666,6 +1735,10 @@ const createRefreshControls = (fetchCallback, interval = 30000) => {
 };
 
 //profile
+let adminProfile = null;
+let departmentMapping = {};
+let reverseDepartmentMapping = {};
+
 async function fetchAdminProfile() {
     try {
         const response = await fetch('/hk-roadmap/profile/get', {
@@ -1673,13 +1746,15 @@ async function fetchAdminProfile() {
         });
 
         if (response.ok) {
-            const data = await response.json();
-            document.getElementById('adminName').value = data.name || '';
-            document.getElementById('adminEmail').value = data.email || '';
-            document.getElementById('adminDepartment').value = data.department || '';
-            document.getElementById('adminPosition').value = data.position || '';
-            document.getElementById('adminContact').value = data.contact_number || '';
-            document.getElementById('adminProfilePicture').src = data.profile_picture_url || '';
+            const adminProfile = await response.json();
+            document.getElementById('adminName').value = adminProfile.name || '';
+            document.getElementById('adminEmail').value = adminProfile.email || '';
+            document.getElementById('adminDepartment').value = adminProfile.department || '';
+            document.getElementById('adminPosition').value = adminProfile.position || '';
+            document.getElementById('adminContact').value = adminProfile.contact_number || '';
+            document.getElementById('adminProfilePicture').src = adminProfile.profile_picture_url || '';
+            updateProfileUI();
+            updateNavProfile(adminProfile);
         } else {
             throw new Error('Failed to fetch profile');
         }
@@ -1688,50 +1763,320 @@ async function fetchAdminProfile() {
     }
 }
 
+
+
 async function saveProfile(inputs, editButton, saveButton) {
-    const profileData = {
-        name: document.getElementById('adminName').value,
-        email: document.getElementById('adminEmail').value,
-        department: document.getElementById('adminDepartment').value,
-        position: document.getElementById('adminPosition').value,
-        contact_number: document.getElementById('adminContact').value
-    };
+    const formData = new FormData();
+    const fileInput = document.querySelector('input[type="file"]');
+    const departmentSelect = document.getElementById('adminDepartment');
+    
+    // Get the selected department full name
+    const selectedDepartmentName = departmentSelect.value;
+    // Convert to abbreviation for backend
+    const departmentAbbr = reverseDepartmentMapping[selectedDepartmentName] || 'OTH';
+
+    // Add all profile fields
+    formData.append('name', document.getElementById('adminName').value);
+    formData.append('email', document.getElementById('adminEmail').value);
+    formData.append('department', departmentAbbr); // Send abbreviation to backend
+    formData.append('position', document.getElementById('adminPosition').value);
+    formData.append('contact_number', document.getElementById('adminContact').value);
+
+    if (selectedDepartmentName === 'Others') {
+        formData.append('department_others', document.getElementById('departmentOthers').value);
+    }
+
+    // Add profile picture if changed
+    if (fileInput.files[0]) {
+        formData.append('profile_picture', fileInput.files[0]);
+    }
 
     try {
         const response = await fetch('/hk-roadmap/profile/update', {
             method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify(profileData)
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+            },
+            body: formData
         });
 
+        const data = await response.json();
         if (response.ok) {
             alert('Profile updated successfully!');
             disableProfileEditing(inputs, editButton, saveButton);
+            await fetchAdminProfile(); // Refresh profile data
         } else {
-            throw new Error('Failed to update profile');
+            throw new Error(data.message || 'Failed to update profile');
         }
     } catch (error) {
         console.error('Error updating profile:', error);
-        alert('Failed to update profile');
+        alert(error.message);
     }
 }
 
 function enableProfileEditing(inputs, editButton, saveButton) {
-    inputs.forEach(input => {
-        input.disabled = false;
-        input.style.backgroundColor = '#fff';
-    });
-    editButton.style.display = 'none';
-    saveButton.style.display = 'block';
+    inputs.forEach(input => input.disabled = false);
+    
+    document.getElementById('editProfileButton').style.display = 'none';
+    document.getElementById('saveProfileButton').style.display = 'block';
+    document.getElementById('cancelEditButton').style.display = 'block';
 }
 
 function disableProfileEditing(inputs, editButton, saveButton) {
-    inputs.forEach(input => {
-        input.disabled = true;
-        input.style.backgroundColor = '#f0f0f0';
+    inputs.forEach(input => input.disabled = true);
+    
+    document.getElementById('editProfileButton').style.display = 'block';
+    document.getElementById('saveProfileButton').style.display = 'none';
+    document.getElementById('cancelEditButton').style.display = 'none';
+}
+
+// Function to populate department select
+function populateDepartmentSelect() {
+    const departmentSelect = document.getElementById('adminDepartment');
+    departmentSelect.innerHTML = '<option value="">Select Department</option>';
+    
+    if (departments) {
+        // Use full names in the dropdown
+        Object.entries(departments).forEach(([abbr, name]) => {
+            const option = document.createElement('option');
+            option.value = name; // Use full name as value
+            option.textContent = name;
+            departmentSelect.appendChild(option);
+        });
+    }
+}
+
+function handleDepartmentChange() {
+    const departmentSelect = document.getElementById('adminDepartment');
+    const departmentOthersGroup = document.getElementById('departmentOthersGroup');
+    const departmentOthers = document.getElementById('departmentOthers');
+
+    if (departmentSelect.value === 'Others') {
+        departmentOthersGroup.style.display = 'block';
+        departmentOthers.disabled = departmentSelect.disabled;
+        departmentOthers.required = true;
+    } else {
+        departmentOthersGroup.style.display = 'none';
+        departmentOthers.required = false;
+    }
+}
+
+async function fetchDepartments() {
+    try {
+        const response = await fetch('/hk-roadmap/profile/departments', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+            }
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to fetch departments: ${errorText}`);
+        }
+
+        const data = await response.json();
+        departments = data.departments;
+
+        // Create mappings
+        departmentMapping = departments; // abbreviation -> full name
+        reverseDepartmentMapping = Object.entries(departments).reduce((acc, [abbr, name]) => {
+            acc[name] = abbr;
+            return acc;
+        }, {});
+
+        return departments;
+    } catch (error) {
+        console.error('Error fetching departments:', error);
+        return null;
+    }
+}
+
+
+function updateNavProfile(profileData) {
+    const profileNameElement = document.getElementById('profileName');
+    const profilePicElement = document.querySelector('.profile-container .profile-pic');
+    
+    if (profileNameElement && profileData.name) {
+        profileNameElement.textContent = profileData.name;
+    }
+
+    if (profilePicElement && profileData.profile_picture_url) {
+        profilePicElement.src = '/' + profileData.profile_picture_url;
+    }
+}
+
+function setupProfilePictureUpload() {
+    const profilePicture = document.getElementById('adminProfilePicture');
+    const editButton = document.getElementById('editProfileButton');
+    const saveButton = document.getElementById('saveProfileButton');
+    const cancelButton = document.getElementById('cancelEditButton');
+    const departmentSelect = document.getElementById('adminDepartment');
+
+    // Create file input element
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.style.display = 'none';
+    document.body.appendChild(fileInput);
+
+    let isEditMode = false;
+
+    // Edit button click handler
+    editButton.addEventListener('click', () => {
+        isEditMode = true;
+        profilePicture.style.cursor = 'pointer';
+        document.querySelectorAll('#profileForm input, #profileForm select').forEach(input => {
+            input.disabled = false;
+        });
+        editButton.style.display = 'none';
+        saveButton.style.display = 'block';
+        cancelButton.style.display = 'block';
     });
-    editButton.style.display = 'block';
-    saveButton.style.display = 'none';
+
+    // Cancel button click handler
+    cancelButton.addEventListener('click', () => {
+        isEditMode = false;
+        profilePicture.style.cursor = 'default';
+        document.querySelectorAll('#profileForm input, #profileForm select').forEach(input => {
+            input.disabled = true;
+        });
+        editButton.style.display = 'block';
+        saveButton.style.display = 'none';
+        cancelButton.style.display = 'none';
+        updateProfileUI(); 
+    });
+
+    profilePicture.addEventListener('click', () => {
+        if (isEditMode) {
+            fileInput.click();
+        }
+    });
+
+    // Department change handler
+    departmentSelect.addEventListener('change', handleDepartmentChange);
+
+    // File selection handler
+    fileInput.addEventListener('change', async (e) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file');
+                return;
+            }
+
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            if (file.size > maxSize) {
+                alert('File size should be less than 5MB');
+                return;
+            }
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                profilePicture.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+
+            // Store for upload
+            saveButton._fileToUpload = file;
+        }
+    });
+
+    // Save button click handler
+    saveButton.addEventListener('click', async () => {
+        try {
+            const formData = new FormData();
+            
+            if (saveButton._fileToUpload) {
+                formData.append('profile_picture', saveButton._fileToUpload);
+            }
+
+            // Add form data
+            formData.append('name', document.getElementById('adminName').value);
+            formData.append('email', document.getElementById('adminEmail').value);
+            formData.append('department', document.getElementById('adminDepartment').value);
+            formData.append('position', document.getElementById('adminPosition').value);
+            formData.append('contact_number', document.getElementById('adminContact').value);
+
+            if (document.getElementById('adminDepartment').value === 'Others') {
+                formData.append('department_others', document.getElementById('departmentOthers').value);
+            }
+
+            const token = localStorage.getItem('authToken');
+            const response = await fetch('/hk-roadmap/profile/update', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update profile');
+            }
+
+            // Reset edit mode
+            isEditMode = false;
+            profilePicture.style.cursor = 'default';
+            document.querySelectorAll('#profileForm input, #profileForm select').forEach(input => {
+                input.disabled = true;
+            });
+            editButton.style.display = 'block';
+            saveButton.style.display = 'none';
+            cancelButton.style.display = 'none';
+            saveButton._fileToUpload = null;
+
+            // Refresh profile data
+            await fetchAdminProfile();
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            alert('Failed to update profile. Please try again.');
+        }
+    });
+}
+
+function getProfilePictureUrl(profilePicturePath) {
+    if (!profilePicturePath) {
+        return '/assets/jpg/default-profile.png';
+    }
+    return '/' + profilePicturePath;
+}
+
+async function updateProfileUI() {
+    if (!departments) {
+        await fetchDepartments();
+        populateDepartmentSelect();
+    }
+
+    if (adminProfile) {
+        document.getElementById('adminName').value = adminProfile.name || '';
+        document.getElementById('adminEmail').value = adminProfile.email || '';
+        document.getElementById('adminPosition').value = adminProfile.position || '';
+        document.getElementById('adminContact').value = adminProfile.contact_number || '';
+
+        const departmentSelect = document.getElementById('adminDepartment');
+        const departmentOthersGroup = document.getElementById('departmentOthersGroup');
+        const departmentOthers = document.getElementById('departmentOthers');
+
+        // Convert department abbreviation to full name for display
+        const departmentFullName = departmentMapping[adminProfile.department] || 'Others';
+        departmentSelect.value = departmentFullName;
+
+        if (departmentFullName === 'Others') {
+            departmentOthersGroup.style.display = 'block';
+            departmentOthers.value = adminProfile.department_others || '';
+        }
+
+        // Update profile pictures
+        const profilePictureUrl = getProfilePictureUrl(adminProfile.profile_picture_url);
+        document.getElementById('adminProfilePicture').src = profilePictureUrl;
+        document.getElementById('headerProfilePic').src = profilePictureUrl;
+
+        // Update header profile name
+        document.getElementById('profileName').textContent = adminProfile.name || 'Admin';
+    }
 }
 
 // frontend listeners
@@ -1748,9 +2093,14 @@ document.addEventListener('DOMContentLoaded', () => {
     refreshControls.start();
     showSection('home');
     fetchCardEvents();
-    showTab('documents');
+    showTab('submissions');
 
     getAuthHeaders();
+
+    document.getElementById('profileForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await saveProfile(inputs, editButton, saveButton);
+    });
 
     document.querySelectorAll('.view-document-button').forEach(button => {
         button.addEventListener('click', () => viewDocument(button.getAttribute('data-id')));
@@ -2035,5 +2385,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('closeCommentPopupButton').addEventListener('click', closeCommentPopup);
 
+    fetchDepartments().then(populateDepartmentSelect);
     fetchAdminProfile();
+    setupProfilePictureUpload();
 });
