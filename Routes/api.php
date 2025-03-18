@@ -365,7 +365,7 @@ class Api {
                     return $this->submissionController->getSubmissionsBySubId();
                 }
                 break;
-
+            // Notification Routes
             case 'notification/get':
                 if ($method === 'GET') {
                     return $this->notificationController->getAdminNotifications();
@@ -444,35 +444,54 @@ class Api {
                     return $this->mailController->sendEmail();
                 }
 
-            case 'announcements/get':
-                if ($method === 'GET') {
-                    return $this->announcementController->getAllAnnouncements();
-                }
-                break;
-
-            case 'announcements/add':
-                if ($method === 'POST') {
-                    return $this->announcementController->createAnnouncement();
-                }
-                break;
-            
-            case 'announcements/student':
-                if ($method === 'GET') {
-                    return $this->announcementController->getStudentNotifications();
-                }
-                break;
-
-            case 'announcements/update':
-                if ($method === 'PUT') {
-                    return $this->announcementController->updateAnnouncement();
-                }
-                break;
-
-            case 'announcements/delete':
-                if ($method === 'DELETE') {
-                    return $this->announcementController->deleteAnnouncement();
-                }
-                break;
+                case 'announcements/get':
+                    if ($method === 'GET') {
+                        return $this->announcementController->getAllAnnouncements();
+                    }
+                    break;
+                
+                case 'announcements/add':
+                    if ($method === 'POST') {
+                        return $this->announcementController->createAnnouncement();
+                    }
+                    break;
+                
+                case 'announcements/student':
+                    if ($method === 'GET') {
+                        return $this->announcementController->getStudentAnnouncements();
+                    }
+                    break;
+                
+                case 'announcements/update':
+                    if ($method === 'PUT') {
+                        return $this->announcementController->updateAnnouncement();
+                    }
+                    break;
+                
+                case 'announcements/delete':
+                    if ($method === 'DELETE') {
+                        return $this->announcementController->deleteAnnouncement();
+                    }
+                    break;
+                
+                // Add these new routes for read tracking:
+                case 'announcements/mark-read':
+                    if ($method === 'POST') {
+                        return $this->announcementController->markAnnouncementAsRead();
+                    }
+                    break;
+                
+                case 'announcements/mark-all-read':
+                    if ($method === 'POST') {
+                        return $this->announcementController->markAllAnnouncementsAsRead();
+                    }
+                    break;
+                
+                case 'announcements/unread-count':
+                    if ($method === 'GET') {
+                        return $this->announcementController->getUnreadCount();
+                    }
+                    break;
                 
             case (preg_match('/^uploads\/(.+)$/', $endpoint, $matches) ? $endpoint : !$endpoint):
                 if ($method === 'GET') {

@@ -515,11 +515,15 @@ if (empty($path[0])) {
                 "send" => "POST /mail/send"
             ],
             //announcement endpoint
-            "announcements" => [
-                "add" => "POST /announcements/add",
-                "update" => "PUT /announcements/update",
-                "delete" => "DELETE /announcements/delete",
-                "get" => "GET /announcements/get"
+                "announcements" => [
+                    "get" => "GET /announcements/get",
+                    "add" => "POST /announcements/add",
+                    "update" => "PUT /announcements/update",
+                    "delete" => "DELETE /announcements/delete",
+                    "student" => "GET /announcements/student",
+                    "mark_read" => "POST /announcements/mark-read",
+                    "mark_all_read" => "POST /announcements/mark-all-read",
+                    "unread_count" => "GET /announcements/unread-count"
             ]
         ],
         "documentation" => [

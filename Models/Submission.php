@@ -39,6 +39,21 @@ class Submission {
         }
     }
 
+    public function getRequirementName($requirementId) {
+        try {
+            $query = "SELECT requirement_name FROM requirement WHERE requirement_id = :requirement_id";
+            $stmt = $this->db->prepare($query);
+            $stmt->bindValue(':requirement_id', $requirementId, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result ? $result['requirement_name'] : null;
+        } catch (PDOException $e) {
+            error_log("Error fetching requirement name: " . $e->getMessage());
+            return null;
+        }
+    }
+
     public function getSubmissionsByEventId($eventId) {
         $query = "SELECT * FROM submission WHERE event_id = :event_id";
         $stmt = $this->db->prepare($query);
