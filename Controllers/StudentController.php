@@ -3,16 +3,20 @@
 namespace Controllers;
 
 use Models\Student;
+use Models\Admin; 
 use PDO;
 use PDOException;
 
 require_once '../models/Student.php';
+require_once '../models/Admin.php'; // Include Admin model
 
 class StudentController {
     private $studentModel;
+    private $adminModel; // Add admin model
 
     public function __construct($db) {
         $this->studentModel = new Student($db);
+        $this->adminModel = new Admin($db); // Initialize admin model
     }
 
     public function validateToken() {
@@ -31,7 +35,20 @@ class StudentController {
         }
 
         $token = substr($authHeader, 7);
-        return $this->studentModel->validateToken($token);
+
+        // Check if the token is for a student
+        $studentData = $this->studentModel->validateToken($token);
+        if ($studentData) {
+            return ['type' => 'student', 'data' => $studentData];
+        }
+
+        // Check if the token is for an admin
+        $adminData = $this->adminModel->validateToken($token);
+        if ($adminData) {
+            return ['type' => 'admin', 'data' => $adminData];
+        }
+
+        return false; // Token is invalid for both
     }
 
     public function getStudentProfile() {
@@ -41,14 +58,20 @@ class StudentController {
                 return;
             }
 
-            $student_id = $tokenData['student_id'];
-            $student = $this->studentModel->getProfileById($student_id);
-            
-            if ($student) {
-                echo json_encode($student);
+            // Get student profile based on token type
+            if ($tokenData['type'] === 'student') {
+                $student_id = $tokenData['data']['student_id'];
+                $student = $this->studentModel->getProfileById($student_id);
+                
+                if ($student) {
+                    echo json_encode($student);
+                } else {
+                    http_response_code(404);
+                    echo json_encode(["message" => "Student not found"]);
+                }
             } else {
-                http_response_code(404);
-                echo json_encode(["message" => "Student not found"]);
+                http_response_code(403);
+                echo json_encode(["message" => "Access denied for admin token"]);
             }
         } catch (PDOException $e) {
             error_log("Profile fetch error: " . $e->getMessage());
@@ -59,7 +82,8 @@ class StudentController {
 
     public function getStudent() {
         try {
-            if (!$this->validateToken()) {
+            $tokenData = $this->validateToken();
+            if (!$tokenData) {
                 return;
             }
             
@@ -74,13 +98,15 @@ class StudentController {
 
     public function getStudentEmails() {
         try {
-            if (!$this->validateToken()) {
+            $tokenData = $this->validateToken();
+            if (!$tokenData) {
                 return;
             }
             
             $students = $this->studentModel->getAllStudents();
             $emails = array_column($students, 'email');
-            echo json_encode(["emails" => $emails]);
+            
+            echo json_encode($emails);
         } catch (PDOException $e) {
             error_log("Get emails error: " . $e->getMessage());
             http_response_code(500);
@@ -110,7 +136,7 @@ class StudentController {
                 echo json_encode(["message" => "Failed to send OTP"]);
             }
         } catch (PDOException $e) {
-            error_log("Send OTP error: " . $e->getMessage());
+            error_log("Send OTP error: " . $e-> getMessage());
             http_response_code(500);
             echo json_encode(["message" => "Server error"]);
         }
@@ -277,7 +303,7 @@ class StudentController {
                 return;
             }
 
-            if ($this->studentModel->logout($tokenData['student_id'])) {
+            if ($this->studentModel->logout($tokenData['data']['student_id'])) {
                 echo json_encode(["message" => "Logout successful"]);
             } else {
                 http_response_code(400);

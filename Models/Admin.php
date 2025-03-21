@@ -19,6 +19,10 @@ class Admin {
         $this->conn = $db;
     }
 
+    public function getDb() {
+        return $this->db; // Return the database connection
+    }
+
     public function getAllAdmins() {
         $query = "SELECT * FROM admin";
         $stmt = $this->conn->prepare($query);
@@ -44,8 +48,6 @@ class Admin {
     }
 
     public function updateToken($admin_id, $token) {
-        // Then insert new token
-        // First delete any existing tokens for this admin
         $deleteQuery = "DELETE FROM admin_tokens WHERE admin_id = :admin_id";
         $stmt = $this->conn->prepare($deleteQuery);
         $stmt->bindParam(':admin_id', $admin_id);

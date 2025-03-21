@@ -1,3 +1,4 @@
+/* Login.css - Match Register.css */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -9,234 +10,290 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 120vh;
+    min-height: 100vh;
     background: url('../jpg/background.jpg') no-repeat;
     background-size: cover;
     background-position: center;
+    padding: 20px;
 }
 
 .section {
-    display: flex; 
-    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
-.design {
-    position: absolute;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    top: 0;
-    right: 170px;
-    left: 30px;
-    width: 700px;
-    height: 100%;
-    background-color: transparent;
+.design, .wrapper {
+    position: relative;
+    width: 100%;
+    padding: 20px;
 }
 
 .design .school-desc {
-    justify-content: center;
-    margin: 10px 10px;
     text-align: center;
+    margin: 20px 0;
 }
 
 .school-desc .logo {
-    width: 400px; 
-    height: 200px; 
-    overflow: hidden;
-    align-self: center; 
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto;
+    display: block;
 }
 
-.school-desc .image {
-    display: flex;
-    justify-content: center;
-    margin: 10px 10px;
+.school-desc h1 {
+    font-size: 1.8rem;
+    margin: 15px 0;
+    color: #333;
 }
 
-.wrapper {
-    padding: 50px;
-    position: absolute;
-    top: 0;
-    right: 870px;
-    left: 770px;
-    width: 700px;
-    height: 100%;
-    background-color: transparent;
+.school-desc p {
+    font-size: 1rem;
+    color: #666;
+    line-height: 1.5;
+    max-width: 500px;
+    margin: 0 auto;
 }
 
 .wrapper .image {
-    margin-top: 20px;
-    display: flex;
-    justify-content: center;
-    margin: 10px 10px;
-}
-
-.image .logo {
-    width: 250px; 
-    height: auto; 
+    text-align: center;
     margin-bottom: 20px;
 }
 
+.image .logo {
+    max-width: 250px;
+    height: auto;
+}
 
 .login-box {
     background: white;
     padding: 25px;
     border-radius: 10px;
+    width: 100%;
     max-width: 450px;
     margin: 0 auto;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.login-top {
+    color: black;
+    text-align: left;
+    margin-bottom: 25px;
+}
+
+.login-top h2 {
+    font-size: 1.8rem;
+    margin-bottom: 10px;
 }
 
 .login-top .block {
     background-color: #45a049;
     width: 165px;
     height: 4px;
-}
-
-.login-top {
-    color: black;
-    text-align: left;
-
-
+    margin-bottom: 20px;
 }
 
 .login-container .form-input {
-    width: 100%;
-    height: 50px;
     margin: 20px 0;
-    border-bottom: 2px solid #fff;
+    position: relative;
 }
 
-.login-container .password-forgot {
-    text-align: right;
-    font-size: small;
-    text-decoration-line: none;
+.form-input label {
+    display: block;
+    text-align: left;
+    margin-bottom: 5px;
+    color: #333;
+    font-weight: 500;
 }
 
-a:link {
-    text-decoration: none!important;
+.form-input input,
+.form-input select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #45a049;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+
+.form-input input:focus,
+.form-input select:focus {
+    outline: none;
+    box-shadow: 0 0 3px #45a049;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 10px;
+    top: 65%;
+    transform: translateY(-50%);
     cursor: pointer;
+    color: #666;
+}
+
+.login-container .Button {
+    margin-top: 25px;
+}
+
+.Submit {
+    background-color: #4CAF50;
+    border: none;
+    color: white;
+    padding: 15px 32px;
+    width: 100%;
+    font-size: 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.Submit:hover {
+    background-color: #45a049;
+    transform: scale(1.02);
 }
 
 .login-container .registration {
     text-align: center;
-    font-size: medium;
-    text-decoration-line: none;
     margin-top: 20px;
 }
 
-.login-container .Button .Submit {
-    background-color: #4CAF50; 
-    border: none; 
-    color: white;
-    padding: 15px 32px;
-    text-align: center; 
-    text-decoration: none; 
-    display: inline-block; 
-    font-size: 16px; 
-    margin: 4px 2px; 
-    cursor: pointer; 
-    border-radius: 8px; 
-    transition: background-color 0.3s, transform 0.2s; 
+.login-container .registration a {
+    color: #4CAF50;
+    text-decoration: none;
+    font-weight: 500;
 }
 
-.Submit:hover {
-    background-color: #45a049; 
-    transform: scale(1.05); 
+.login-container .registration a:hover {
+    text-decoration: underline;
 }
 
-
-.login-container .Button {
-    margin-top: 10px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.form-input input{
+.popup {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 100%;
-    padding: 8px;
-    margin-bottom: 5px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    border-color: #45a049;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    animation: fadeIn 0.3s;
 }
 
-.form-input label{
-    text-align: left;
-}
-
-.design, .wrapper {
+.popup-content {
     position: relative;
-    right: auto;
-    left: auto;
-    width: 100%;
-    max-width: 700px; /* Adjust as needed */
-    margin: 0 auto;
-    padding: 20px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    animation: slideIn 0.3s ease-out;
 }
 
+/* Message Types */
+.popup.success { border-left: 4px solid #28a745; }
+.popup.error { border-left: 4px solid #dc3545; }
+.popup.info { border-left: 4px solid #17a2b8; }
+
+.popup-message {
+    margin: 1rem 0;
+    font-size: 1.1rem;
+    color: #333;
+}
+
+.popup-buttons {
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+.close-popup {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    cursor: pointer;
+    font-size: 1.5rem;
+    color: #666;
+    background: none;
+    border: none;
+    padding: 0;
+}
+
+.close-popup:hover {
+    color: #333;
+}
+
+/* Responsive Adjustments */
 @media (min-width: 768px) {
-    /* Desktop layout */
     .section {
         flex-direction: row;
-        justify-content: space-around;
+        justify-content: space-between;
         align-items: center;
     }
-    
+
     .design {
         width: 45%;
-        margin-right: 5%;
+        padding-right: 40px;
     }
-    
+
     .wrapper {
         width: 45%;
-        margin-left: 5%;
+        padding-left: 40px;
+    }
+
+    .school-desc h1 {
+        font-size: 2rem;
+    }
+
+    .school-desc p {
+        font-size: 1.1rem;
     }
 }
 
 @media (max-width: 767px) {
-    /* Mobile layout */
-    .section {
-        flex-direction: column;
-    }
-    
-    body {
-        height: auto;
-        min-height: 100vh;
-    }
-    
     .design, .wrapper {
-        width: 100%;
-        max-width: 500px;
-        padding: 20px;
+        text-align: center;
     }
-    
-    .design {
-        order: 1;
-        margin-top: 50px;
-    }
-    
-    .wrapper {
-        order: 2;
-        margin-top: 30px;
-    }
-    
+
     .school-desc .logo {
-        width: 300px;
-        height: auto;
+        width: 200px;
+    }
+
+    .login-box {
+        margin-top: 30px;
     }
 }
 
 @media (max-width: 480px) {
-    .design, .wrapper {
+    body {
         padding: 10px;
     }
-    
-    .school-desc .logo {
-        width: 250px;
-    }
-    
+
     .login-box {
         padding: 20px;
+    }
+
+    .form-input input,
+    .form-input select {
+        padding: 8px;
+        font-size: 0.9rem;
+    }
+
+    .Submit {
+        padding: 12px 20px;
+        font-size: 0.9rem;
+    }
+
+    .school-desc h1 {
+        font-size: 1.5rem;
+    }
+
+    .school-desc p {
+        font-size: 0.9rem;
     }
 }

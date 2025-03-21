@@ -41,7 +41,7 @@ class MailService {
 
     public function sendEmail($recipient, $subject, $body) {
         try {
-            $this->mail->setFrom('noreply@yourdomain.com', 'Your System Name');
+            $this->mail->setFrom('noreply@yourdomain.com', 'Scholaristech');
             $this->mail->addAddress($recipient);
             $this->mail->isHTML(true);
             $this->mail->Subject = $subject;

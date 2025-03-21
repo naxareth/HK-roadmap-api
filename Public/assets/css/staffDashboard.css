@@ -793,7 +793,7 @@ button {
 
 /* logout and profile */
 
-.profile-container {
+.navprofile-container {
     position: relative;
     display: flex;
     align-items: center;
@@ -1046,11 +1046,11 @@ button {
 }
 
 .comment-groups-container {
+    width: 80%;
     display: grid; 
     grid-template-columns: 1fr; 
     gap: 20px; 
     padding: 20px; 
-    min-width: 1050px;
 }
 
 #comment-section {
@@ -1062,7 +1062,7 @@ button {
 }
 
 .comments-container {
-    width: 100%;
+    width: 80%;
     box-sizing: border-box;
     padding: 1rem;
     background-color: #f8f9fa;
@@ -1075,14 +1075,14 @@ button {
 
 /* comments */
 .comments-list {
-    width: 100%;
+    width: 80%;
     box-sizing: border-box;
     margin-left: 0;  
     padding-left: 20px; 
 }
 
 .student-header {
-    width: 100%;
+    width: 80%;
     min-width: 100%; 
     margin-bottom: 1rem;
     border: 1px solid #e0e0e0;

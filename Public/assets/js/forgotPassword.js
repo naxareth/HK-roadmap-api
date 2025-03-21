@@ -19,7 +19,32 @@ function clearError() {
 }
 
 
+// Add success message handling
+function showSuccess(message) {
+    const successPopup = document.getElementById('successPopup');
+    const successText = document.getElementById('successText');
+    if (successPopup && successText) {
+        successText.textContent = message;
+        successPopup.style.display = 'block';
+        setTimeout(() => {
+            successPopup.style.display = 'none';
+        }, 3000);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    // Close button handlers
+    const closeButtons = document.querySelectorAll('.close-popup');
+    closeButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const popup = this.closest('.popup');
+            if (popup) {
+                popup.style.display = 'none';
+            }
+        });
+    });
+
+    // Form submission handler
     const recoveryForm = document.querySelector('.Recovery');
     
     if (recoveryForm) {
@@ -27,20 +52,17 @@ document.addEventListener('DOMContentLoaded', function() {
             event.preventDefault();
             clearError();
             
-            // Get form elements
             const roleSelect = recoveryForm.querySelector('select[name="role"]');
             const emailInput = recoveryForm.querySelector('input[name="email"]');
             
             const role = roleSelect.value;
             const email = emailInput.value.trim();
 
-            // Validate inputs
             if (!role || !email) {
                 showError('Please select a role and enter your email');
                 return;
             }
 
-            // Disable submit button during request
             const submitButton = recoveryForm.querySelector('button[type="submit"]');
             submitButton.disabled = true;
             submitButton.textContent = 'Sending OTP...';
@@ -54,16 +76,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 if (response.success) {
-                    alert('OTP has been sent to your email');
-                    // Redirect with role parameter
-                    window.location.href = `changePassword.html?role=${role}&email=${encodeURIComponent(email)}`;
+                    showSuccess('OTP has been sent to your email');
+                    localStorage.setItem('passwordResetData', JSON.stringify({
+                        role: role,
+                        email: email
+                    }));
+                    setTimeout(() => {
+                        window.location.href = `changePassword.html`;
+                    }, 1500);
                 } else {
                     showError(response.message || `${role} OTP request failed`);
                 }
             } catch (error) {
                 console.error('OTP request error:', error);
-                const errorMessage = error.message || 'An error occurred while sending OTP';
-                showError(errorMessage);
+                showError(error.message || 'An error occurred while sending OTP');
             } finally {
                 submitButton.disabled = false;
                 submitButton.textContent = 'Send OTP';
@@ -71,4 +97,3 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-
