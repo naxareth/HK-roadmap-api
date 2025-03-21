@@ -2,6 +2,7 @@
 
 namespace Controllers;
 
+use Models\Notification;
 use Models\Document;
 use Models\Comment;
 use Models\Admin;
@@ -551,25 +552,54 @@ class CommentController {
     
             // Create notifications based on user type
             if ($user['user_type'] === 'admin' || $user['user_type'] === 'staff') {
-                $notificationBody = "{$user['user_name']} has commented on {$requirementData['event_name']}, {$requirementData['requirement_name']}";
-                $notificationType = ($user['user_type'] === 'admin') ? 'student' : 'admin';
-                $query = "INSERT INTO notification (notification_body, notification_type, related_user_id, read_notif) 
-                         VALUES (:notification_body, 'student', :student_id, 0)";
+                // Admin/Staff commenting - notify student
+                $notificationBody = "{$user['user_name']} ({$user['user_type']}) has commented on your requirement: {$requirementData['event_name']}, {$requirementData['requirement_name']}";
+                
+                $query = "INSERT INTO notification (
+                    notification_body, 
+                    notification_type, 
+                    recipient_id,      -- Set student as recipient
+                    staff_recipient_id,
+                    related_user_id, 
+                    read_notif
+                ) VALUES (
+                    :notification_body, 
+                    'student', 
+                    :recipient_id,
+                    0,                 -- No staff recipient
+                    :related_user_id, 
+                    0
+                )";
                 
                 $stmt = $this->db->prepare($query);
                 $stmt->bindParam(':notification_body', $notificationBody);
-                $stmt->bindParam(':student_id', $studentId);
+                $stmt->bindParam(':recipient_id', $studentId);      // Student is the recipient
+                $stmt->bindParam(':related_user_id', $user['user_id']);
                 $stmt->execute();
-            } else {
-                // Create notification for admin
-                $notificationBody = "{$user['user_name']} has commented on {$requirementData['event_name']}, {$requirementData['requirement_name']}";
                 
-                $query = "INSERT INTO notification (notification_body, notification_type, related_user_id, read_notif) 
-                         VALUES (:notification_body, 'admin', :student_id, 0)";
+            } else if ($user['user_type'] === 'student') {
+                // Student commenting - notify admin
+                $notificationBody = "Student {$user['user_name']} has commented on requirement: {$requirementData['event_name']}, {$requirementData['requirement_name']}";
+                
+                $query = "INSERT INTO notification (
+                    notification_body, 
+                    notification_type, 
+                    recipient_id,
+                    staff_recipient_id,
+                    related_user_id, 
+                    read_notif
+                ) VALUES (
+                    :notification_body, 
+                    'admin', 
+                    0,                 -- No student recipient
+                    0,                 -- No specific staff recipient
+                    :related_user_id, 
+                    0
+                )";
                 
                 $stmt = $this->db->prepare($query);
                 $stmt->bindParam(':notification_body', $notificationBody);
-                $stmt->bindParam(':student_id', $studentId);
+                $stmt->bindParam(':related_user_id', $studentId);
                 $stmt->execute();
             }
         } catch (Exception $e) {
@@ -577,6 +607,5 @@ class CommentController {
             throw $e;
         }
     }
-    
 }
 ?>
