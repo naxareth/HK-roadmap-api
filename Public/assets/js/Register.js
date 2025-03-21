@@ -2,6 +2,33 @@ import ApiService from './apiService.js';
 
 const apiService = new ApiService('http://localhost:8000');
 
+// Password toggle functionality
+function setupPasswordToggles() {
+    const togglePassword = document.getElementById('togglePassword');
+    const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
+
+    if (togglePassword) {
+        togglePassword.addEventListener('click', function() {
+            const passwordField = document.getElementById('password');
+            const type = passwordField.type === 'password' ? 'text' : 'password';
+            passwordField.type = type;
+            this.classList.toggle('fa-eye');
+            this.classList.toggle('fa-eye-slash');
+        });
+    }
+
+    if (toggleConfirmPassword) {
+        toggleConfirmPassword.addEventListener('click', function() {
+            const confirmPasswordField = document.getElementById('confirm-password');
+            const type = confirmPasswordField.type === 'password' ? 'text' : 'password';
+            confirmPasswordField.type = type;
+            this.classList.toggle('fa-eye');
+            this.classList.toggle('fa-eye-slash');
+        });
+    }
+}
+
+// Error handling functions
 function showError(message) {
     const errorElement = document.getElementById('errorMessage');
     const errorText = document.getElementById('errorText');
@@ -33,6 +60,7 @@ function handleNetworkError(error) {
     showError(errorMessage);
 }
 
+// Validation function
 function validateRegistration(role, name, email, password, confirmPassword) {
     const errors = [];
     
@@ -60,32 +88,21 @@ function validateRegistration(role, name, email, password, confirmPassword) {
     return true;
 }
 
+// Main initialization
 document.addEventListener('DOMContentLoaded', function() {
+
+    localStorage.removeItem('passwordResetData');
+    // Initialize password toggles first
+    setupPasswordToggles();
+
+    const registerForm = document.getElementById('registerForm');
     if (!registerForm) {
         console.error('Registration form not found!');
         return;
     }
-    // Initialize password toggles first
-    document.getElementById('togglePassword').addEventListener('click', function() {
-        const passwordField = document.getElementById('password');
-        const type = passwordField.type === 'password' ? 'text' : 'password';
-        passwordField.type = type;
-        this.classList.toggle('fa-eye');
-        this.classList.toggle('fa-eye-slash');
-    });
 
-    document.getElementById('toggleConfirmPassword').addEventListener('click', function() {
-        const confirmPasswordField = document.getElementById('confirm-password');
-        const type = confirmPasswordField.type === 'password' ? 'text' : 'password';
-        confirmPasswordField.type = type;
-        this.classList.toggle('fa-eye');
-        this.classList.toggle('fa-eye-slash');
-    });
-
-    const registerForm = document.getElementById('registerForm');
-    if (registerForm) {
-        registerForm.addEventListener('submit', async function(event) {
-            event.preventDefault();
+    registerForm.addEventListener('submit', async function(event) {
+        event.preventDefault();
         clearError();
 
         const closeButtons = document.querySelectorAll('.close-popup');
@@ -125,12 +142,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             if (response.success) {
-                
-                console.log('Redirecting to:', window.location.href); 
-                localStorage.setItem('lastRedirect', new Date().toISOString());
-                showSuccess(`${role.toUpperCase()} registration successful! Redirecting...`);
+                showSuccess();
                 setTimeout(() => window.location.href = '/login.html', 1500);
-
             } else {
                 showError(response.message || `Failed to register as ${role}`);
             }
@@ -141,4 +154,4 @@ document.addEventListener('DOMContentLoaded', function() {
             submitButton.textContent = 'Register';
         }
     });
-    }});
+});

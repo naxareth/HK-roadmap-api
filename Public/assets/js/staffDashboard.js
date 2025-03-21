@@ -702,18 +702,6 @@ const badgeRefresher = {
 };
 
 //profile
-function updateNavProfile(profileData) {
-    const navProfileName = document.getElementById('navProfileName');
-    const navProfileImage = document.querySelector('.profile-container .profile-pic');
-    
-    if (navProfileName && profileData.name) {
-        navProfileName.textContent = profileData.name;
-    }
-    
-    if (navProfileImage && profileData.profile_picture_url) {
-        navProfileImage.src = '/' + profileData.profile_picture_url;
-    }
-}
 
 async function fetchStaffProfile() {
     try {
@@ -884,14 +872,14 @@ async function fetchDepartments() {
 
 function updateNavProfile(profileData) {
     const staffNameElement = document.getElementById('navProfileName');
-    const staffPicElement = document.querySelector('.profile-container .profile-pic');
+    const staffPicElement = document.querySelector('.navprofile-container .profile-pic');
     
     if (staffNameElement && profileData.name) {
         staffNameElement.textContent = profileData.name;
     }
 
     if (staffPicElement && profileData.profile_picture_url) {
-        staffPicElement.src = '/' + profileData.profile_picture_url;
+        staffPicElement.src = profileData.profile_picture_url;
     }
 }
 
@@ -1571,7 +1559,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const notificationPopup = document.getElementById('notificationPopup');
             const profileMenu = document.getElementById('profileMenu');
             if (!e.target.closest('.notifications-container') && notificationPopup) notificationPopup.style.display = 'none';
-            if (!e.target.closest('.profile-container') && profileMenu) profileMenu.style.display = 'none';
+            if (!e.target.closest('.navprofile-container') && profileMenu) profileMenu.style.display = 'none';
         });
 
         const commentSearch = document.getElementById('commentSearch');

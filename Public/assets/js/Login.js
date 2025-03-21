@@ -40,6 +40,8 @@ function validateLogin(role, email, password) {
 
 document.addEventListener('DOMContentLoaded', function() {
 
+    localStorage.removeItem('passwordResetData');
+
     const authToken = localStorage.getItem('authToken');
     if (authToken) {
         window.location.href = 'dashboard.html';

@@ -147,7 +147,7 @@ class Profile {
             // Remove the "../" - folder should be in web root
 
             
-            $targetDir = $_SERVER['DOCUMENT_ROOT'] . "uploads/profile_pictures/";
+            $targetDir = $_SERVER['DOCUMENT_ROOT'] . "/uploads/profile_pictures/";
             if (!file_exists($targetDir)) {
                 mkdir($targetDir, 0777, true);
             }
@@ -156,7 +156,7 @@ class Profile {
             $targetPath = $targetDir . $fileName;
     
             if (move_uploaded_file($file['tmp_name'], $targetPath)) {
-                return 'uploads/profile_pictures/' . $fileName;
+                return '/uploads/profile_pictures/' . $fileName;
             }
             return false;
         } catch (Exception $e) {
