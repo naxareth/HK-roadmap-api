@@ -1612,7 +1612,7 @@ async function fetchNotifications() {
     }
 }
 
-async function toggleReadStatus(notificationId, button) {
+async function toggleReadStatus(notificationId, button, status, requirementName) {
     const isRead = button.dataset.read === '1';
 
     try {
@@ -1624,12 +1624,15 @@ async function toggleReadStatus(notificationId, button) {
             },
             body: JSON.stringify({
                 notification_id: parseInt(notificationId),  // Ensure number type
-                read: !isRead  // Send boolean value
+                read: !isRead,  // Send boolean value
+                status: status,  // Add status field
+                requirement_name: requirementName  // Add requirement_name field
             })
         });
 
         if (!response.ok) {
             const error = await response.text();
+            console.error('Response error:', error); // Log the full error response
             throw new Error(`Server error: ${error}`);
         }
 

@@ -76,18 +76,18 @@ class NotificationController {
 
     public function toggleAdminNotification() {
         $input = json_decode(file_get_contents('php://input'), true);
-    
+
         // Validate input
-        if (empty($input['notification_id']) || !isset($input['read']) || empty($input['status']) || empty($input['requirement_name'])) {
+        if (empty($input['notification_id']) || !isset($input['read'])) {
             http_response_code(400);
             echo json_encode(["message" => "Missing required fields"]);
             return;
         }
-    
+
         // Authenticate admin
         $admin = $this->validateAuthAdmin();
         if (!$admin) return;
-    
+
         // Get original notification
         $notification = $this->notificationModel->getNotificationById($input['notification_id']);
         if (!$notification || $notification['notification_type'] !== 'admin') {
@@ -95,31 +95,17 @@ class NotificationController {
             echo json_encode(["message" => "Admin notification not found"]);
             return;
         }
-    
+
         // Update notification with admin's ID
         $success = $this->notificationModel->editAdminNotification(
             $input['notification_id'],
             (bool)$input['read'],
             $admin['admin_id']
         );
-    
+
         if ($success) {
             $updatedNotification = $this->notificationModel->getNotificationById($input['notification_id']);
-            
-            // Create student notification if marked as read
-            if ($updatedNotification['read_notif'] == 1) {
-                $statusMessage = "Your submission for the requirement for {$input['requirement_name']} has been " . 
-                               ($input['status'] === 'approved' ? "approved" : "rejected") . 
-                               " by Admin {$admin['name']}";
-                
-                $this->notificationModel->create(
-                    $statusMessage,
-                    'student',
-                    $updatedNotification['related_user_id'],
-                    $admin['admin_id']
-                );
-            }
-    
+
             echo json_encode([
                 "success" => true,
                 "notification" => $updatedNotification

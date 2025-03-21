@@ -47,22 +47,27 @@ class Admin {
     }
 
     public function updateToken($admin_id, $token) {
-        $deleteQuery = "DELETE FROM admin_tokens WHERE admin_id = :admin_id";
-        $stmt = $this->conn->prepare($deleteQuery);
-        $stmt->bindParam(':admin_id', $admin_id);
-        $stmt->execute();
-
-            // Then insert new token
+        try {
+            $this->conn->beginTransaction(); // Start a new transaction here
+    
+            // Delete old tokens
+            $deleteQuery = "DELETE FROM admin_tokens WHERE admin_id = :admin_id";
+            $stmt = $this->conn->prepare($deleteQuery);
+            $stmt->bindParam(':admin_id', $admin_id);
+            $stmt->execute();
+    
+            // Insert new token
             $query = "INSERT INTO admin_tokens (admin_id, token) VALUES (:admin_id, :token)";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':token', $token);
             $stmt->bindParam(':admin_id', $admin_id);
             
             $result = $stmt->execute();
-            $this->conn->commit();
+            $this->conn->commit(); // Now valid (transaction is active)
             return $result;
+    
         } catch (PDOException $e) {
-            $this->conn->rollBack();
+            $this->conn->rollBack(); // Now valid (transaction is active)
             error_log("Token update error: " . $e->getMessage());
             return false;
         }
