@@ -104,6 +104,10 @@ class Profile {
             // Preserve existing name and email if not provided in update
             $name = isset($data['name']) ? $data['name'] : ($existingProfile['name'] ?? null);
             $email = isset($data['email']) ? $data['email'] : ($existingProfile['email'] ?? null);
+
+            if (isset($data['name']) && $data['name'] !== $existingProfile['name']) {
+                $this->updateAdminName($userId, $data['name']);
+            }
     
             return $stmt->execute([
                 ':user_id' => $userId,
@@ -123,6 +127,19 @@ class Profile {
         } catch (PDOException $e) {
             error_log("Profile update error: " . $e->getMessage());
             return false;
+        }
+    }
+
+    private function updateAdminName($userId, $newName) {
+        try {
+            $query = "UPDATE admin SET name = :name WHERE admin_id = :user_id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute([
+                ':name' => $newName,
+                ':user_id' => $userId
+            ]);
+        } catch (PDOException $e) {
+            error_log("Admin name update error: " . $e->getMessage());
         }
     }
 

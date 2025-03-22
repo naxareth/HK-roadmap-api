@@ -1017,8 +1017,7 @@ input[type="date"] {
     display: none; /* Initially hidden */
     position: absolute; /* Position relative to the nearest positioned ancestor */
     padding: 10px;
-    right: 0; /* Align to the right of the notification bell */
-    top: 100%; /* Position below the notification bell */
+    top: 60px;
     width: 50%; /* Fixed width */
     max-height: 600px; /* Max height */
     background: white; /* Background color */
@@ -1066,13 +1065,14 @@ input[type="date"] {
 }
 
 .mark-read-btn {
+    width: 70%;
+    height: 10%;
     background: none;
     border: 1px solid #007bff;
     color: #007bff;
     padding: 10px 15px;
     border-radius: 4px;
     cursor: pointer;
-    margin-left: auto;
 }
 
 @media (max-width: 200px) {
@@ -1375,7 +1375,7 @@ input[type="date"] {
     align-items: start;
 }
 
-.profile-picture {
+.profile-pict {
     width: 150px;
     height: 150px;
     border-radius: 50%;
@@ -1695,7 +1695,7 @@ button {
 .profile-menu.visible {
     display: block; /* Make it visible when needed */
     opacity: 1; /* Fade in */
-    transform: translateY(0); /* Slide down */
+    transform: translateY(0);
 }
 
 #profileMenu {

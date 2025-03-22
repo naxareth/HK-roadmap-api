@@ -9,6 +9,7 @@
 </head>
 <body>
     <div class="top-nav">
+        <button id="toggleMenuButton">☰</button>
         <h1>HK Roadmap</h1>
         <div class="nav-controls">
             <div class="notifications-container">
@@ -105,11 +106,6 @@
                         <input type="text" id="staffName" name="name"  required>
                     </div>
             
-                    <div class="form-group">
-                        <label for="staffEmail">Email:</label>
-                        <input type="email" id="staffEmail" name="email"  required>
-                    </div>
-            
                     <!-- Department Selection -->
                     <div class="form-group">
                         <label for="staffDepartment">Department:</label>
@@ -150,9 +146,10 @@
             
                     <div class="form-group">
                         <label for="collegeProgram">College Program:</label>
-                        <input type="text" id="collegeProgram" name="college_program" >
+                        <select type="text" id="collegeProgram" name="college_program" >
+                            <option value="">Select Program</option>
+                        </select>
                     </div>
-
             
                     <div class="form-group">
                         <label for="scholarshipType">Scholarship Type:</label>
@@ -201,7 +198,7 @@
 
         <div id="profilePopup" class="popup" style="display: none;">
             <div class="popup-content">
-                <span class="close">&times;</span>
+                <span class="close-popup">&times;</span>
                 <h2 id="popupTitle">Profile Details</h2>
                 <div id="popupContent"></div>
             </div>
@@ -209,7 +206,7 @@
 
         <div id="commentPopup" class="popup" style="display: none;">
             <div class="popup-content">
-                <span class="close" onclick="closeCommentPopup()">&times;</span>
+                <span class="close-popup" onclick="closeCommentPopup()">&times;</span>
                 <h3>Add Comment</h3>
                 <textarea id="commentInput" 
                         placeholder="Enter your comment here..." 

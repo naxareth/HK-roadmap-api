@@ -72,6 +72,7 @@ function toggleNotifPopup() {
     const popup = document.getElementById('notificationPopup');
     const isOpening = popup.style.display !== 'block';
     
+    // Toggle the display of the popup
     popup.style.display = isOpening ? 'block' : 'none';
     
     if (isOpening) {
@@ -79,13 +80,47 @@ function toggleNotifPopup() {
         document.getElementById('notificationList').innerHTML = 
             '<div class="loading">Loading notifications...</div>';
         
+        // Fetch notifications
         fetchNotifications();
+        
+        // Position the popup below the notification bell
+        const bell = document.querySelector('.notification-bell');
+        const rect = bell.getBoundingClientRect();
+        const int = 50; // Adjust this value as needed
+
+        // Set the calculated styles
+        popup.style.left = `${rect.right - popup.offsetWidth + int}px`; // Align right edge of popup with right edge of bell
+
+        popup.classList.add('visible');
+    } else {
+        popup.classList.remove('visible');
     }
+}
+
+function positionNotificationPopup() {
+    const popup = document.getElementById('notificationPopup');
+    const bell = document.querySelector('.notification-bell');
+    const rect = bell.getBoundingClientRect();
+    const int = 50;
+    
+    // Set the position of the popup
+    popup.style.left = `${rect.right - popup.offsetWidth + int}px`; // Align right edge of popup with right edge of bell
 }
 
 function toggleProfileMenu() {
     const menu = document.getElementById('profileMenu');
-    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    const isOpening = menu.style.display !== 'block';
+
+    // Toggle the display of the menu
+    menu.style.display = isOpening ? 'block' : 'none';
+
+    if (isOpening) {
+        // Add visible class for animation
+        menu.classList.add('visible');
+    } else {
+        // Remove visible class when closing
+        menu.classList.remove('visible');
+    }
 }
 
 function closeEditPopup() {
@@ -201,7 +236,6 @@ async function fetchAllEvents() {
     }
 }
 
-
 async function fetchStudent() {
     const data = await fetchProfiles('student');
     const tableBody = document.querySelector('#studentsTable tbody');
@@ -233,7 +267,7 @@ function showProfileDetails(type, profile) {
     const popup = document.getElementById('profilePopup');
     const popupContent = document.getElementById('popupContent');
     const popupTitle = document.getElementById('popupTitle');
-    const closeBtn = popup.querySelector('.close');
+    const closeBtn = popup.querySelector('.close-popup');
 
     popupTitle.textContent = `${type.charAt(0).toUpperCase() + type.slice(1)} Profile: ${profile.name}`;
 
@@ -241,7 +275,7 @@ function showProfileDetails(type, profile) {
         <div class="profile-details">
             <img src="${profile.profile_picture_url || '/assets/jpg/default-profile.png'}" 
                  alt="Profile Picture" 
-                 class="profile-picture">
+                 class="profile-pict">
             <div class="details-grid">
                 <p><strong>Name:</strong> ${profile.name || '-'}</p>
                 <p><strong>Email:</strong> ${profile.email || '-'}</p>
@@ -509,8 +543,14 @@ async function fetchNotifications() {
             notificationItem.className = `notification-item ${notification.read_notif ? '' : 'unread'}`;
             notificationItem.innerHTML = `
                 <div class="notification-content">
-                    <p>${notification.notification_body}</p>
-                    <small>${formatDateTime(notification.created_at)}</small>
+                    <div class="notif-text>
+                        <div class="notification-body">
+                            ${notification.notification_body}
+                        </div>
+                        <small class="notification-date">
+                            ${formatDateTime(notification.created_at)}
+                        </small>
+                    </div>
                     <button class="mark-read-btn" 
                             onclick="toggleReadStatus(${notification.notification_id}, this)"
                             data-read="${notification.read_notif ? 1 : 0}">
@@ -702,7 +742,6 @@ const badgeRefresher = {
 };
 
 //profile
-
 async function fetchStaffProfile() {
     try {
         const response = await fetch('/hk-roadmap/profile/get', {
@@ -713,7 +752,6 @@ async function fetchStaffProfile() {
             const profileData = await response.json();
             // Staff fields
             document.getElementById('staffName').value = profileData.name || '';
-            document.getElementById('staffEmail').value = profileData.email || '';
             document.getElementById('staffDepartment').value = profileData.department || '';
             document.getElementById('staffPosition').value = profileData.position || '';
             document.getElementById('staffContact').value = profileData.contact_number || '';
@@ -747,7 +785,6 @@ async function saveProfile(inputs, editButton, saveButton) {
 
     // Common fields
     formData.append('name', document.getElementById('staffName').value);
-    formData.append('email', document.getElementById('staffEmail').value);
     formData.append('department', departmentAbbr);
     formData.append('position', document.getElementById('staffPosition').value);
     formData.append('contact_number', document.getElementById('staffContact').value);
@@ -972,7 +1009,6 @@ function setupProfilePictureUpload() {
 
             // Add form data
             formData.append('name', document.getElementById('staffName').value);
-            formData.append('email', document.getElementById('staffEmail').value);
             formData.append('department', document.getElementById('staffDepartment').value);
             formData.append('position', document.getElementById('staffPosition').value);
             formData.append('contact_number', document.getElementById('staffContact').value);
@@ -1033,7 +1069,6 @@ async function updateProfileUI() {
     if (userProfile) {
         // Update form fields
         document.getElementById('staffName').value = userProfile.name || '';
-        document.getElementById('staffEmail').value = userProfile.email || '';
         document.getElementById('staffPosition').value = userProfile.position || '';
         document.getElementById('staffContact').value = userProfile.contact_number || '';
         document.getElementById('studentNumber').value = userProfile.student_number || '';
@@ -1062,6 +1097,36 @@ async function updateProfileUI() {
         updateNavProfile(userProfile);
         disableProfileEditing();
     }
+}
+
+async function fetchPrograms() {
+    try {
+        const response = await fetch('/hk-roadmap/profile/programs', {
+            headers: getAuthHeaders()
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        renderPrograms(data.programs);
+    } catch (error) {
+        console.error('Error fetching programs:', error);
+        showError('Failed to load programs');
+    }
+}
+
+function renderPrograms(programs) {
+    const programSelect = document.getElementById('collegeProgram'); // Assuming you have a select element for programs
+    programSelect.innerHTML = '<option value="">Select Program</option>'; // Clear existing options
+
+    programs.forEach(program => {
+        const option = document.createElement('option');
+        option.value = program; // Assuming program is a string
+        option.textContent = program; // Display program name
+        programSelect.appendChild(option);
+    });
 }
 
 function populateDepartmentSelect() {
@@ -1140,9 +1205,16 @@ async function renderCommentDashboard(comments = allComments) {
         const numericReqId = Number(reqId); // Define numericReqId here
         const numericEventId = Number(event_id);
         
-        const requirement = requirementMap.get(numericReqId) || { name: `Requirement ${numericReqId}` };
-        const eventName = eventMap.get(numericEventId) || `Event #${numericEventId}`;
+        // Get requirement and event names
+        const requirement = requirementMap.get(numericReqId);
+        const eventName = eventMap.get(numericEventId);
         
+        // Check if requirement and event names are valid
+        if (!requirement || !eventName) {
+            console.warn(`Skipping requirement ID ${numericReqId} or event ID ${numericEventId} due to missing names.`);
+            continue; // Skip this iteration if names are not valid
+        }
+
         const requirementGroup = document.createElement('div');
         requirementGroup.className = 'requirement-group';
         requirementGroup.innerHTML = `
@@ -1454,7 +1526,7 @@ function editComment(commentId, commentBody) {
         document.body.appendChild(editPopup);
         
         // Add close button functionality
-        editPopup.querySelector('.close').onclick = closeEditPopup;
+        editPopup.querySelector('close-popup').onclick = closeEditPopup;
     }
 
     // Set the comment text in the textarea
@@ -1524,6 +1596,20 @@ async function deleteComment(commentId) {
     }
 }
 
+//frontend system
+
+function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    
+    // Toggle the visible class on the sidebar
+    sidebar.classList.toggle('visible');
+}
+
+function closeSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    sidebar.classList.remove('visible');
+}
+
 
 document.addEventListener('DOMContentLoaded', () => {
     try {
@@ -1535,6 +1621,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showTab('submissions');
         fetchSubmissions();
         populateDepartmentSelect();
+        
 
         // Search Input
         document.querySelector('#searchInput')?.addEventListener('input', function(e) {
@@ -1634,10 +1721,44 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        const menuButton = document.getElementById('toggleMenuButton');
+     menuButton.addEventListener('click', function() {
+         toggleSidebar();
+     });
+ 
+    document.addEventListener('click', function(event) {
+        const sidebar = document.querySelector('.sidebar');
+        const toggleButton = document.getElementById('toggleMenuButton');
+        const content = document.querySelector('.content');
+     
+         // Check if the click was outside the sidebar and the toggle button
+        if (!sidebar.contains(event.target) && !toggleButton.contains(event.target)) {
+            closeSidebar();
+        }
+ 
+        toggleMenuButton.addEventListener('click', function() {
+            sidebar.classList.toggle('visible');
+        });
+         
+        document.addEventListener('click', function(event) {
+            if (!sidebar.contains(event.target) && !toggleMenuButton.contains(event.target)) {
+                sidebar.classList.remove('visible');
+            }
+        });
+    });
+ 
+     window.addEventListener('resize', () => {
+         const popup = document.getElementById('notificationPopup');
+         if (popup.style.display === 'block') {
+             positionNotificationPopup();
+         }
+     });
+
         initCommentManagement();
         fetchDepartments().then(populateDepartmentSelect);
         fetchStaffProfile();
         setupProfilePictureUpload();
+        fetchPrograms();
 
     } catch (error) {
         console.error('Error initializing dashboard:', error);

@@ -57,16 +57,14 @@ function toggleNotifPopup() {
         
         // Fetch notifications
         fetchNotifications();
-        positionNotificationPopup();
         
         // Position the popup below the notification bell
         const bell = document.querySelector('.notification-bell');
         const rect = bell.getBoundingClientRect();
-        const int = 50;
+        const int = 50; // Adjust this value as needed
 
         // Set the calculated styles
         popup.style.left = `${rect.right - popup.offsetWidth + int}px`; // Align right edge of popup with right edge of bell
-        popup.style.top = `${rect.bottom + window.scrollY}px`; // Position below the bell
 
         popup.classList.add('visible');
     } else {
@@ -82,7 +80,6 @@ function positionNotificationPopup() {
     
     // Set the position of the popup
     popup.style.left = `${rect.right - popup.offsetWidth + int}px`; // Align right edge of popup with right edge of bell
-    popup.style.top = `${rect.bottom + window.scrollY}px`; // Position below the bell
 }
 
 function toggleProfileMenu() {
@@ -304,7 +301,7 @@ function showProfileDetails(type, profile) {
         <div class="profile-details">
             <img src="${profile.profile_picture_url || '/assets/jpg/default-profile.png'}" 
                  alt="Profile Picture" 
-                 class="profile-picture">
+                 class="profile-pict">
             <div class="details-grid">
                 <div class="details-section">
                     <h3>Personal Information</h3>
@@ -1871,7 +1868,6 @@ async function fetchAdminProfile() {
         if (response.ok) {
             const adminProfile = await response.json();
             document.getElementById('adminName').value = adminProfile.name || '';
-            document.getElementById('adminEmail').value = adminProfile.email || '';
             document.getElementById('adminDepartment').value = adminProfile.department || '';
             document.getElementById('adminPosition').value = adminProfile.position || '';
             document.getElementById('adminContact').value = adminProfile.contact_number || '';
@@ -1886,8 +1882,6 @@ async function fetchAdminProfile() {
     }
 }
 
-
-
 async function saveProfile(inputs, editButton, saveButton) {
     const formData = new FormData();
     const fileInput = document.querySelector('input[type="file"]');
@@ -1897,7 +1891,6 @@ async function saveProfile(inputs, editButton, saveButton) {
     const departmentAbbr = reverseDepartmentMapping[selectedDepartmentName] || 'OTH';
 
     formData.append('name', document.getElementById('adminName').value);
-    formData.append('email', document.getElementById('adminEmail').value);
     formData.append('department', departmentAbbr);
     formData.append('position', document.getElementById('adminPosition').value);
     formData.append('contact_number', document.getElementById('adminContact').value);
@@ -1939,6 +1932,7 @@ function enableProfileEditing(inputs, editButton, saveButton) {
     document.getElementById('editProfileButton').style.display = 'none';
     document.getElementById('saveProfileButton').style.display = 'block';
     document.getElementById('cancelEditButton').style.display = 'block';
+    document.getElementById('changeProfilePictureButton').style.display = 'block';
 }
 
 function disableProfileEditing(inputs, editButton, saveButton) {
@@ -1947,6 +1941,7 @@ function disableProfileEditing(inputs, editButton, saveButton) {
     document.getElementById('editProfileButton').style.display = 'block';
     document.getElementById('saveProfileButton').style.display = 'none';
     document.getElementById('cancelEditButton').style.display = 'none';
+    document.getElementById('changeProfilePictureButton').style.display = 'none';
 }
 
 function populateDepartmentSelect() {
@@ -2065,7 +2060,9 @@ function setupProfilePictureUpload() {
         editButton.style.display = 'block';
         saveButton.style.display = 'none';
         cancelButton.style.display = 'none';
+        document.getElementById('changeProfilePictureButton').style.display = 'none';
         updateProfileUI(); 
+        fetchAdminProfile();
     });
 
     profilePicture.addEventListener('click', () => {
@@ -2116,7 +2113,6 @@ function setupProfilePictureUpload() {
 
             // Add form data
             formData.append('name', document.getElementById('adminName').value);
-            formData.append('email', document.getElementById('adminEmail').value);
             formData.append('department', document.getElementById('adminDepartment').value);
             formData.append('position', document.getElementById('adminPosition').value);
             formData.append('contact_number', document.getElementById('adminContact').value);
@@ -2173,7 +2169,6 @@ async function updateProfileUI() {
 
     if (adminProfile) {
         document.getElementById('adminName').value = adminProfile.name || '';
-        document.getElementById('adminEmail').value = adminProfile.email || '';
         document.getElementById('adminPosition').value = adminProfile.position || '';
         document.getElementById('adminContact').value = adminProfile.contact_number || '';
 
@@ -2377,7 +2372,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('comment-section').style.display = 'none';
         document.getElementById('requirements-section').style.display = 'grid';
         document.getElementById('backtoRequirements').style.display = 'none';
-        document.getElementById('backToEventsButton').style.display = 'grid';
+        document.getElementById('backToEventsButton').style.display = 'block';
     });
 
     document.getElementById('yearSelect').addEventListener('change', function() {
