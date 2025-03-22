@@ -364,12 +364,6 @@ function showProfileDetails(type, profile) {
 
     // Close popup handlers
     closeBtn.onclick = () => popup.style.display = "none";
-    
-    window.onclick = (event) => {
-        if (event.target === popup) {
-            popup.style.display = "none";
-        }
-    };
 }
 
 function fetchSubmissions() {
@@ -655,15 +649,15 @@ async function fetchCardEvents(selectedFilter) {
                 const card = `
                     <div class="card" data-event-id="${doc.event_id}" data-date="${doc.date}">
                         <div class="text-content">
-                            <h2>Event ID: ${doc.event_id}</h2>
                             <br>
-                            <p><strong>Event:</strong> ${doc.event_name}</p>
-                            <p><strong>Date:</strong> ${formattedDate}</p>
+                            <h2> <i class="fas fa-image icon"></i> ${doc.event_name}</h2>
+                            <br>
+                            <p style="color: black;" font-weight="700"> <i class="fas fa-calendar-alt icon"></i> ${formattedDate}</p>
                         </div>
                         <div class="button-content">
-                            <button class="show-requirements evnt-btn">Show Requirements</button>
-                            <button class="edit-event evnt-btn" data-event-id="${doc.event_id}">Edit</button>
-                            <button class="delete-event evnt-btn" data-event-id="${doc.event_id}">Delete</button>
+                            <button class="show-requirements shwn-btn">Show Requirements</button>
+                            <button class="edit-event shwn-btn" data-event-id="${doc.event_id}">Edit</button>
+                            <button class="delete-event shwn-btn" data-event-id="${doc.event_id}">Delete</button>
                         </div>
                     </div>
                 `;
@@ -723,15 +717,15 @@ async function showRequirements(eventId) {
                 const requirement = `
                     <div class="card" data-requirement-id="${req.requirement_id}" data-event-id="${req.event_id}">
                         <div class="text-content">
-                            <h2>Requirement: ${req.requirement_name}</h2>
+                            <h2> <i class="fas fa-flag icon"></i>Requirement: ${req.requirement_name}</h2>
                             <p><strong>Description:</strong> ${req.requirement_desc}</p>
                             <br>
                             <p><strong>Due:</strong> ${req.due_date}</p>
                         </div>
                         <div class="button-content">
-                            <button class="edit-requirement evnt-btn" data-requirement-id="${req.requirement_id}">Edit</button>
-                            <button class="delete-requirement evnt-btn" data-requirement-id="${req.requirement_id}" aria-label="Delete requirement ${req.requirement_id}">Delete</button>
-                            <button class="show-comments evnt-btn" data-requirement-id="${req.requirement_id}">Show Comments</button>
+                            <button class="edit-requirement shwn-btn" data-requirement-id="${req.requirement_id}">Edit</button>
+                            <button class="delete-requirement shwn-btn" data-requirement-id="${req.requirement_id}" aria-label="Delete requirement ${req.requirement_id}">Delete</button>
+                            <button class="show-comments shwn-btn" data-requirement-id="${req.requirement_id}">Show Comments</button>
                         </div>
                     </div>`;
                 requirementsSection.insertAdjacentHTML('beforeend', requirement); 
@@ -1742,27 +1736,34 @@ async function fetchAnnouncements() {
             
             data.announcements.forEach(announcement => {
                 const card = `
-                    <div class="card announcement-card" data-id="${announcement.announcement_id}">
-                        <div class="text-content">
-                            <div class="card-title">
-                                <div class="card-author">Posted by: ${announcement.author_name}</div> <!-- Access admin name -->
-                                <h3>${announcement.title}</h3>
-                            </div>
-                            <div class="card-content">
-                                <p>${announcement.content.replace(/\n/g, '<br>')}</p>
-                            </div>
-                            <div class="card-meta">
-                                <div class="card-date">
-                                    ${new Date(announcement.created_at).toLocaleDateString()}
+                    <div class="two-card announcement-card" data-id="${announcement.announcement_id}">
+                        <div class="upper-announce">
+                            <div class="text-content">
+                                <div class="card-title">
+                                    <div class="card-author">Posted by: ${announcement.author_name}</div>
+                                    <h3>${announcement.title}</h3>
+                                    <div class="card-meta">
+                                        <div class="card-date">
+                                            ${new Date(announcement.created_at).toLocaleDateString()}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="button-content">
+                                    <div class="card-menu">
+                                        <button class="menu-button">⋯</button>
+                                        <div class="menu-options">
+                                            <button class="edit-announcement">Edit</button>
+                                            <button class="delete-announcement">Delete</button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="button-content">
-                            <div class="card-menu">
-                                <button class="menu-button">⋯</button>
-                                <div class="menu-options">
-                                    <button class="edit-announcement">Edit</button>
-                                    <button class="delete-announcement">Delete</button>
+                        <div class="lower-announce">
+                            <div class="text-content">
+                                <hr class="separator"> 
+                                <div class="card-content">
+                                    <p>${announcement.content.replace(/\n/g, '<br>')}</p>
                                 </div>
                             </div>
                         </div>
@@ -2396,6 +2397,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 backButtonContainer.style.display = 'none';
                 createEvent.style.display = 'block';
                 yearSelect.style.display = 'block';
+                yearSelected.style.display = 'block';
                 document.getElementById('yearSelectorContainer').style.display = 'block';
             }
         });
@@ -2572,6 +2574,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    window.addEventListener('click', function(event) {
+        const popup = document.getElementById('profilePopup');
+        if (event.target === popup) {
+          popup.style.display = "none";
+        }
+    });
     
     document.getElementById('submitCommentButton').addEventListener('click', submitComment);
 

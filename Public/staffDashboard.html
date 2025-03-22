@@ -10,7 +10,7 @@
 <body>
     <div class="top-nav">
         <button id="toggleMenuButton">☰</button>
-        <h1>HK Roadmap</h1>
+        <h1><span class="green">H</span><span class="yellow">K</span> Roadmap</h1>
         <div class="nav-controls">
             <div class="notifications-container">
                 <button class="notification-bell" onclick="toggleNotifPopup()">
@@ -54,39 +54,43 @@
                     <div id="searchContainer">
                         <input type="text" id="searchInput" placeholder="Search by any field...">
                     </div>
-                    <table id="submissionsTable">
-                        <thead>
-                            <tr>
-                                <th>Event</th>
-                                <th>Requirement</th>
-                                <th>Student</th>
-                                <th>Date</th>
-                                <th>Status</th>
-                                <th>View</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        </tbody>
-                    </table>
+                    <div class="table-responsive">
+                        <table id="submissionsTable">
+                            <thead>
+                                <tr>
+                                    <th>Event</th>
+                                    <th>Requirement</th>
+                                    <th>Student</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>View</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
                 <div id="students" class="tab-content" style="display: none;">
                     <h2>Student Table</h2>
                     <div class="search-container">
                         <input type="text" id="studentSearch" placeholder="Search students..." class="search-input">
                     </div>
-                    <table id="studentsTable">
-                        <thead>
-                            <tr>
-                                <th>Student Number</th>
-                                <th>Name</th>
-                                <th>Department</th>
-                                <th>Year Level</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        </tbody>
-                    </table>
+                    <div class="table-responsive">
+                        <table id="studentsTable">
+                            <thead>
+                                <tr>
+                                    <th>Student Number</th>
+                                    <th>Name</th>
+                                    <th>Department</th>
+                                    <th>Year Level</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
             <section id="profile-section" class="profile-container">
