@@ -6,6 +6,7 @@
     <title>Staff Dashboard</title>
     <link rel="stylesheet" href="/assets/css/staffDashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Signika:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="top-nav">
@@ -36,13 +37,14 @@
         </div>
     </div>
     <div class="container">
-        <aside class="sidebar">
+        <div class="sidebar">
+            <h1><span class="green">H<span class="yellow">K</span> Roadmap</span></h1>
             <ul>
                 <li><a href="#" onclick="showSection('home')">Home</a></li>
                 <li><a href="#" onclick="showSection('comments')">Comments</a></li>
                 <li><a href="#" onclick="showSection('profile')">Profile</a></li>
             </ul>
-        </aside>
+        </div>
         <main class="content">
             <section id="home-section" class="staff-container">
                 <div class="tab-container">
@@ -188,22 +190,27 @@
         </main>
 
         <div id="documentPopup" class="popup" style="display: none;">
-            <span class="close-popup" onclick="closeDocumentPopup()">×</span>
+            <div class="popup-header">
+                <h5> Submitted Document </h5>
+                <span class="close-popup" onclick="closeDocumentPopup()">×</span>
+            </div>
             <div class="popup-content">
                 <div id="documentDetails">
-                    <!-- Content will be inserted here -->
+                    <!-- See Javascript -->
                 </div>
-                <div class="action-buttons">
-                    <button class="approve-btn" onclick="approveAllDocuments()">Approve All</button>
-                    <button class="reject-btn" onclick="rejectAllDocuments()">Reject All</button>
-                </div>
+            </div>
+            <div class="action-buttons">
+                <button id="approveButton" class="approve-btn" onclick="approveAllDocuments()">Approve All</button>
+                <button id="rejectButton" class="reject-btn" onclick="rejectAllDocuments()">Reject All</button>
             </div>
         </div>
 
         <div id="profilePopup" class="popup" style="display: none;">
-            <div class="popup-content">
+            <div class="popup-header">
                 <span class="close-popup">&times;</span>
                 <h2 id="popupTitle">Profile Details</h2>
+            </div>
+            <div class="popup-content">
                 <div id="popupContent"></div>
             </div>
         </div>

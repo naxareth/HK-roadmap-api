@@ -276,7 +276,7 @@ function showProfileDetails(type, profile) {
             <img src="${profile.profile_picture_url || '/assets/jpg/default-profile.png'}" 
                  alt="Profile Picture" 
                  class="profile-pict">
-            <div class="details-grid">
+            <div class="profileDetails">
                 <p><strong>Name:</strong> ${profile.name || '-'}</p>
                 <p><strong>Email:</strong> ${profile.email || '-'}</p>
                 <p><strong>Department:</strong> ${profile.department || '-'}</p>
@@ -334,6 +334,7 @@ async function fetchDocument(id) {
         .catch(() => null);
 }
 
+
 function viewDocuments(submissionIds) {
     const popup = document.getElementById('documentPopup');
     const content = document.getElementById('documentDetails');
@@ -367,10 +368,26 @@ function renderDocuments() {
 
     // Create tabs and content
     docItems.forEach((doc, index) => {
+        let fileName = '';
+        let title = '';
+
+        // Determine the type of document and set the title accordingly
+        if (doc.document_type === 'link') {
+            // If it's a link, use the full URL as the title
+            title = doc.link_url;
+            fileName = title; // You can also use a custom name if needed
+        } else {
+            // For documents and images, extract the filename
+            const url = new URL(doc.link_url || `http://localhost:8000/${doc.file_path}`);
+            fileName = url.pathname.split('/').pop(); // Get the last part of the URL path
+            title = fileName; // Use the filename as the title
+        }
+
         // Tab
         const tab = document.createElement('button');
         tab.className = `doc-tab ${index === currentDocIndex ? 'active' : ''}`;
-        tab.textContent = `Document ${index + 1}`;
+        tab.textContent = fileName; // Use the filename
+        tab.title = title; // Set title for full name on hover
         tab.onclick = () => switchDocument(index);
         tabsContainer.appendChild(tab);
 
@@ -381,13 +398,13 @@ function renderDocuments() {
         if (doc.document_type === 'link') {
             docItem.innerHTML = `
                 <a href="${doc.link_url}" class="doc-link" target="_blank">
-                    ${doc.link_url}
+                    ${title}
                 </a>
             `;
         } else {
             docItem.innerHTML = `
                 <img src="http://localhost:8000/${doc.file_path}" 
-                     alt="Document preview" 
+                     alt="${fileName}" 
                      class="doc-image">
             `;
         }
@@ -824,7 +841,9 @@ async function saveProfile(inputs, editButton, saveButton) {
 
 function enableProfileEditing() {
     const inputs = document.querySelectorAll('#profileForm input, #profileForm select');
-    inputs.forEach(input => input.disabled = false);
+    inputs.forEach(input => 
+        input.disabled = false
+    );
     
     document.getElementById('editProfileButton').style.display = 'none';
     document.getElementById('saveProfileButton').style.display = 'block';
@@ -834,8 +853,7 @@ function enableProfileEditing() {
 function disableProfileEditing() {
     const inputs = document.querySelectorAll('#profileForm input, #profileForm select');
     inputs.forEach(input => {
-        input.disabled = true;
-        input.style.cursor = 'not-allowed';
+        input.disabled = true
     });
     
     document.getElementById('editProfileButton').style.display = 'block';
