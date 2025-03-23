@@ -39,18 +39,70 @@ class Staff {
             ':email' => $email,
             ':password' => $hashedPassword
         ]);
+
+        $staffId = $this->conn->lastInsertId();
+
+        // Create initial profile
+        $profileSql = "INSERT INTO user_profiles (user_id, user_type, name, email) 
+        VALUES (:user_id, 'student', :name, :email)";
+
+        $profileStmt = $this->conn->prepare($profileSql);
+        $profileStmt->bindParam(':user_id', $staffId);
+        $profileStmt->bindParam(':user_type', 'staff');
+        $profileStmt->bindParam(':name', $name);
+        $profileStmt->bindParam(':email', $email);
+
+        if (!$profileStmt->execute()) {
+        throw new PDOException("Failed to create student profile");
+        }
+
+        $this->conn->commit();
+        return true;
     }
 
     public function login($email, $password) {
-        $query = "SELECT * FROM staff WHERE email = :email";
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute([':email' => $email]);
-        $staff = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($staff && password_verify($password, $staff['password'])) {
-            return $staff;
+        try {
+            $this->conn->beginTransaction();
+    
+            // First check if login credentials are valid
+            $query = "SELECT s.*, p.profile_id
+                     FROM staff s
+                     LEFT JOIN user_profiles p ON s.staff_id = p.user_id AND p.user_type = 'staff'
+                     WHERE s.email = :email";
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute(['email' => $email]);
+            $staff = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+            if ($staff && password_verify($password, $staff['password'])) {
+                // Check if profile exists
+                if (!$staff['profile_id']) {
+                    // Create initial profile if it doesn't exist
+                    $profileSql = "INSERT INTO user_profiles (user_id, user_type, name, email)
+                                 VALUES (:user_id, 'staff', :name, :email)";
+                    
+                    $profileStmt = $this->conn->prepare($profileSql);
+                    $profileStmt->bindParam(':user_id', $staff['staff_id']);
+                    $profileStmt->bindParam(':name', $staff['name']);
+                    $profileStmt->bindParam(':email', $staff['email']);
+                    
+                    if (!$profileStmt->execute()) {
+                        throw new PDOException("Failed to create initial staff profile");
+                    }
+                }
+                
+                $this->conn->commit();
+                return $staff;
+            }
+    
+            $this->conn->commit();
+            return false;
+    
+        } catch (PDOException $e) {
+            $this->conn->rollBack();
+            error_log("Staff login error: " . $e->getMessage());
+            return false;
         }
-        return false;
     }
 
     public function validateSubmissionToken($token) {
