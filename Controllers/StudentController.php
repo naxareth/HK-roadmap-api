@@ -3,7 +3,7 @@
 namespace Controllers;
 
 use Models\Student;
-use Models\Admin; 
+use Models\Admin;
 use PDO;
 use PDOException;
 
@@ -54,20 +54,26 @@ class StudentController {
     public function getStudentProfile() {
         try {
             $tokenData = $this->validateToken();
+            
             if (!$tokenData) {
                 return;
             }
-
+            
             // Get student profile based on token type
             if ($tokenData['type'] === 'student') {
                 $student_id = $tokenData['data']['student_id'];
                 $student = $this->studentModel->getProfileById($student_id);
                 
                 if ($student) {
+                    // Add default profile picture if none exists
+                    if (empty($student['profile_picture_url'])) {
+                        $student['profile_picture_url'] = '/assets/jpg/default-profile.png';
+                    }
+                    
                     echo json_encode($student);
                 } else {
                     http_response_code(404);
-                    echo json_encode(["message" => "Student not found"]);
+                    echo json_encode(["message" => "Student profile not found"]);
                 }
             } else {
                 http_response_code(403);
@@ -83,6 +89,7 @@ class StudentController {
     public function getStudent() {
         try {
             $tokenData = $this->validateToken();
+            
             if (!$tokenData) {
                 return;
             }
@@ -99,13 +106,13 @@ class StudentController {
     public function getStudentEmails() {
         try {
             $tokenData = $this->validateToken();
+            
             if (!$tokenData) {
                 return;
             }
             
             $students = $this->studentModel->getAllStudents();
             $emails = array_column($students, 'email');
-            
             echo json_encode($emails);
         } catch (PDOException $e) {
             error_log("Get emails error: " . $e->getMessage());
@@ -121,14 +128,15 @@ class StudentController {
                 echo json_encode(["message" => "Email is required"]);
                 return;
             }
-
+            
             $email = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
+            
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 http_response_code(400);
                 echo json_encode(["message" => "Invalid email format"]);
                 return;
             }
-
+            
             if ($this->studentModel->requestOtp($email)) {
                 echo json_encode(["message" => "OTP sent successfully"]);
             } else {
@@ -136,7 +144,7 @@ class StudentController {
                 echo json_encode(["message" => "Failed to send OTP"]);
             }
         } catch (PDOException $e) {
-            error_log("Send OTP error: " . $e-> getMessage());
+            error_log("Send OTP error: " . $e->getMessage());
             http_response_code(500);
             echo json_encode(["message" => "Server error"]);
         }
@@ -149,10 +157,10 @@ class StudentController {
                 echo json_encode(["message" => "Email and OTP are required"]);
                 return;
             }
-
+            
             $email = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
             $otp = filter_var($_POST['otp'], FILTER_SANITIZE_NUMBER_INT);
-
+            
             if ($this->studentModel->verifyOTP($email, $otp)) {
                 echo json_encode(["message" => "OTP verified successfully"]);
             } else {
@@ -173,16 +181,16 @@ class StudentController {
                 echo json_encode(["message" => "Email and new password are required"]);
                 return;
             }
-
+            
             $email = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
             $newPassword = $_POST['new_password'];
-
+            
             if (strlen($newPassword) < 6) {
                 http_response_code(400);
                 echo json_encode(["message" => "Password must be at least 6 characters"]);
                 return;
             }
-
+            
             if ($this->studentModel->changePassword($email, $newPassword)) {
                 echo json_encode(["message" => "Password changed successfully"]);
             } else {
@@ -203,42 +211,42 @@ class StudentController {
                 echo json_encode(["message" => "All fields are required"]);
                 return;
             }
-
+            
             $name = trim($_POST['name']);
             $email = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
             $password = $_POST['password'];
             $confirm_password = $_POST['confirm_password'];
-
+            
             if (empty($name) || empty($email) || empty($password) || empty($confirm_password)) {
                 http_response_code(400);
                 echo json_encode(["message" => "All fields are required"]);
                 return;
             }
-
+            
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 http_response_code(400);
                 echo json_encode(["message" => "Invalid email format"]);
                 return;
             }
-
+            
             if (strlen($password) < 6) {
                 http_response_code(400);
                 echo json_encode(["message" => "Password must be at least 6 characters"]);
                 return;
             }
-
+            
             if ($password !== $confirm_password) {
                 http_response_code(400);
                 echo json_encode(["message" => "Passwords do not match"]);
                 return;
             }
-
+            
             if ($this->studentModel->emailExists($email)) {
                 http_response_code(400);
                 echo json_encode(["message" => "Email already exists"]);
                 return;
             }
-
+            
             if ($this->studentModel->register($name, $email, $password)) {
                 echo json_encode(["message" => "Registration successful"]);
             } else {
@@ -259,20 +267,21 @@ class StudentController {
                 echo json_encode(["message" => "Email and password are required"]);
                 return;
             }
-
+            
             $email = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
             $password = $_POST['password'];
-
+            
             if (empty($email) || empty($password)) {
                 http_response_code(400);
                 echo json_encode(["message" => "Email and password are required"]);
                 return;
             }
-
+            
             $student = $this->studentModel->login($email, $password);
-
+            
             if ($student) {
                 $token = bin2hex(random_bytes(32));
+                
                 if ($this->studentModel->updateToken($student['student_id'], $token)) {
                     echo json_encode([
                         "message" => "Login successful",
@@ -299,11 +308,17 @@ class StudentController {
     public function logout() {
         try {
             $tokenData = $this->validateToken();
+            
             if (!$tokenData) {
                 return;
             }
-
-            if ($this->studentModel->logout($tokenData['data']['student_id'])) {
+            
+            // Get the token from the Authorization header
+            $headers = getallheaders();
+            $authHeader = $headers['Authorization'];
+            $token = substr($authHeader, 7);
+            
+            if ($this->studentModel->logout($token)) {
                 echo json_encode(["message" => "Logout successful"]);
             } else {
                 http_response_code(400);
