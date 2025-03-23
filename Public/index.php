@@ -5,6 +5,7 @@ ini_set('display_errors', 1);
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../Routes/api.php';
 
+// Model includes
 include_once __DIR__ . '/../Models/Admin.php';
 include_once __DIR__ . '/../Models/Student.php';
 include_once __DIR__ . '/../Models/Document.php';
@@ -14,7 +15,9 @@ include_once __DIR__ . '/../Models/Submission.php';
 include_once __DIR__ . '/../Models/Comment.php';
 include_once __DIR__ . '/../Models/Notification.php';
 include_once __DIR__ . '/../Models/Profile.php';
+include_once __DIR__ . '/../Models/ProfileRequirements.php'; // Add this line
 
+// Controller includes
 include_once __DIR__ . '/../Controllers/AdminController.php';
 include_once __DIR__ . '/../Controllers/StudentController.php';
 include_once __DIR__ . '/../Controllers/DocumentController.php';
@@ -25,7 +28,7 @@ include_once __DIR__ . '/../Controllers/NotificationController.php';
 include_once __DIR__ . '/../Controllers/MailController.php';
 include_once __DIR__ . '/../Controllers/CommentController.php';
 include_once __DIR__ . '/../Controllers/ProfileController.php';
-include_once __DIR__ . '/../Controllers/ProfileController.php';
+include_once __DIR__ . '/../Controllers/ProfileRequirementsController.php';
 
 require_once __DIR__ . '/../Middleware/Middleware.php';
 require_once __DIR__ . '/../Middleware/AuthMiddleware.php';
@@ -290,6 +293,146 @@ if (empty($path[0])) {
                     ]
                 ],
             ],
+            // Profile Requirements endpoints
+            "profile_requirements" => [
+                "get" => [
+                    "method" => "GET",
+                    "url" => "/profile/requirements",
+                    "description" => "Get current user's profile with requirements list",
+                    "authentication" => "Bearer token required",
+                    "response" => [
+                        "success" => [
+                            "status" => 200,
+                            "data" => [
+                                "profile" => [
+                                    "user_id" => "integer",
+                                    "name" => "string",
+                                    "email" => "string",
+                                    "department" => "string",
+                                    "student_number" => "string",
+                                    "college_program" => "string",
+                                    "year_level" => "string",
+                                    "scholarship_type" => "string",
+                                    "contact_number" => "string",
+                                    "profile_picture_url" => "string",
+                                    "created_at" => "datetime",
+                                    "updated_at" => "datetime"
+                                ],
+                                "requirements" => [
+                                    [
+                                        "event_id" => "integer",
+                                        "event_name" => "string",
+                                        "event_description" => "string",
+                                        "start_date" => "datetime",
+                                        "end_date" => "datetime",
+                                        "created_at" => "datetime",
+                                        "updated_at" => "datetime",
+                                        "requirements" => [
+                                            [
+                                                "requirement_id" => "integer",
+                                                "name" => "string",
+                                                "description" => "string",
+                                                "due_date" => "datetime",
+                                                "status" => "string (pending|approved|rejected)",
+                                                "approved_by" => "string|null",
+                                                "approved_at" => "datetime|null",
+                                                "created_at" => "datetime",
+                                                "updated_at" => "datetime"
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ],
+                        "error" => [
+                            "401" => [
+                                "success" => false,
+                                "message" => "Unauthorized access"
+                            ],
+                            "404" => [
+                                "success" => false,
+                                "message" => "Profile not found"
+                            ],
+                            "500" => [
+                                "success" => false,
+                                "message" => "Failed to fetch profile and requirements data"
+                            ]
+                        ]
+                    ]
+                ],
+                "get_specific" => [
+                    "method" => "GET",
+                    "url" => "/profile/requirements/{userId}",
+                    "description" => "Get specific user's profile with requirements (Admin only)",
+                    "authentication" => "Bearer token required (Admin access)",
+                    "params" => [
+                        "userId" => "integer (required) - The ID of the user to fetch"
+                    ],
+                    "response" => [
+                        "success" => [
+                            "status" => 200,
+                            "data" => [
+                                "profile" => [
+                                    "user_id" => "integer",
+                                    "name" => "string",
+                                    "email" => "string",
+                                    "department" => "string",
+                                    "student_number" => "string",
+                                    "college_program" => "string",
+                                    "year_level" => "string",
+                                    "scholarship_type" => "string",
+                                    "contact_number" => "string",
+                                    "profile_picture_url" => "string",
+                                    "created_at" => "datetime",
+                                    "updated_at" => "datetime"
+                                ],
+                                "requirements" => [
+                                    [
+                                        "event_id" => "integer",
+                                        "event_name" => "string",
+                                        "event_description" => "string",
+                                        "start_date" => "datetime",
+                                        "end_date" => "datetime",
+                                        "created_at" => "datetime",
+                                        "updated_at" => "datetime",
+                                        "requirements" => [
+                                            [
+                                                "requirement_id" => "integer",
+                                                "name" => "string",
+                                                "description" => "string",
+                                                "due_date" => "datetime",
+                                                "status" => "string (pending|approved|rejected)",
+                                                "approved_by" => "string|null",
+                                                "approved_at" => "datetime|null",
+                                                "created_at" => "datetime",
+                                                "updated_at" => "datetime"
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ],
+                        "error" => [
+                            "401" => [
+                                "success" => false,
+                                "message" => "Unauthorized access"
+                            ],
+                            "403" => [
+                                "success" => false,
+                                "message" => "Access forbidden. Admin privileges required."
+                            ],
+                            "404" => [
+                                "success" => false,
+                                "message" => "User not found"
+                            ],
+                            "500" => [
+                                "success" => false,
+                                "message" => "Failed to fetch profile and requirements data"
+                            ]
+                        ]
+                    ]
+                ]
+                            ],
            // Document endpoints
             "documents" => [
                 "upload" => [

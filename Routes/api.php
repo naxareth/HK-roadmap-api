@@ -15,6 +15,7 @@ use Controllers\MailController;
 use Controllers\ProfileController;
 use Controllers\AnnouncementController;
 use Controllers\StaffController;
+use Controllers\ProfileRequirementsController;
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
@@ -31,6 +32,7 @@ class Api {
     private $profileController;
     private $announcementController;
     private $staffController;
+    private $profileRequirementsController;
     private $middleware = [];
 
     public function __construct($db) {
@@ -46,6 +48,7 @@ class Api {
         $this->profileController = new ProfileController($db);
         $this->announcementController = new AnnouncementController($db);
         $this->staffController = new StaffController($db);
+        $this->profileRequirementsController = new ProfileRequirementsController($db);
     }
 
     public function use($middleware) {
@@ -163,6 +166,18 @@ class Api {
                     return $this->profileController->getAllProfiles();
                 }
                 break;
+
+                case 'profile/requirements':
+                    if ($method === 'GET') {
+                        return $this->profileRequirementsController->getProfileRequirements();
+                    }
+                    break;
+    
+                case (preg_match('/^profile\/requirements\/(\d+)$/', $endpoint, $matches) ? $endpoint : !$endpoint):
+                    if ($method === 'GET') {
+                        return $this->profileRequirementsController->getSpecificUserRequirements($matches[1]);
+                    }
+                    break;
 
             // Document Routes
             case 'documents/admin':
