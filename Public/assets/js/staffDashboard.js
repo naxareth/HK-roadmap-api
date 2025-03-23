@@ -783,6 +783,9 @@ async function fetchStaffProfile() {
             updateProfileUI();
             updateNavProfile(profileData);
             disableProfileEditing();
+
+            userProfile = profileData; // Update userProfile object
+            updateProfileUI();
         } else {
             throw new Error('Failed to fetch profile');
         }
@@ -848,6 +851,7 @@ function enableProfileEditing() {
     document.getElementById('editProfileButton').style.display = 'none';
     document.getElementById('saveProfileButton').style.display = 'block';
     document.getElementById('cancelEditButton').style.display = 'block';
+    document.getElementById('changeProfilePictureButton').style.display = 'block';
 }
 
 function disableProfileEditing() {
@@ -859,6 +863,7 @@ function disableProfileEditing() {
     document.getElementById('editProfileButton').style.display = 'block';
     document.getElementById('saveProfileButton').style.display = 'none';
     document.getElementById('cancelEditButton').style.display = 'none';
+    document.getElementById('changeProfilePictureButton').style.display = 'none';
     
     // Reset file input
     const fileInput = document.querySelector('input[type="file"]');
@@ -944,6 +949,7 @@ function setupProfilePictureUpload() {
     const saveButton = document.getElementById('saveProfileButton');
     const cancelButton = document.getElementById('cancelEditButton');
     const departmentSelect = document.getElementById('staffDepartment');
+    const changeProfilePictureButton = document.getElementById('changeProfilePictureButton');
 
     // Create file input element
     const fileInput = document.createElement('input');
@@ -951,6 +957,10 @@ function setupProfilePictureUpload() {
     fileInput.accept = 'image/*';
     fileInput.style.display = 'none';
     document.body.appendChild(fileInput);
+
+    changeProfilePictureButton.addEventListener('click', () => {
+        fileInput.click();
+    });
 
     let isEditMode = false;
 
@@ -976,7 +986,9 @@ function setupProfilePictureUpload() {
         editButton.style.display = 'block';
         saveButton.style.display = 'none';
         cancelButton.style.display = 'none';
+        document.getElementById('changeProfilePictureButton').style.display = 'none';
         updateProfileUI(); 
+        fetchStaffProfile();
     });
 
     profilePicture.addEventListener('click', () => {
@@ -1101,6 +1113,7 @@ async function updateProfileUI() {
 
         const departmentOthersGroup = document.getElementById('departmentOthersGroup');
         const departmentOthers = document.getElementById('departmentOthers');
+        
         if (departmentFullName === 'Others') {
             departmentOthersGroup.style.display = 'block';
             departmentOthers.value = userProfile.department_others || '';
@@ -1110,10 +1123,6 @@ async function updateProfileUI() {
         const profilePictureUrl = getProfilePictureUrl(userProfile.profile_picture_url);
         document.getElementById('staffProfilePicture').src = profilePictureUrl;
         document.getElementById('headerProfilePic').src = profilePictureUrl;
-        
-        // Update navigation profile
-        updateNavProfile(userProfile);
-        disableProfileEditing();
     }
 }
 
@@ -1638,7 +1647,6 @@ document.addEventListener('DOMContentLoaded', () => {
         showSection('home'); 
         showTab('submissions');
         fetchSubmissions();
-        populateDepartmentSelect();
         
 
         // Search Input

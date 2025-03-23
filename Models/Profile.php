@@ -253,6 +253,7 @@ class Profile {
                     case 'staff':
                         // Format position display
                         $profile['position_display'] = $profile['position'] ?: 'Not specified';
+                        $profile['year_level_display'] = $profile['year_level'] ? $profile['year_level'] . ' Year' : '';
                         break;
                 }
             }
