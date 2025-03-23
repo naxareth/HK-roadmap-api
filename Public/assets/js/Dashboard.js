@@ -110,6 +110,13 @@ function toggleMenu(event) {
     menu.style.display = menu.style.display === 'block' ? 'none' : 'block'; 
 }
 
+function closeMenuOptions() {
+    const menus = document.querySelectorAll('.menu-options');
+    menus.forEach(menu => {
+        menu.style.display = 'none'; // Hide all menu options
+    });
+}
+
 function toggleSidebar() {
     const sidebar = document.querySelector('.sidebar');
     
@@ -442,10 +449,26 @@ function renderDocuments() {
 
     // Create tabs and content
     docItems.forEach((doc, index) => {
+        let fileName = '';
+        let title = '';
+
+        // Determine the type of document and set the title accordingly
+        if (doc.document_type === 'link') {
+            // If it's a link, use the full URL as the title
+            title = doc.link_url;
+            fileName = title; // You can also use a custom name if needed
+        } else {
+            // For documents and images, extract the filename
+            const url = new URL(doc.link_url || `http://localhost:8000/${doc.file_path}`);
+            fileName = url.pathname.split('/').pop(); // Get the last part of the URL path
+            title = fileName; // Use the filename as the title
+        }
+
         // Tab
         const tab = document.createElement('button');
         tab.className = `doc-tab ${index === currentDocIndex ? 'active' : ''}`;
-        tab.textContent = `Document ${index + 1}`;
+        tab.textContent = fileName; // Use the filename
+        tab.title = title; // Set title for full name on hover
         tab.onclick = () => switchDocument(index);
         tabsContainer.appendChild(tab);
 
@@ -456,13 +479,13 @@ function renderDocuments() {
         if (doc.document_type === 'link') {
             docItem.innerHTML = `
                 <a href="${doc.link_url}" class="doc-link" target="_blank">
-                    ${doc.link_url}
+                    ${title}
                 </a>
             `;
         } else {
             docItem.innerHTML = `
                 <img src="http://localhost:8000/${doc.file_path}" 
-                     alt="Document preview" 
+                     alt="${fileName}" 
                      class="doc-image">
             `;
         }
@@ -1283,7 +1306,7 @@ async function showComments(requirementId) {
             header.innerHTML = `
                 <div class="header-content">
                     <span class="toggle-icon">▶</span>
-                    <h4>${studentComments[0].user_name} (ID: ${studentId})</h4>
+                    <h4>${studentComments[0].user_name}</h4>
                     <span class="comment-count">${studentComments.length} comments</span>
                 </div>
             `;
@@ -1738,22 +1761,22 @@ async function fetchAnnouncements() {
                 const card = `
                     <div class="two-card announcement-card" data-id="${announcement.announcement_id}">
                         <div class="upper-announce">
-                            <div class="text-content">
-                                <div class="card-title">
-                                    <div class="card-author">Posted by: ${announcement.author_name}</div>
-                                    <h3>${announcement.title}</h3>
-                                    <div class="card-meta">
-                                        <div class="card-date">
-                                            ${new Date(announcement.created_at).toLocaleDateString()}
-                                        </div>
+                            <div class="card-author"><strong>Posted by:</strong> ${announcement.author_name}</div>
+                            <div class="announce-button-content">
+                                <div class="card-menu">
+                                    <button class="menu-button">⋯</button>
+                                    <div class="menu-options">
+                                        <button class="edit-announcement">Edit</button>
+                                        <button class="delete-announcement">Delete</button>
                                     </div>
                                 </div>
-                                <div class="button-content">
-                                    <div class="card-menu">
-                                        <button class="menu-button">⋯</button>
-                                        <div class="menu-options">
-                                            <button class="edit-announcement">Edit</button>
-                                            <button class="delete-announcement">Delete</button>
+                            </div>
+                            <div class="text-content">
+                                <div class="card-title">
+                                    <h3><strong>${announcement.title}</strong></h3>
+                                    <div class="card-meta">
+                                        <div class="card-date">
+                                            <strong>${new Date(announcement.created_at).toLocaleDateString()}</strong>
                                         </div>
                                     </div>
                                 </div>
@@ -1761,7 +1784,6 @@ async function fetchAnnouncements() {
                         </div>
                         <div class="lower-announce">
                             <div class="text-content">
-                                <hr class="separator"> 
                                 <div class="card-content">
                                     <p>${announcement.content.replace(/\n/g, '<br>')}</p>
                                 </div>
@@ -2238,7 +2260,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log(`Edit event ID: ${eventId}`);
         } else if (event.target.classList.contains('delete-event')) {
             const eventId = event.target.closest('.card').dataset.eventId;
-            if (confirm(`Are you sure you want to delete event ID: ${eventId}?`)) {
+            if (confirm(`Are you sure you want to delete this event?`)) {
                 deleteEvent(eventId);
             }
         }
@@ -2262,7 +2284,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log(`Edit requirement ID: ${requirementId}`);
         } else if (event.target.classList.contains('delete-requirement')) {
             const requirementId = event.target.closest('.card').dataset.requirementId;
-            if (confirm(`Are you sure you want to delete requirement ID: ${requirementId}?`)) {
+            if (confirm(`Are you sure you want to delete this requirement?`)) {
                 deleteRequirement(requirementId);
             }
         } 
@@ -2578,6 +2600,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const popup = document.getElementById('profilePopup');
         if (event.target === popup) {
           popup.style.display = "none";
+        }
+    });
+
+    document.addEventListener('click', function(event) {
+        const menuButton = event.target.closest('.menu-button'); // Check if the clicked element is a menu button
+        const menuOptions = event.target.closest('.menu-options'); // Check if the clicked element is within menu options
+    
+        // If the click is outside the menu button and menu options, close the menu options
+        if (!menuButton && !menuOptions) {
+            closeMenuOptions();
         }
     });
     

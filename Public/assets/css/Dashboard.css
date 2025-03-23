@@ -120,7 +120,7 @@
 }
 
 .sidebar ul li a:hover {
-    background-color: #007bff; /* Background color on hover */
+    background-color: rgba(25, 135, 0, 0.7); /* Background color on hover */
     color: #fff; /* Text color on hover */
 }
 
@@ -190,7 +190,11 @@
 /** body **/ 
 body {
     font-family: 'Signika', sans-serif;
-    background-color: rgb(240, 240, 240);
+    background-image: url('/assets/jpg/hkbackground.png'); /* Replace with your image path */
+    background-size: cover; /* Cover the entire viewport */
+    background-position: center; /* Center the image */
+    background-repeat: no-repeat; /* Prevent the image from repeating */
+    background-attachment: fixed;
     margin: 0;
     padding-right: 10px;
     display: flex;
@@ -290,7 +294,7 @@ header h1 {
     width: 97%; 
     display: flex; 
     flex-direction: row;
-    background: rgb(255, 255, 255);
+    background: rgba(255, 255, 255, 0.667);
     color: rgba(25, 135, 0, 0.7);
     padding: 20px;
     border-radius: 10px;
@@ -302,30 +306,30 @@ header h1 {
     font-size: 18px;
     transition: 0.3s;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 10;
 }
 
 .two-card {
     width: 97%; 
     border-right: 1px solid black;
     border-left: 1px solid black;
-    background-color: #00a500;
+    background-color: rgba(25, 135, 0, 0.7);
     border-radius: 30px;
 }
 
 .upper-announce {
-    background-color: #ffffff;
+    background-color: #ffffffcf;
     border-bottom: 1px solid black;
     border-top: 1px solid black;
     border-radius: 30px;
-    padding: 10px 15px;
+    padding: 25px;
     z-index: 1000;
 }
 
 .lower-announce {
     border-bottom: 1px solid black;
-    background-color: #00a500;
     border-radius: 30px;
-    padding: 10px 15px;
+    padding: 25px;
 }
 
 .text-content {
@@ -346,6 +350,10 @@ header h1 {
     margin-left: auto;
     gap: 10px; 
     z-index: 1001;
+}
+
+.add-comment-button {
+    background-color: rgba(25, 135, 0, 0.7);
 }
 
 
@@ -626,6 +634,7 @@ header h1 {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     padding: 20px;
     width: 500px; 
+    max-height: 500px;
     display: flex; 
     flex-direction: column; 
     align-items: center;
@@ -634,19 +643,24 @@ header h1 {
 
 .popup-content {
     background: white;
-    padding: 2rem;
     border-radius: 10px;
-    max-width: 600px;
-    width: 90%;
+    max-width: 800px;
+    width: 100%; /* Fill the width of the popup */
     max-height: 80vh;
-    overflow-y: auto;
-    position: relative;
+    overflow-y: auto; /* Enable vertical scrolling */
 }
 
+#documentDetails {
+    background: white;
+    padding: 0; /* Remove padding to avoid gaps */
+    border-radius: 10px;
+    max-width: 100%; /* Fill the width of the popup */
+    max-height: 50vh; /* Set a maximum height */
+    overflow-y: auto; /* Enable vertical scrolling */
+}
 
 .popup-header {
-    font-size: 24px; 
-    margin-bottom: 20px; 
+    font-size: 18px; 
     color: #4caf50; 
     text-align: center; 
 }
@@ -703,7 +717,6 @@ input[type="date"] {
     width: calc(100% - 60px);
     margin: 30px;
     overflow-x: auto;
-    background: #ffffff;
     border-radius: 8px;
 }
 
@@ -714,11 +727,12 @@ input[type="date"] {
     border-collapse: separate;
     border-spacing: 0;
     font-size: 14px;
+    text-align: center;
 }
 
 .admin-container th {
-    background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
-    color: #2d3436;
+    background: rgb(25, 135, 0); /* Set the background to the specified green color */
+    color: #ffffff; /* Change text color to white for better contrast */
     padding: 16px 20px;
     font-weight: 600;
     text-transform: uppercase;
@@ -731,7 +745,7 @@ input[type="date"] {
     padding: 14px 20px;
     color: #4a4a4a;
     border-bottom: 1px solid #f1f3f5;
-    background: #ffffff;
+    background: rgba(255, 255, 255, 0.8); /* Set a slightly transparent white background */
     transition: background 0.2s ease;
 }
 
@@ -895,12 +909,7 @@ input[type="date"] {
     margin-bottom: 20px;
     border: 1px solid rgb(0, 0, 0);
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.card-menu {
-    position: absolute;
-    top: 10px;
-    right: 10px;
+    background-color: #ffffffae;
 }
 
 .card-content {
@@ -928,29 +937,47 @@ input[type="date"] {
     color: #333;
 }
 
-.menu-options {
-    display: none;
-    position: absolute;
-    right: 0;
-    top: 25px;
-    background: white;
-    border: 1px solid #000000;
-    border-radius: 4px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    z-index: 1;
-}
-
-.button-content {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-}
-
 .separator {
     border: 0; /* Remove default border */
     height: 1px; /* Set height for line */
     background-color: #ccc; /* Line color */
     margin: 10px 0; /* Spacing above and below line */
+}
+
+.upper-announce {
+    display: flex;
+    flex-wrap: wrap; /* Allows items to wrap into multiple rows */
+}
+  
+.announce-button-content {
+    margin-left: auto; /* Pushes the menu to the right */
+}
+
+.card-menu {
+    padding-bottom: 10px;
+    position: relative;
+}
+  
+  /* Second row: Title and date */
+.text-content {
+    flex-basis: 100%; /* Forces it to the next line */
+}
+  
+  /* Align title and date in the same row */
+.card-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+  
+.card-title h3 {
+    margin: 0;
+    flex-grow: 1;
+}
+  
+.card-meta {
+    flex-shrink: 0;
+    margin-left: 1rem;
 }
 
 .card-content p {
@@ -971,12 +998,11 @@ input[type="date"] {
     position: absolute;
     right: 0;
     top: 25px;
-    color: #000000;
     background: white;
-    border: 1px solid #ddd;
+    border: 1px solid #000000;
     border-radius: 4px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    z-index: 10;
+    z-index: 1;
 }
 
 .menu-options button {
@@ -1054,14 +1080,6 @@ input[type="date"] {
     flex-direction: column; 
     align-items: center;
     z-index: 1000;
-}
-
-/* Popup header */
-.popup-header {
-    font-size: 24px; 
-    margin-bottom: 20px; 
-    color: #4caf50; 
-    text-align: center; 
 }
 
 /* new css for new designs */
@@ -1203,7 +1221,6 @@ input[type="date"] {
 }
 
 /* logout and profile */
-
 .navprofile-container {
     position: relative;
     display: flex;
@@ -1225,7 +1242,8 @@ input[type="date"] {
     width: 35px;
     height: 35px;
     border-radius: 50%; /* Circular profile picture */
-    object-fit: cover; /* Ensure the image covers the area */
+    object-fit: contain; /* Change to contain to fit the full image */
+    border: 2px solid #e0e0e0; /* Optional: Add a border for better visibility */
 }
 
 .profile-menu {
@@ -1292,6 +1310,10 @@ input[type="date"] {
     color: #6c757d;
     border-radius: 4px;
     transition: all 0.2s ease;
+    white-space: nowrap; /* Prevent wrapping */
+    overflow: hidden; /* Hide overflow */
+    text-overflow: ellipsis; /* Show ellipsis for overflow */
+    max-width: 150px; /* Set a max width for the tab */
 }
 
 .doc-tab.active {
@@ -1388,16 +1410,17 @@ input[type="date"] {
 }
 
 .close-popup {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    color: #666;
-    padding: 0 0.5rem;
+    cursor: pointer; 
+    position: fixed; /* Change to fixed */
+    top: 10px; /* Adjust as needed */
+    right: 15px; /* Adjust as needed */
+    font-size: 24px; 
+    color: #aaa; 
+    z-index: 1001; /* Ensure it is above other content */
 }
 
 .close-popup:hover {
-    color: #333;
+    color: #f00;
 }
 
 #submissionsTable td {
@@ -1450,11 +1473,6 @@ input[type="date"] {
 .status-cell {
     font-weight: 500;
     text-transform: capitalize;
-}
-
-.action-buttons {
-    display: flex;
-    gap: 8px;
 }
 
 .view-button {
@@ -1560,13 +1578,14 @@ input[type="date"] {
     margin: 0 auto 1.5rem;
     cursor: pointer;
     transition: transform 0.3s ease;
+    overflow: hidden; /* Ensure that any overflow is hidden */
 }
 
 .profile-picture {
     width: 100%;
     height: 100%;
-    border-radius: 50%;
-    object-fit: cover;
+    border-radius: 50%; /* Keep the circular shape */
+    object-fit: contain; /* Change to contain to fit the full image */
     border: 3px solid #e0e0e0;
 }
 
@@ -1765,9 +1784,12 @@ button {
 }
 
 .action-buttons {
-    display: flex;
-    gap: 10px;
-    margin-top: 15px;
+    margin: auto;
+    display: block;
+    align-items: center;
+    text-align: center;
+    padding: 12px;
+    margin-top: 10px;
 }
 
 #submitCommentButton {
