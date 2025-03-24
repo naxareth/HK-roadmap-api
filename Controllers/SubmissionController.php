@@ -54,10 +54,8 @@ class SubmissionController {
 
     public function updateSubmissionStatus() {
         header('Content-Type: application/json');
-        
         try {
             $userData = $this->validateSubmissionToken(getallheaders()['Authorization'] ?? '');
-            
             if (!$userData || (!isset($userData['admin_id']) && !isset($userData['staff_id']))) {
                 http_response_code(401);
                 echo json_encode(["success" => false, "message" => "Invalid token"]);
@@ -65,7 +63,6 @@ class SubmissionController {
             }
     
             $input = json_decode(file_get_contents('php://input'), true);
-            
             if (json_last_error() !== JSON_ERROR_NONE) {
                 http_response_code(400);
                 echo json_encode(["success" => false, "message" => "Invalid JSON"]);
@@ -78,26 +75,27 @@ class SubmissionController {
                 return;
             }
     
-            $approverType = isset($userData['admin_id']) ? "Admin" : "Staff";
+            // Store just the name in the database
             $approverName = $userData['name'];
+            
+            // For notification message only
+            $approverType = isset($userData['admin_id']) ? "Admin" : "Staff";
     
             $success = $this->submissionModel->updateSubmissionStatus(
                 $input['submission_id'],
                 $input['status'],
-                "$approverType: " . $approverName
+                $approverName  // Store only the name without prefix
             );
     
             if ($success) {
                 $submission = $this->submissionModel->getSubmissionById($input['submission_id']);
-                
                 if ($submission) {
-                    // Get the requirement name from the submission
                     $requirementName = $this->submissionModel->getRequirementName($submission['requirement_id']);
                     
-                    // Updated notification message format with requirement name
+                    // Keep the full classification only in the notification message
                     $message = sprintf(
                         "Your submission for the requirement for %s has been %s by %s %s",
-                        $requirementName ?? 'Unknown Requirement', // Fallback if name not found
+                        $requirementName ?? 'Unknown Requirement',
                         strtolower($input['status']),
                         $approverType,
                         $approverName
@@ -120,7 +118,6 @@ class SubmissionController {
                 "success" => $success,
                 "message" => $success ? "Status updated" : "Update failed"
             ]);
-    
         } catch (PDOException $e) {
             http_response_code(500);
             error_log("Database error: " . $e->getMessage());

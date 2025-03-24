@@ -3,14 +3,17 @@ namespace Controllers;
 
 use Models\Profile;
 use PDOException;
+use PDO;
 
 class ProfileController {
     private $profileModel;
+    private $db;
     private $adminController;
     private $studentController;
     private $staffController;
 
     public function __construct($db) {
+        $this->db = $db;
         $this->profileModel = new Profile($db);
         $this->adminController = new AdminController($db);
         $this->studentController = new StudentController($db);
@@ -18,43 +21,85 @@ class ProfileController {
     }
 
     private function validateUserToken() {
-        $headers = getallheaders();
-        if (!isset($headers['Authorization'])) {
+        try {
+            $headers = getallheaders();
+            
+            if (!isset($headers['Authorization'])) {
+                http_response_code(401);
+                echo json_encode(["message" => "Authorization header missing"]);
+                return null;
+            }
+            
+            $authHeader = $headers['Authorization'];
+            
+            if (strpos($authHeader, 'Bearer ') !== 0) {
+                http_response_code(401);
+                echo json_encode(["message" => "Invalid Authorization header format"]);
+                return null;
+            }
+            
+            $token = substr($authHeader, 7);
+            
+            // Direct database query for student tokens (same as ProfileRequirementsController)
+            $query = "
+                SELECT
+                    'student' as user_type,
+                    st.student_id as user_id
+                FROM student_tokens st
+                WHERE st.token = :token";
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':token', $token);
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($result) {
+                error_log("Found student token: " . print_r($result, true));
+                return ['type' => 'student', 'id' => $result['user_id']];
+            }
+            
+            // Direct database query for admin tokens
+            $query = "
+                SELECT
+                    'admin' as user_type,
+                    at.admin_id as user_id
+                FROM admin_tokens at
+                WHERE at.token = :token";
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':token', $token);
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($result) {
+                error_log("Found admin token: " . print_r($result, true));
+                return ['type' => 'admin', 'id' => $result['user_id']];
+            }
+            
+            // Direct database query for staff tokens
+            $query = "
+                SELECT
+                    'staff' as user_type,
+                    st.staff_id as user_id
+                FROM staff_tokens st
+                WHERE st.token = :token";
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':token', $token);
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($result) {
+                error_log("Found staff token: " . print_r($result, true));
+                return ['type' => 'staff', 'id' => $result['user_id']];
+            }
+            
             http_response_code(401);
-            echo json_encode(["message" => "Authorization header missing"]);
+            echo json_encode(["message" => "Invalid token"]);
+            return null;
+        } catch (\Exception $e) {
+            error_log("Error in validateUserToken: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(["message" => "Server error"]);
             return null;
         }
-
-        $authHeader = $headers['Authorization'];
-        if (strpos($authHeader, 'Bearer ') !== 0) {
-            http_response_code(401);
-            echo json_encode(["message" => "Invalid Authorization header format"]);
-            return null;
-        }
-
-        $token = substr($authHeader, 7);
-        
-        // Try admin token first
-        $adminData = $this->adminController->validateToken($token);
-        if ($adminData && isset($adminData['admin_id'])) {
-            return ['type' => 'admin', 'id' => $adminData['admin_id']];
-        }
-
-        // Try student token
-        $studentData = $this->studentController->validateToken($token);
-        if ($studentData && isset($studentData['student_id'])) {
-            return ['type' => 'student', 'id' => $studentData['student_id']];
-        }
-
-        // Try staff token
-        $staffData = $this->staffController->validateToken($token);
-        if ($staffData && isset($staffData['staff_id'])) {
-            return ['type' => 'staff', 'id' => $staffData['staff_id']];
-        }
-
-        http_response_code(401);
-        echo json_encode(["message" => "Invalid token"]);
-        return null;
     }
 
     public function getProfile() {

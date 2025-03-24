@@ -20,7 +20,7 @@ class Admin {
     }
 
     public function getDb() {
-        return $this->db; // Return the database connection
+        return $this->conn; // Return the database connection
     }
 
     public function getAllAdmins() {

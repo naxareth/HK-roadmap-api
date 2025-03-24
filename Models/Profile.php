@@ -161,7 +161,6 @@ class Profile {
 
     public function uploadProfilePicture($file) {
         try {
-            // Remove the "../" - folder should be in web root
 
             
             $targetDir = $_SERVER['DOCUMENT_ROOT'] . "/uploads/profile_pictures/";
