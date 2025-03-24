@@ -149,6 +149,7 @@ function showTab(tabId) {
 }
 
 function showSection(section) {
+    showLoadingSpinner();
     const sectionToShow = document.getElementById(section + '-section');
     const sectionsToHide = ['home-section', 'profile-section', 'comments-section'];
 
@@ -760,32 +761,30 @@ const badgeRefresher = {
 
 //profile
 async function fetchStaffProfile() {
+    showLoadingSpinner();
     try {
         const response = await fetch('/hk-roadmap/profile/get', {
             headers: getAuthHeaders()
         });
 
         if (response.ok) {
-            const profileData = await response.json();
+            const userProfile = await response.json();
             // Staff fields
-            document.getElementById('staffName').value = profileData.name || '';
-            document.getElementById('staffDepartment').value = profileData.department || '';
-            document.getElementById('staffPosition').value = profileData.position || '';
-            document.getElementById('staffContact').value = profileData.contact_number || '';
-            document.getElementById('staffProfilePicture').src = profileData.profile_picture_url || '';
+            document.getElementById('staffName').value = userProfile.name || '';
+            document.getElementById('staffDepartment').value = userProfile.department || '';
+            document.getElementById('staffPosition').value = userProfile.position || '';
+            document.getElementById('staffContact').value = userProfile.contact_number || '';
+            document.getElementById('staffProfilePicture').src = userProfile.profile_picture_url || '';
                 
             // Student-specific fields
-            document.getElementById('studentNumber').value = profileData.student_number || '';
-            document.getElementById('collegeProgram').value = profileData.college_program || '';
-            document.getElementById('yearLevel').value = profileData.year_level || '';
-            document.getElementById('scholarshipType').value = profileData.scholarship_type || '';
+            document.getElementById('studentNumber').value = userProfile.student_number || '';
+            document.getElementById('collegeProgram').value = userProfile.college_program || '';
+            document.getElementById('yearLevel').value = userProfile.year_level || '';
+            document.getElementById('scholarshipType').value = userProfile.scholarship_type || '';
             
             updateProfileUI();
-            updateNavProfile(profileData);
-            disableProfileEditing();
-
-            userProfile = profileData; // Update userProfile object
-            updateProfileUI();
+            updateNavProfile(userProfile);
+            disableProfileEditing()
         } else {
             throw new Error('Failed to fetch profile');
         }
@@ -930,16 +929,16 @@ async function fetchDepartments() {
     }
 }
 
-function updateNavProfile(profileData) {
+function updateNavProfile(userProfile) {
     const staffNameElement = document.getElementById('navProfileName');
     const staffPicElement = document.querySelector('.navprofile-container .profile-pic');
     
-    if (staffNameElement && profileData.name) {
-        staffNameElement.textContent = profileData.name;
+    if (staffNameElement && userProfile.name) {
+        staffNameElement.textContent = userProfile.name;
     }
 
-    if (staffPicElement && profileData.profile_picture_url) {
-        staffPicElement.src = profileData.profile_picture_url;
+    if (staffPicElement && userProfile.profile_picture_url) {
+        staffPicElement.src = userProfile.profile_picture_url;
     }
 }
 
@@ -1122,7 +1121,6 @@ async function updateProfileUI() {
         // Update profile pictures
         const profilePictureUrl = getProfilePictureUrl(userProfile.profile_picture_url);
         document.getElementById('staffProfilePicture').src = profilePictureUrl;
-        document.getElementById('headerProfilePic').src = profilePictureUrl;
     }
 }
 
@@ -1624,6 +1622,34 @@ async function deleteComment(commentId) {
 }
 
 //frontend system
+
+
+let loadingSpinnerTimeout; // Variable to hold the timeout reference
+
+function showLoadingSpinner(duration = 700) { // Default duration is 5000ms (5 seconds)
+    const spinner = document.getElementById('loadingSpinner');
+    if (spinner) {
+        spinner.style.display = 'flex'; // Show the spinner
+    }
+
+    // Clear any existing timeout to prevent multiple timers
+    clearTimeout(loadingSpinnerTimeout);
+
+    // Set a timeout to hide the spinner after the specified duration
+    loadingSpinnerTimeout = setTimeout(() => {
+        hideLoadingSpinner();
+    }, duration);
+}
+
+function hideLoadingSpinner() {
+    const spinner = document.getElementById('loadingSpinner');
+    if (spinner) {
+        spinner.style.display = 'none'; // Hide the spinner
+    }
+
+    // Clear the timeout when hiding the spinner
+    clearTimeout(loadingSpinnerTimeout);
+}
 
 function toggleSidebar() {
     const sidebar = document.querySelector('.sidebar');

@@ -148,6 +148,7 @@ function showTab(tabId) {
 }
 
 function showSection(section) {
+    showLoadingSpinner();
     const sectionToShow = document.getElementById(section + '-section');
     const sectionsToHide = ['home-section', 'admin-section', 'announce-section', 'profile-section'];
 
@@ -630,6 +631,7 @@ async function initializeYearDropdown() {
 
 //cards
 async function fetchCardEvents(selectedFilter) {
+    showLoadingSpinner();
     const authToken = localStorage.getItem('authToken');
     const eventSection = document.getElementById('event-section');
     const createEvent = document.getElementById('event-create');
@@ -705,6 +707,8 @@ async function fetchCardEvents(selectedFilter) {
 async function showRequirements(eventId) {
     const authToken = localStorage.getItem('authToken');
     document.getElementById('eventId').value = eventId;
+
+    showLoadingSpinner();
     
     try {
         const response = await fetch(`/hk-roadmap/requirements/add?event_id=${eventId}`, {
@@ -803,6 +807,7 @@ function groupEventsByMonth(events) {
 
 // Event CRUD functions
 async function updateEvent(eventId, eventData) {
+    showLoadingSpinner();
     const authToken = localStorage.getItem('authToken');
 
     console.log(eventId, eventData);
@@ -835,7 +840,7 @@ async function updateEvent(eventId, eventData) {
 
 async function createEvent(eventData) {
     const authToken = localStorage.getItem('authToken');
-
+    showLoadingSpinner();
     console.log(eventId, eventData);
     try {
         const response = await fetch(`/hk-roadmap/event/add`, {
@@ -868,6 +873,7 @@ async function createEvent(eventData) {
 }
 
 async function saveEvent() {
+    showLoadingSpinner();
     const eventId = document.getElementById('eventId').value;
     const eventDate = document.getElementById('eventDate').value;
     const selectedYear = document.getElementById('yearSelect').value;
@@ -897,6 +903,7 @@ async function saveEvent() {
 
 async function loadEventForEdit(eventId) {
     const authToken = localStorage.getItem('authToken'); 
+    showLoadingSpinner();
 
     try {
         const response = await fetch(`/hk-roadmap/event/edit?event_id=${eventId}`, { 
@@ -944,6 +951,7 @@ async function loadEventForEdit(eventId) {
 async function deleteEvent(eventId) {
     const authToken = localStorage.getItem('authToken');
     const selectedYear = document.getElementById('yearSelect').value;
+    showLoadingSpinner();
 
     try {
         const response = await fetch(`/hk-roadmap/event/delete?event_id=${eventId}`, {
@@ -1052,6 +1060,7 @@ async function updateRequirement(requirementId, requirementData) {
     console.log('Creating requirement with data:', requirementId, requirementData);
     const eventId = document.getElementById('eventId').value;
     requirementData.event_id = eventId;
+    showLoadingSpinner();
 
     try {
         const response = await fetch(`/hk-roadmap/requirements/edit?requirement_id=${requirementId}`, {
@@ -1087,6 +1096,8 @@ async function updateRequirement(requirementId, requirementData) {
 async function createRequirement(requirementData) {
     console.log('Creating requirement with data:', requirementData);
     const authToken = localStorage.getItem('authToken');
+
+    showLoadingSpinner();
 
     try {
         const response = await fetch(`/hk-roadmap/requirements/add`, {
@@ -1127,6 +1138,7 @@ async function saveRequirement() {
     const requirementDate = document.getElementById('dueDate').value;
     const selectedDate = new Date(requirementDate);
     const currentDate = new Date();
+    showLoadingSpinner();
 
     currentDate.setHours(0, 0, 0, 0);
 
@@ -1214,15 +1226,16 @@ async function loadRequirementForEdit(requirementId) {
 async function deleteRequirement(requirementId) {
     const authToken = localStorage.getItem('authToken');
     const eventID = document.getElementById('eventId').value;
+    showLoadingSpinner();
 
-        try {
-            const deleteResponse = await fetch(`/hk-roadmap/requirements/delete?requirement_id=${requirementId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${authToken}`
-                }
-            });
+    try {
+        const deleteResponse = await fetch(`/hk-roadmap/requirements/delete?requirement_id=${requirementId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
 
         const data = await deleteResponse.json(); 
         console.log('Requirement data:', data);
@@ -1233,6 +1246,7 @@ async function deleteRequirement(requirementId) {
         } else {
             throw new Error(data.message || 'Failed to delete event');
         }
+
     } catch (error) {
         console.error('Error deleting event:', error);
         alert(error.message);
@@ -1270,6 +1284,7 @@ function filterComments() {
 const commentCollapseStates = new Map();
 
 async function showComments(requirementId) {
+    showLoadingSpinner();
     try {
         currentRequirementId = requirementId;
         const authToken = localStorage.getItem('authToken');
@@ -1745,6 +1760,7 @@ async function markAllAsRead() {
 
 //annoucement
 async function fetchAnnouncements() {
+    showLoadingSpinner();
     try {
         const response = await fetch('/hk-roadmap/announcements/get', {
             headers: getAuthHeaders()
@@ -1883,6 +1899,7 @@ let departmentMapping = {};
 let reverseDepartmentMapping = {};
 
 async function fetchAdminProfile() {
+    showLoadingSpinner();
     try {
         const response = await fetch('/hk-roadmap/profile/get', {
             headers: getAuthHeaders()
@@ -2216,6 +2233,33 @@ async function updateProfileUI() {
         // Update header profile name
         document.getElementById('profileName').textContent = adminProfile.name || 'Admin';
     }
+}
+
+let loadingSpinnerTimeout; // Variable to hold the timeout reference
+
+function showLoadingSpinner(duration = 700) { // Default duration is 5000ms (5 seconds)
+    const spinner = document.getElementById('loadingSpinner');
+    if (spinner) {
+        spinner.style.display = 'flex'; // Show the spinner
+    }
+
+    // Clear any existing timeout to prevent multiple timers
+    clearTimeout(loadingSpinnerTimeout);
+
+    // Set a timeout to hide the spinner after the specified duration
+    loadingSpinnerTimeout = setTimeout(() => {
+        hideLoadingSpinner();
+    }, duration);
+}
+
+function hideLoadingSpinner() {
+    const spinner = document.getElementById('loadingSpinner');
+    if (spinner) {
+        spinner.style.display = 'none'; // Hide the spinner
+    }
+
+    // Clear the timeout when hiding the spinner
+    clearTimeout(loadingSpinnerTimeout);
 }
 
 // frontend listeners
