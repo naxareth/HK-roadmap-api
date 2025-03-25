@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Dashboard</title>
+    <link rel="stylesheet" href="/assets/css/staffDashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Signika:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="top-nav">
+        <button id="toggleMenuButton">☰</button>
+        <h1><span class="green">H</span><span class="yellow">K</span> Roadmap</h1>
+        <div class="nav-controls">
+            <div class="notifications-container">
+                <button class="notification-bell" onclick="toggleNotifPopup()">
+                    <i class="fas fa-bell" style="color: black;"></i>
+                    <span class="notification-badge" id="notificationBadge">0</span>
+                </button>
+                <div id="notificationPopup" class="notification-popup">
+                    <div class="notification-header">
+                        <h3>Notifications</h3>
+                        <button class="mark-all" onclick="markAllAsRead()">Mark All Read</button>
+                    </div>
+                    <div class="notification-list" id="notificationList"></div>
+                </div>
+            </div>
+            <!-- Notifications container remains unchanged -->
+            <div class="navprofile-container" onclick="toggleProfileMenu()">
+                <span class="profile-name" id="navProfileName"></span>
+                <div id="profileMenu" class="profile-menu">
+                    <button onclick="logout()">Logout</button>
+                </div>
+                <img src="/assets/jpg/default-profile.png" class="profile-pic" alt="Profile">
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <div class="sidebar">
+            <h1><span class="green">H<span class="yellow">K</span> Roadmap</span></h1>
+            <ul>
+                <li><a href="#" onclick="showSection('home')">Home</a></li>
+                <li><a href="#" onclick="showSection('comments')">Comments</a></li>
+                <li><a href="#" onclick="showSection('profile')">Profile</a></li>
+            </ul>
+        </div>
+        <main class="content">
+            <section id="home-section" class="staff-container">
+                <div class="tab-container">
+                    <button class="tab-button" onclick="showTab('submissions')">Submissions</button>
+                    <button class="tab-button" onclick="showTab('students')">Students</button>
+                </div>
+                <div id="submissions" class="tab-content" style="display: none;">
+                    <h2>Submissions Table</h2>
+                    <div id="searchContainer">
+                        <input type="text" id="searchInput" placeholder="Search by any field...">
+                    </div>
+                    <div class="table-responsive">
+                        <table id="submissionsTable">
+                            <thead>
+                                <tr>
+                                    <th>Event</th>
+                                    <th>Requirement</th>
+                                    <th>Student</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>View</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="students" class="tab-content" style="display: none;">
+                    <h2>Student Table</h2>
+                    <div class="search-container">
+                        <input type="text" id="studentSearch" placeholder="Search students..." class="search-input">
+                    </div>
+                    <div class="table-responsive">
+                        <table id="studentsTable">
+                            <thead>
+                                <tr>
+                                    <th>Student Number</th>
+                                    <th>Name</th>
+                                    <th>Department</th>
+                                    <th>Year Level</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            <section id="profile-section" class="profile-container">
+                <h2>Profile Information</h2>
+                <form id="profileForm" class="profile-form">
+                    <div class="profile-picture-container">
+                        <img id="staffProfilePicture" src="/assets/jpg/default-profile.png" alt="Profile Picture" class="profile-picture">
+                        <div class="profile-picture-overlay" style="display: none;">
+                            <i class="fas fa-camera"></i>
+                            <span>Change Photo</span>
+                        </div>
+                    </div>
+
+                    <button type="button" style="display: none" id="changeProfilePictureButton">Change Profile Picture</button>
+            
+                    <!-- Common Fields -->
+                    <div class="form-group">
+                        <label for="staffName">Name:</label>
+                        <input type="text" id="staffName" name="name"  required>
+                    </div>
+            
+                    <!-- Department Selection -->
+                    <div class="form-group">
+                        <label for="staffDepartment">Department:</label>
+                        <select id="staffDepartment" name="department"  required>
+                            <option value="">Select Department</option>
+                            <!-- Dynamically populated -->
+                        </select>
+                    </div>
+            
+                    <!-- Department Others Field -->
+                    <div class="form-group" id="departmentOthersGroup" style="display: none;">
+                        <label for="departmentOthers">Specify Department:</label>
+                        <input type="text" id="departmentOthers" name="department_others" >
+                    </div>
+            
+                    <!-- Position Field -->
+                    <div class="form-group">
+                        <label for="staffPosition">Position:</label>
+                        <input type="text" id="staffPosition" name="position"  required>
+                    </div>
+            
+                    <!-- Contact Number -->
+                    <div class="form-group">
+                        <label for="staffContact">Contact Number:</label>
+                        <input type="tel" id="staffContact" name="contact_number" 
+                               pattern="[0-9]{11}" title="11-digit phone number">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="studentNumber">Student Number:</label>
+                        <input type="text" id="studentNumber" name="student_number" >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="yearLevel">Year level:</label>
+                        <input type="text" id="yearLevel" name="year_level" >
+                    </div>
+            
+                    <div class="form-group">
+                        <label for="collegeProgram">College Program:</label>
+                        <select type="text" id="collegeProgram" name="college_program" >
+                            <option value="">Select Program</option>
+                        </select>
+                    </div>
+            
+                    <div class="form-group">
+                        <label for="scholarshipType">Scholarship Type:</label>
+                        <input id="scholarshipType" name="scholarship_type" >
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="form-actions">
+                        <button type="button" id="editProfileButton" class="btn-edit">Edit Profile</button>
+                        <button type="button" id="saveProfileButton" class="btn-save" style="display:none;">
+                            Save Changes
+                        </button>
+                        <button type="button" id="cancelEditButton" class="btn-cancel" style="display:none;">
+                            Cancel
+                        </button>
+                    </div>
+
+                </form>
+            </section>
+            <section id="comments-section" class="comment-dashboard" style="display: none;">
+                <div class="section-header">
+                    <h2>Comment Management</h2>
+                    <div class="comment-controls">
+                        <input type="text" id="commentSearch" placeholder="Search by requirement ID, student ID, or content...">
+                        <button class="sort-btn" onclick="toggleSortOrder()">
+                            <i class="fas fa-sort"></i> Toggle Sort
+                        </button>
+                    </div>
+                </div>
+                <div class="comment-groups-container"></div>
+            </section>
+        </main>
+
+        <div id="documentPopup" class="popup" style="display: none;">
+            <div class="popup-header">
+                <h5> Submitted Document </h5>
+                <span class="close-popup" onclick="closeDocumentPopup()">×</span>
+            </div>
+            <div class="popup-content">
+                <div id="documentDetails">
+                    <!-- See Javascript -->
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button id="approveButton" class="approve-btn" onclick="approveAllDocuments()">Approve All</button>
+                <button id="rejectButton" class="reject-btn" onclick="rejectAllDocuments()">Reject All</button>
+            </div>
+        </div>
+
+        <div id="profilePopup" class="popup" style="display: none;">
+            <div class="popup-header">
+                <span class="close-popup">&times;</span>
+                <h2 id="popupTitle">Profile Details</h2>
+            </div>
+            <div class="popup-content">
+                <div id="popupContent"></div>
+            </div>
+        </div>
+
+        <div id="commentPopup" class="popup" style="display: none;">
+            <div class="popup-content">
+                <span class="close-popup" onclick="closeCommentPopup()">&times;</span>
+                <h3>Add Comment</h3>
+                <textarea id="commentInput" 
+                        placeholder="Enter your comment here..." 
+                        rows="4"
+                        maxlength="500"></textarea>
+                <div class="popup-buttons">
+                    <button id="submitCommentButton" class="submit-btn" onclick="submitComment()">Submit</button>
+                    <button class="cancel-btn" onclick="closeCommentPopup()">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="loadingSpinner" class="loading-overlay" style="display: none;">
+            <div class="spinner"></div>
+        </div>
+
+    </div>
+    <script src="/assets/js/staffDashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Document and Submission Tables</title>
+        <link rel="stylesheet" href="/assets/css/Dashboard.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+        <link href="https://fonts.googleapis.com/css2?family=Signika:wght@400;600&display=swap" rel="stylesheet">
+        <script>
+        </script>
+    </head>
+    <body>
+        <div class="top-nav">
+            <button id="toggleMenuButton">☰</button>
+            <h1><span class="green">H<span class="yellow">K</span> Roadmap</span></h1>
+            <div class="nav-controls">
+                <div class="notifications-container">
+                    <button class="notification-bell" onclick="toggleNotifPopup()">
+                        <i class="fas fa-bell" style="color: rgba(25, 135, 0, 0.7);"></i>
+                        <span class="notification-badge" id="notificationBadge">0</span>
+                    </button>
+                    <div id="notificationPopup" class="notification-popup">
+                        <div class="notification-header">
+                            <h3>Notifications</h3>
+                            <button class="mark-all" onclick="markAllAsRead()">Mark All Read</button>
+                        </div>
+                        <div class="notification-list" id="notificationList"></div>
+                    </div>
+                </div>
+                <div class="navprofile-container" onclick="toggleProfileMenu()">
+                    <span class="profile-name" id="profileName" style="color: rgba(25, 135, 0, 0.7);"></span>
+                    <div id="profileMenu" class="profile-menu">
+                        <button onclick="logout()">Logout</button>
+                    </div>
+                    <img src="/assets/jpg/default-profile.png" class="profile-pic" alt="Profile">
+                </div>
+            </div>
+        </div>
+        <div class="container">
+            <div class="sidebar" id="sidebar">
+                <h1><span class="green">H<span class="yellow">K</span> Roadmap</span></h1>
+                <ul>
+                    <li><a href="#" onclick="showSection('home')" id="showHomeButton">Home</a></li>
+                    <li><a href="#" onclick="showSection('announce')" id="showAnnounceButton">Announcement</a></li>
+                    <li><a href="#" onclick="showSection('admin')" id="showAdminButton">Admin</a></li>
+                    <li><a href="#" onclick="showSection('profile')" id="showProfileButton">Profile</a></li>
+                </ul>
+            </div>
+            <main class="content">
+                <section id="home-section">
+                    <header>
+                        <h1 style="color: rgba(25, 135, 0, 0.7);"> Events and Requirements </h1>
+                    </header>
+                    <div style="display: none;" class="backToEventsButton" id="backToEventsButton">
+                        <button class="backToEventsBtn" id="backToEventsBtn">
+                            <i class="fas fa-arrow-left"></i> Back to Events
+                        </button>
+                    </div>
+
+                    <div style="display: none;" class="backToRequirements" id="backtoRequirements">
+                        <button class="backToReqBtn" id="backToReqBtn">
+                            <i class="fas fa-arrow-left"></i> Back to Requirements
+                        </button>
+                    </div>
+
+                    <div id="yearSelectorContainer" style="display: none;">
+                        <label for="yearSelect" id="yearSelected"><span class="green">Select Year:</span></label>
+                        <select id="yearSelect" style="color: rgba(25, 135, 0, 0.7);"></select>
+                    </div>
+                    <section class="cards" id="event-section" style="display: none;">
+                        <button id="event-create" class="shwn-btn" style="display: none;">Create Event</button>
+                        <!-- See Javascript -->
+                    </section>
+                    <section class="cards" id="requirements-section" style="display: none;">
+                        <button id="requirement-create" class="evnt-btn">Create Requirement</button>
+                        <!-- See Javascript -->
+                    </section>
+                    <section class="cards" id="comment-section" style="display: none;">
+                        <div class="comments-header">
+                            <h3>Comments</h3>
+                        </div>
+                        <div id="search-container">
+                            <input type="text" id="search-input" placeholder="Search comments..." oninput="filterComments()">
+                        </div>
+                        <div id="comments-list" class="comment-groups-container"></div>
+                    </section>
+                    </div>
+                </section>
+                <section id="admin-section" class="admin-container">
+                    <div class="tab-container">
+                        <button class="tab-button" onclick="showTab('submissions')">Submissions</button>
+                        <button class="tab-button" onclick="showTab('students')">Students</button>
+                        <button class="tab-button" onclick="showTab('admins')">Admin</button>
+                        <button class="tab-button" onclick="showTab('staffs')">Staffs</button>
+                    </div>
+                
+                    <div id="submissions" class="tab-content" style="display: none;">
+                        <h2>Submissions Table</h2>
+                        <div id="searchContainer">
+                            <input type="text" id="searchInput" class="search-input" placeholder="Search by any field...">
+                        </div>
+                        <div class="table-responsive">
+                            <table id="submissionsTable">
+                                <!-- Table headers -->
+                                <thead>
+                                    <tr>
+                                        <th>Event</th>
+                                        <th>Requirement</th>
+                                        <th>Student</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>Review</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Data will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="students" class="tab-content" style="display: none;">
+                        <h2>Student Table</h2>
+                        <div class="search-container">
+                            <input type="text" id="studentSearch" placeholder="Search students..." class="search-input">
+                        </div>
+                        <div class="table-responsive">
+                            <table id="studentsTable">
+                                <!-- Table headers -->
+                                <thead>
+                                    <tr>
+                                        <th>Student Number</th>
+                                        <th>Name</th>
+                                        <th>Department</th>
+                                        <th>Year Level</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Data will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="admins" class="tab-content" style="display: none;">
+                        <h2>Admin Table</h2>
+                        <div class="search-container">
+                            <input type="text" id="adminSearch" placeholder="Search admins..." class="search-input">
+                        </div>
+                        <div class="table-responsive">
+                            <table id="adminsTable">
+                                <!-- Table headers -->
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Position</th>
+                                        <th>Department</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Data will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div> 
+                    
+                    <div id="staffs" class="tab-content" style="display: none;">
+                        <h2>Staff Table</h2>
+                        <div class="search-container">
+                            <input type="text" id="staffSearch" placeholder="Search staff..." class="search-input">
+                        </div>
+                        <div class="table-responsive">
+                            <table id="staffsTable">
+                                <!-- Table headers -->
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Position</th>
+                                        <th>Department</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Data will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div> 
+                </section>
+
+                <section id="announce-section" class="announcement-container" style="display: none;">
+                    <div class="announcement-header">
+                        <h2 style="text-align: center;">Announcements</h2>
+                    </div>
+                    
+                    <div class="background-form">
+                        <form id="announcementForm">
+                            <input type="hidden" id="announcementId">
+                            <input type="text" id="announcementTitle" placeholder="Announcement Title" required>
+                            <textarea id="announcementContent" placeholder="Announcement Content" required></textarea>
+                            <button class="shwn-btn" type="submit">Post Announcement</button>
+                        </form>
+                    </div>
+
+                    <div class="announcement-header">
+                        <h2 style="text-align: center; margin-top: 100px;">Previous Annoucements</h2>
+                    </div>
+                    
+                    <div id="announcementContainer" class="announcement-cards">
+                        <!-- Announcements will be inserted here -->
+                    </div>
+                </section>
+                <section id="profile-section" class="profile-container">
+                    <h2>Profile Information</h2>
+                    <form id="profileForm" class="profile-form">
+                        <div class="profile-picture-container">
+                            <img id="adminProfilePicture" src="/assets/jpg/default-profile.png" alt="Profile Picture" class="profile-picture">
+                            <div class="profile-picture-overlay" style="display: none;">
+                                <i class="fas fa-camera"></i>
+                                <span>Change Photo</span>
+                            </div>
+                        </div>
+
+                        <button type="button" style="display: none" id="changeProfilePictureButton">Change Profile Picture</button>
+                        
+                        <div class="form-group">
+                            <label for="adminName">Name:</label>
+                            <input type="text" id="adminName" name="name" disabled required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="adminDepartment">Department:</label>
+                            <select id="adminDepartment" name="department" disabled required>
+                                <option value="">Select Department</option>
+                                <!-- Options will be populated dynamically -->
+                            </select>
+                        </div>
+                        
+                        <div class="form-group" id="departmentOthersGroup" style="display: none;">
+                            <label for="departmentOthers">Specify Department:</label>
+                            <input type="text" id="departmentOthers" name="department_others" disabled>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="adminPosition">Position:</label>
+                            <input type="text" id="adminPosition" name="position" disabled required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="adminContact">Contact Number:</label>
+                            <input type="tel" id="adminContact" name="contact_number" disabled 
+                                pattern="[0-9]{11}" title="Please enter a valid 11-digit phone number">
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" id="editProfileButton" class="btn-edit">Edit Profile</button>
+                            <button type="button" id="saveProfileButton" class="btn-save" style="display:none;">Save Changes</button>
+                            <button type="button" id="cancelEditButton" class="btn-cancel" style="display:none;">Cancel</button>
+                        </div>
+                    </form>
+                </section>
+
+                <div id="eventPopup" class="popup" style="display: none;">
+                    <span class="close-popup" onclick="toggleEventPopup()">×</span>
+                    <div class="popup-header">Event Form</div>
+                    <input type="hidden" id="eventId" value="">
+                    <label for="eventName">Event Name:</label>
+                    <input type="text" id="eventName" required>
+                    <label for="eventDate">Event Date:</label>
+                    <input type="date" id="eventDate" required>
+                    <button class="popup-button" onclick="saveEvent()">Save Event</button>
+                </div>
+                
+                <div id="requirementPopup" class="popup" style="display: none;">
+                    <span class="close-popup" onclick="toggleRequirementPopup()">×</span>
+                    <div class="popup-header">Requirement Form</div>
+                    <input type="hidden" id="eventId" value="">
+                    <input type="hidden" id="requirementId">
+                    <label for="requirementName">Requirement Name:</label>
+                    <input type="text" id="requirementName" required>
+                    <label for="requirementDescription">Requirement Description:</label>
+                    <input type="text" id="requirementDescription" required>
+                    <label for="dueDate">Due Date:</label>
+                    <input type="date" id="dueDate" required>
+                    <button class="popup-button" onclick="saveRequirement()">Save Requirement</button>
+                </div>
+
+                <div id="editAnnouncementPopup" class="announcePopup" style="display: none;">
+                    <span class="close-popup" onclick="toggleEditAnnouncementPopup()">×</span>
+                    <div class="popup-header">Edit Announcement</div>
+                    <form id="editAnnouncementForm">
+                        <input type="hidden" id="editAnnouncementId">
+                        <input type="text" id="editAnnouncementTitle" placeholder="Announcement Title" required>
+                        <textarea id="editAnnouncementContent" placeholder="Announcement Content" required></textarea>
+                        <button type="submit">Update Announcement</button>
+                    </form>
+                </div>
+
+                <div id="documentPopup" class="popup" style="display: none;">
+                    <div class="popup-header">
+                        <h5> Submitted Document </h5>
+                        <span class="close-popup" onclick="closeDocumentPopup()">×</span>
+                    </div>
+                    <div class="popup-content">
+                        <div id="documentDetails">
+                            <!-- See Javascript -->
+                        </div>
+                    </div>
+                    <div class="action-buttons">
+                        <button id="approveButton" class="approve-btn" onclick="approveAllDocuments()">Approve All</button>
+                        <button id="rejectButton" class="reject-btn" onclick="rejectAllDocuments()">Reject All</button>
+                    </div>
+                </div>
+
+                <div id="editCommentModal" class="popup" style="display: none;">
+                    <span class="close-popup" onclick="closeEditModal()">&times;</span>
+                    <div class="popup-content">
+                        <h3>Edit Comment</h3>
+                        <textarea id="editCommentText" rows="4"></textarea>
+                        <div class="action-buttons">
+                            <button onclick="submitCommentEdit()">Save Changes</button>
+                            <button onclick="closeEditModal()">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="profilePopup" class="popup" style="display: none;">
+                    <div class="popup-header">
+                        <span class="close-popup">&times;</span>
+                        <h2 id="popupTitle">Profile Details</h2>
+                    </div>
+                    <div class="popup-content">
+                        <div id="popupContent"></div>
+                    </div>
+                </div>
+                
+                <div id="commentPopup" class="popup" style="display: none;">
+                    <div class="popup-content">
+                        <span class="close-popup" id="closeCommentPopupButton">&times;</span>
+                        <h3>Add Comment</h3>
+                        <textarea id="commentInput" rows="4"></textarea>
+                        <button id="submitCommentButton" class="submit-btn">Submit Comment</button>
+                    </div>
+                </div>
+
+                <div id="loadingSpinner" class="loading-overlay" style="display: none;">
+                    <div class="spinner"></div>
+                </div>
+
+            </main>
+        </div>
+        <script src="/assets/js/Dashboard.js"></script>
+    </body>
+</html>

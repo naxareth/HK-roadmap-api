@@ -1,0 +1,299 @@
+/* Register.css - Full Responsive Version */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: url('../jpg/background.jpg') no-repeat;
+    background-size: cover;
+    background-position: center;
+    padding: 20px;
+}
+
+.section {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.design, .wrapper {
+    position: relative;
+    width: 100%;
+    padding: 20px;
+}
+
+.design .school-desc {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.school-desc .logo {
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto;
+    display: block;
+}
+
+.school-desc h1 {
+    font-size: 1.8rem;
+    margin: 15px 0;
+    color: #333;
+}
+
+.school-desc p {
+    font-size: 1rem;
+    color: #666;
+    line-height: 1.5;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.wrapper .image {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.image .logo {
+    max-width: 250px;
+    height: auto;
+}
+
+.register-box {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 450px;
+    margin: 0 auto;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.register-top {
+    color: black;
+    text-align: left;
+    margin-bottom: 25px;
+}
+
+.register-top h2 {
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+}
+
+.register-top .block {
+    background-color: #45a049;
+    width: 165px;
+    height: 4px;
+    margin-bottom: 20px;
+}
+
+.register-container .form-input {
+    margin: 20px 0;
+    position: relative;
+}
+
+.form-input label {
+    display: block;
+    text-align: left;
+    margin-bottom: 5px;
+    color: #333;
+    font-weight: 500;
+}
+
+.form-input input,
+.form-input select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #45a049;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+
+.form-input input:focus,
+.form-input select:focus {
+    outline: none;
+    box-shadow: 0 0 3px #45a049;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 10px;
+    top: 65%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #666;
+}
+
+.register-container .Button {
+    margin-top: 25px;
+}
+
+.Submit {
+    background-color: #4CAF50;
+    border: none;
+    color: white;
+    padding: 15px 32px;
+    width: 100%;
+    font-size: 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.Submit:hover {
+    background-color: #45a049;
+    transform: scale(1.02);
+}
+
+.register-container .Login {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.register-container .Login a {
+    color: #4CAF50;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.register-container .Login a:hover {
+    text-decoration: underline;
+}
+
+.popup {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    animation: fadeIn 0.3s;
+}
+
+.popup-content {
+    position: relative;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Message Types */
+.popup.success { border-left: 4px solid #28a745; }
+.popup.error { border-left: 4px solid #dc3545; }
+.popup.info { border-left: 4px solid #17a2b8; }
+
+.popup-message {
+    margin: 1rem 0;
+    font-size: 1.1rem;
+    color: #333;
+}
+
+.popup-buttons {
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+.close-popup {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    cursor: pointer;
+    font-size: 1.5rem;
+    color: #666;
+    background: none;
+    border: none;
+    padding: 0;
+}
+
+.close-popup:hover {
+    color: #333;
+}
+
+/* Responsive Adjustments */
+@media (min-width: 768px) {
+    .section {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .design {
+        width: 45%;
+        padding-right: 40px;
+    }
+
+    .wrapper {
+        width: 45%;
+        padding-left: 40px;
+    }
+
+    .school-desc h1 {
+        font-size: 2rem;
+    }
+
+    .school-desc p {
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 767px) {
+    .design, .wrapper {
+        text-align: center;
+    }
+
+    .school-desc .logo {
+        width: 200px;
+    }
+
+    .register-box {
+        margin-top: 30px;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 10px;
+    }
+
+    .register-box {
+        padding: 20px;
+    }
+
+    .form-input input,
+    .form-input select {
+        padding: 8px;
+        font-size: 0.9rem;
+    }
+
+    .Submit {
+        padding: 12px 20px;
+        font-size: 0.9rem;
+    }
+
+    .school-desc h1 {
+        font-size: 1.5rem;
+    }
+
+    .school-desc p {
+        font-size: 0.9rem;
+    }
+}
