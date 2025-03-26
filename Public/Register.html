@@ -12,10 +12,12 @@
         <div class="section">
             <div class="design">
                 <div class="school-desc">
-                    <div class="image">
-                        <img src="/assets/jpg/logo_phinma.png" alt="logo" class="logo" />
+                    <div class="image-container">
+                        <img src="/assets/jpg/logo_phinma.png" alt="logo" class="transition-logo active" />
+                        <img src="/assets/jpg/upang-backgroundOne.png" alt="logo" class="transition-logo" />
+                        <img src="/assets/jpg/upang-backgroundTwo.jpg" alt="logo" class="transition-logo" />
                     </div>
-                    <h1> University of Pangasinan </h1>
+                    <h1> HK ROADMAP </h1>
                     <p> 28WV+R2R, Arellano St, Downtown District, Dagupan, 2400 Pangasinan, Philippines </p>
                 </div>
             </div>
@@ -67,20 +69,46 @@
                 </div>
             </div>
         </div>
-        <!-- Success Popup -->
+        
         <div id="successPopup" class="popup" style="display: none;">
             <div class="popup-content">
-                <span class="close-popup">&times;</span>
                 <p>Registration successful! Redirecting...</p>
             </div>
         </div>
         <div id="errorMessage" class="popup error-message" style="display: none;">
             <div class="popup-content">
-                <span class="close-popup">&times;</span>
                 <span id="errorText"></span>
             </div>
         </div>
 
         <script src="/assets/js/Register.js" type="module"></script>
+        <script>
+            // Image transition functionality
+            (function() {
+                const images = [
+                    '/assets/jpg/logo_phinma.png',
+                    '/assets/jpg/upang-backgroundOne.png',
+                    '/assets/jpg/upang-backgroundTwo.jpg'
+                ];
+        
+                // Preload images
+                images.forEach(src => new Image().src = src);
+        
+                const logoElements = document.querySelectorAll('.transition-logo');
+                let currentIndex = 0;
+        
+                function cycleImages() {
+                    const nextIndex = (currentIndex + 1) % images.length;
+                    
+                    logoElements[currentIndex].classList.remove('active');
+                    logoElements[nextIndex].classList.add('active');
+                    
+                    currentIndex = nextIndex;
+                }
+        
+                // Start cycling every 7 seconds
+                setInterval(cycleImages, 7000);
+            })();
+        </script>
     </body>
 </html>

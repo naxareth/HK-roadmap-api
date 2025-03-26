@@ -41,10 +41,10 @@
             <div class="sidebar" id="sidebar">
                 <h1><span class="green">H<span class="yellow">K</span> Roadmap</span></h1>
                 <ul>
-                    <li><a href="#" onclick="showSection('home')" id="showHomeButton">Home</a></li>
-                    <li><a href="#" onclick="showSection('announce')" id="showAnnounceButton">Announcement</a></li>
-                    <li><a href="#" onclick="showSection('admin')" id="showAdminButton">Admin</a></li>
-                    <li><a href="#" onclick="showSection('profile')" id="showProfileButton">Profile</a></li>
+                    <li></i><a href="#" onclick="showSection('home')" id="showHomeButton"><i class="fas fa-home"></i>  Home</a></li>
+                    <li></i><a href="#" onclick="showSection('announce')" id="showAnnounceButton"><i class="fas fa-bullhorn"></i>  Announcement</a></li>
+                    <li></i><a href="#" onclick="showSection('admin')" id="showAdminButton"><i class="fas fa-user-gear"></i>  Admin</a></li>
+                    <li><a href="#" onclick="showSection('profile')" id="showProfileButton"><i class="fas fa-user"></i>  Profile</a></li>
                 </ul>
             </div>
             <main class="content">
@@ -65,7 +65,7 @@
                     </div>
 
                     <div id="yearSelectorContainer" style="display: none;">
-                        <label for="yearSelect" id="yearSelected"><span class="green">Select Year:</span></label>
+                        <label for="yearSelect" id="yearSelected"><span class="green">Select Sort:</span></label>
                         <select id="yearSelect" style="color: rgba(25, 135, 0, 0.7);"></select>
                     </div>
                     <section class="cards" id="event-section" style="display: none;">
@@ -316,7 +316,9 @@
                 </div>
 
                 <div id="editCommentModal" class="popup" style="display: none;">
-                    <span class="close-popup" onclick="closeEditModal()">&times;</span>
+                    <div class="popup-header">
+                        <span class="close-popup" onclick="closeEditModal()">&times;</span>
+                    </div>
                     <div class="popup-content">
                         <h3>Edit Comment</h3>
                         <textarea id="editCommentText" rows="4"></textarea>
@@ -337,12 +339,66 @@
                     </div>
                 </div>
                 
-                <div id="commentPopup" class="popup" style="display: none;">
-                    <div class="popup-content">
+                <div id="commentPopup" class="addComment" style="display: none;">
+                    <div class="popup-header">
                         <span class="close-popup" id="closeCommentPopupButton">&times;</span>
+                    </div>
+                    <div class="comment-content">
                         <h3>Add Comment</h3>
                         <textarea id="commentInput" rows="4"></textarea>
-                        <button id="submitCommentButton" class="submit-btn">Submit Comment</button>
+                        <button id="submitCommentButton" class="action-buttons">Submit Comment</button>
+                    </div>
+                </div>
+
+                <div id="welcome-screen" class="welcome-screen">
+                    <div class="onboarding-content">
+                        <div id="step-1" class="onboarding-step active">
+                            <h1>Welcome to HK Roadmap!</h1>
+                            <p class="description">Providing you with efficient, easy to understand functions to make student lives easier!</p>
+                            <div class="button-group">
+                                <button class="next-button primary" data-next="step-2">Next →</button>
+                            </div>
+                        </div>
+                        <div id="step-2" class="onboarding-step">
+                            <h1>Events and Requirements!</h1>
+                            <p class="description">Create events and requirements students need to pass!</p>
+                            <div class="button-group">
+                                <button class="prev-button secondary" data-prev="step-1">← Back</button>
+                                <button class="next-button primary" data-next="step-3">Next →</button>
+                            </div>
+                        </div>
+                        <div id="step-3" class="onboarding-step">
+                            <h1>  Announcements! </h1>
+                            <p class="description">Capture the undivided attentions of your scholars!</p>
+                            <div class="button-group">
+                                <button class="prev-button secondary" data-prev="step-2">← Back</button>
+                                <button class="next-button primary" data-next="step-4">Next →</button>
+                            </div>
+                        </div>
+                        <div id="step-4" class="onboarding-step">
+                            <h1>  Submissions and Profile! </h1>
+                            <p class="description">View various submissions and academic details of your students!</p>
+                            <div class="button-group">
+                                <button class="prev-button secondary" data-prev="step-3">← Back</button>
+                                <button class="next-button primary" data-next="step-5">Next →</button>
+                            </div>
+                        </div>
+                        <div id="step-5" class="onboarding-step">
+                            <h1>  Edit your Profile Details! </h1>
+                            <p class="description">Edit your profile picture, name and others!</p>
+                            <div class="button-group">
+                                <button class="prev-button secondary" data-prev="step-4">← Back</button>
+                                <button class="next-button primary" data-next="step-6">Next →</button>
+                            </div>
+                        </div>
+                        <div id="step-6" class="onboarding-step">
+                            <h1>  You're now ready! </h1>
+                            <p class="description">Now, let's go on to make student lives better!!</p>
+                            <div class="button-group">
+                                <button class="prev-button secondary" data-prev="step-5">← Back</button>
+                                <button id="continue-button" class="primary">Start Website →</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

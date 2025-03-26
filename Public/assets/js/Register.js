@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 showSuccess();
                 setTimeout(() => window.location.href = '/login.html', 1500);
             } else {
-                showError(response.message || `Failed to register as ${role}`);
+                showError(response.error.message || `Failed to register as ${role}, ${response.error.message}`);
             }
         } catch (error) {
             handleNetworkError(error);

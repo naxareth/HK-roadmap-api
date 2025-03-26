@@ -47,24 +47,19 @@ function toggleNotifPopup() {
     const popup = document.getElementById('notificationPopup');
     const isOpening = popup.style.display !== 'block';
     
-    // Toggle the display of the popup
     popup.style.display = isOpening ? 'block' : 'none';
     
     if (isOpening) {
-        // Clear old notifications and show loading state
         document.getElementById('notificationList').innerHTML = 
             '<div class="loading">Loading notifications...</div>';
         
-        // Fetch notifications
         fetchNotifications();
         
-        // Position the popup below the notification bell
         const bell = document.querySelector('.notification-bell');
         const rect = bell.getBoundingClientRect();
-        const int = 50; // Adjust this value as needed
+        const int = 50;
 
-        // Set the calculated styles
-        popup.style.left = `${rect.right - popup.offsetWidth + int}px`; // Align right edge of popup with right edge of bell
+        popup.style.left = `${rect.right - popup.offsetWidth + int}px`; 
 
         popup.classList.add('visible');
     } else {
@@ -86,14 +81,11 @@ function toggleProfileMenu() {
     const menu = document.getElementById('profileMenu');
     const isOpening = menu.style.display !== 'block';
 
-    // Toggle the display of the menu
     menu.style.display = isOpening ? 'block' : 'none';
 
     if (isOpening) {
-        // Add visible class for animation
         menu.classList.add('visible');
     } else {
-        // Remove visible class when closing
         menu.classList.remove('visible');
     }
 }
@@ -113,7 +105,7 @@ function toggleMenu(event) {
 function closeMenuOptions() {
     const menus = document.querySelectorAll('.menu-options');
     menus.forEach(menu => {
-        menu.style.display = 'none'; // Hide all menu options
+        menu.style.display = 'none';
     });
 }
 
@@ -166,6 +158,53 @@ function showSection(section) {
     } else {
         console.error(`Section "${section}-section" not found.`);
     }
+    closeSidebar();
+}
+
+function showOnBoardingScreens() {
+    const welcomeScreen = document.getElementById("welcome-screen");
+    const mainContent = document.getElementById("main-content");
+    const continueButton = document.getElementById("continue-button");
+    const nextButtons = document.querySelectorAll(".next-button");
+    const prevButtons = document.querySelectorAll(".prev-button");
+    const onboardingSteps = document.querySelectorAll(".onboarding-step");
+
+    if (localStorage.getItem("hasSeenWelcomeScreen")) {
+        welcomeScreen.style.display = "none";
+        mainContent.style.display = "block";
+    } else {
+        welcomeScreen.style.display = "flex";
+    }
+
+    function showStep(stepId) {
+        onboardingSteps.forEach(step => {
+            step.classList.remove('active');
+            step.style.display = 'none';
+        });
+        const activeStep = document.getElementById(stepId);
+        activeStep.classList.add('active');
+        activeStep.style.display = 'block';
+    }
+
+    nextButtons.forEach(button => {
+        button.addEventListener("click", function() {
+            const nextStepId = this.getAttribute("data-next");
+            showStep(nextStepId);
+        });
+    });
+
+    prevButtons.forEach(button => {
+        button.addEventListener("click", function() {
+            const prevStepId = this.getAttribute("data-prev");
+            showStep(prevStepId);
+        });
+    });
+
+    continueButton.addEventListener("click", function() {
+        localStorage.setItem("hasSeenWelcomeScreen", "true");
+        welcomeScreen.style.display = "none";
+        mainContent.style.display = "block";
+    });
 }
 
 // admin logout, start of fetching functions for database interaction and modifications
@@ -396,11 +435,10 @@ function fetchSubmissions() {
                 tableBody.innerHTML += row;
             });
 
-            // Attach click handlers for grouped submissions
             document.querySelectorAll('.view-docs-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const submissionIds = btn.dataset.ids.split(',');
-                    viewDocuments(submissionIds); // Open popup with all docs in group
+                    viewDocuments(submissionIds); 
                 });
             });
         });
@@ -420,7 +458,6 @@ function viewDocuments(submissionIds) {
         <div class="doc-content"></div>
     `;
 
-    // Fetch documents
     Promise.all(submissionIds.map(fetchDocument))
         .then(docs => {
             docItems = docs.filter(doc => doc);
@@ -444,36 +481,30 @@ function renderDocuments() {
     const tabsContainer = document.querySelector('.doc-tabs');
     const contentContainer = document.querySelector('.doc-content');
     
-    // Clear existing elements
     tabsContainer.innerHTML = '';
     contentContainer.innerHTML = '';
 
-    // Create tabs and content
     docItems.forEach((doc, index) => {
         let fileName = '';
         let title = '';
 
-        // Determine the type of document and set the title accordingly
         if (doc.document_type === 'link') {
-            // If it's a link, use the full URL as the title
             title = doc.link_url;
-            fileName = title; // You can also use a custom name if needed
+            fileName = title; 
         } else {
-            // For documents and images, extract the filename
             const url = new URL(doc.link_url || `http://localhost:8000/${doc.file_path}`);
-            fileName = url.pathname.split('/').pop(); // Get the last part of the URL path
-            title = fileName; // Use the filename as the title
+            fileName = url.pathname.split('/').pop(); 
+            title = fileName;
         }
 
         // Tab
         const tab = document.createElement('button');
         tab.className = `doc-tab ${index === currentDocIndex ? 'active' : ''}`;
-        tab.textContent = fileName; // Use the filename
-        tab.title = title; // Set title for full name on hover
+        tab.textContent = fileName; 
+        tab.title = title; 
         tab.onclick = () => switchDocument(index);
         tabsContainer.appendChild(tab);
 
-        // Content
         const docItem = document.createElement('div');
         docItem.className = `doc-item ${index === currentDocIndex ? 'active' : ''}`;
         
@@ -562,7 +593,7 @@ function fetchSubmissions() {
     fetch('/hk-roadmap/submission/update')
         .then(response => response.json())
         .then(data => {
-            allSubmissions = data; // Store submissions globally
+            allSubmissions = data; 
             renderTable(data);
         });
 }
@@ -588,7 +619,6 @@ function renderTable(data) {
         tableBody.innerHTML += row;
     });
 
-    // Reattach event listeners
     document.querySelectorAll('.view-docs-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const submissionIds = btn.dataset.ids.split(',');
@@ -615,13 +645,11 @@ async function initializeYearDropdown() {
         if (!response.ok) throw new Error('Failed to fetch events');
         const data = await response.json();
 
-        // Clear and populate dropdown with sorting options
         yearSelect.innerHTML = `
             <option value="most_recent" selected>Most Recent</option>
             <option value="oldest">Oldest</option>
         `;
 
-        // Initial load with most recent events
         fetchCardEvents('most_recent');
 
     } catch (error) {
@@ -649,18 +677,15 @@ async function fetchCardEvents(selectedFilter) {
         if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`);
         let data = await response.json();
 
-        // Apply sorting
         if (selectedFilter === 'most_recent') {
             data = data.sort((a, b) => b.event_id - a.event_id);
         } else if (selectedFilter === 'oldest') {
             data = data.sort((a, b) => a.event_id - b.event_id);
         }
 
-        // Clear only the cards while preserving other elements
         const existingCards = eventSection.querySelectorAll('.card');
         existingCards.forEach(card => card.remove());
 
-        // Create temporary container
         const tempContainer = document.createDocumentFragment();
         
         if (data.length > 0) {
@@ -695,7 +720,6 @@ async function fetchCardEvents(selectedFilter) {
             eventSection.innerHTML += '<p>No events found</p>';
         }
 
-        // Keep these elements visible
         createEvent.style.display = 'block';
         yearSelector.style.display = 'block';
 
@@ -731,10 +755,8 @@ async function showRequirements(eventId) {
             const requirementMessage = requirementsSection.querySelectorAll('p');
             requirementMessage.forEach(p => p.remove())
 
-            // Hide year selector container
-            document.getElementById('yearSelectorContainer').style.display = 'none'; // Add this line
+            document.getElementById('yearSelectorContainer').style.display = 'none';
 
-            // Hide individual elements
             document.getElementById('yearSelect').style.display = 'none';
             document.getElementById('yearSelected').style.display = 'none';
 
@@ -941,10 +963,10 @@ async function loadEventForEdit(eventId) {
             }
             toggleEventPopup();  
         } else {
-            throw new Error(data.message || 'Failed to load event data'); // Handle error
+            throw new Error(data.message || 'Failed to load event data'); 
         }
     } catch (error) {
-        console.error('Error loading event:', error); // Log the error
+        console.error('Error loading event:', error); 
     }
 }
 
@@ -978,7 +1000,6 @@ async function deleteEvent(eventId) {
 //event and require notif students
 async function sendEventEmails(eventName, eventDate) {
     try {
-        // 1. Get all student emails
         const studentsResponse = await fetch('/hk-roadmap/student/emails', {
             headers: getAuthHeaders()
         });
@@ -988,16 +1009,15 @@ async function sendEventEmails(eventName, eventDate) {
             return;
         }
 
-        const emails = await studentsResponse.json(); // Changed variable name
+        const emails = await studentsResponse.json(); 
         
-        // 2. Send emails in background
-        emails.forEach(async (email) => { // Changed parameter name
+        emails.forEach(async (email) => { 
             try {
                 await fetch('/hk-roadmap/mail/send', {
                     method: 'POST',
                     headers: getAuthHeaders(),
                     body: JSON.stringify({
-                        recipient: email, // Use email directly
+                        recipient: email,
                         subject: "New Event Created",
                         body: `A new event has been created: ${eventName}. Date: ${eventDate}.`
                     })
@@ -1014,7 +1034,6 @@ async function sendEventEmails(eventName, eventDate) {
 
 async function sendRequirementEmails(requirementName, dueDate) {
     try {
-        // 1. Get all student emails
         const studentsResponse = await fetch('/hk-roadmap/student/emails', {
             headers: getAuthHeaders()
         });
@@ -1026,14 +1045,12 @@ async function sendRequirementEmails(requirementName, dueDate) {
 
         const emails = await studentsResponse.json();
         
-        // 2. Format due date
         const formattedDueDate = new Date(dueDate).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
             day: 'numeric'
         });
 
-        // 3. Send emails in background
         emails.forEach(async (email) => {
             try {
                 await fetch('/hk-roadmap/mail/send', {
@@ -1072,9 +1089,8 @@ async function updateRequirement(requirementId, requirementData) {
             body: JSON.stringify(requirementData)
         });
 
-        // Check if the response is OK
         if (!response.ok) {
-            const errorText = await response.text(); // Get the response text for debugging
+            const errorText = await response.text();
             console.error('Error response:', errorText);
             throw new Error(`Failed to update requirement: ${response.status} ${response.statusText}`);
         }
@@ -1299,11 +1315,10 @@ async function showComments(requirementId) {
         commentsList.innerHTML = '';
 
         if (comments.length === 0) {
-            alert('No comments found for this requirement.'); // Alert if no comments
-            return; // Exit the function early
+            alert('No comments found for this requirement.'); 
+            return;
         }
 
-        // Group comments by student_id
         const commentsByStudent = comments.reduce((groups, comment) => {
             const key = comment.student_id;
             if (!groups[key]) groups[key] = [];
@@ -1331,7 +1346,6 @@ async function showComments(requirementId) {
             commentsContainer.className = 'comments-container';
             commentsContainer.style.display = 'none';
 
-            // Add toggle functionality
             header.addEventListener('click', () => {
                 const isCollapsed = commentsContainer.style.display === 'none';
                 commentsContainer.style.display = isCollapsed ? 'block' : 'none';
@@ -1339,14 +1353,12 @@ async function showComments(requirementId) {
                 commentCollapseStates.set(studentId, !isCollapsed);
             });
 
-            // Restore previous state
             if (commentCollapseStates.has(studentId)) {
                 const isExpanded = commentCollapseStates.get(studentId);
                 commentsContainer.style.display = isExpanded ? 'block' : 'none';
                 header.querySelector('.toggle-icon').textContent = isExpanded ? '▼' : '▶';
             }
 
-            // Populate comments
             studentComments.forEach(comment => {
                 const commentDate = new Date(comment.created_at).toLocaleDateString('en-US', {
                     year: 'numeric',
@@ -1380,7 +1392,6 @@ async function showComments(requirementId) {
                 commentsContainer.insertAdjacentHTML('beforeend', commentCard);
             });
 
-            // Add comment button
             const addButton = document.createElement('button');
             addButton.className = 'add-comment-button';
             addButton.textContent = 'Add Comment';
@@ -1392,7 +1403,6 @@ async function showComments(requirementId) {
             commentsList.appendChild(studentGroup);
         });
 
-        // Update UI visibility
         document.getElementById('requirements-section').style.display = 'none';
         document.getElementById('comment-section').style.display = 'grid';
         document.getElementById('backtoRequirements').style.display = 'block';
@@ -1456,7 +1466,6 @@ async function submitCommentEdit() {
         });
 
         if (response.ok) {
-            // Update the comment in the UI
             const commentBody = document.querySelector(
                 `.comment-card[data-comment-id="${currentEditCommentId}"] .comment-body`
             );
@@ -1513,7 +1522,7 @@ function submitComment() {
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                showComments(requirementId); // Refresh comments
+                showComments(requirementId); 
             } else {
                 alert('Failed to add comment: ' + data.message);
             }
@@ -1584,14 +1593,13 @@ async function fetchNotifications() {
         
         const response = await fetch('/hk-roadmap/notification/get', {
             headers: getAuthHeaders(),
-            cache: 'no-cache' // Prevent browser caching
+            cache: 'no-cache'
         });
 
         if (!response.ok) throw new Error(`HTTP error! ${response.status}`);
         
         const notifications = await response.json();
         
-        // Clear existing content
         let unreadCount = 0;
         notificationList.innerHTML = '';
 
@@ -1601,11 +1609,10 @@ async function fetchNotifications() {
             return;
         }
 
-        // Sort notifications by date (newest first)
         const sortedNotifications = notifications.sort((a, b) => {
             const dateA = new Date(a.created_at);
             const dateB = new Date(b.created_at);
-            return dateB - dateA; // Descending order
+            return dateB - dateA; 
         });
 
         sortedNotifications.forEach(notification => {
@@ -1652,10 +1659,10 @@ async function toggleReadStatus(notificationId, button, status, requirementName)
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                notification_id: parseInt(notificationId),  // Ensure number type
-                read: !isRead,  // Send boolean value
-                status: status,  // Add status field
-                requirement_name: requirementName  // Add requirement_name field
+                notification_id: parseInt(notificationId),  
+                read: !isRead, 
+                status: status,  
+                requirement_name: requirementName  
             })
         });
 
@@ -1848,15 +1855,13 @@ function handleAnnouncementDelete(event) {
 async function handleAnnouncementEdit(event) {
     const card = event.target.closest('.announcement-card');
     const id = card.dataset.id;
-    const title = card.querySelector('h3').innerText; // Use innerText to preserve formatting
-    const content = card.querySelector('p').innerText; // Use innerText to preserve formatting
+    const title = card.querySelector('h3').innerText;
+    const content = card.querySelector('p').innerText; 
 
-    // Populate edit form
     document.getElementById('editAnnouncementTitle').value = title;
-    document.getElementById('editAnnouncementContent').value = content; // Keep line breaks
+    document.getElementById('editAnnouncementContent').value = content; 
     document.getElementById('editAnnouncementId').value = id;
     
-    // Show edit announcement popup
     toggleEditAnnouncementPopup();
 }
 
@@ -1989,10 +1994,9 @@ function populateDepartmentSelect() {
     departmentSelect.innerHTML = '<option value="">Select Department</option>';
     
     if (departments) {
-        // Use full names in the dropdown
         Object.entries(departments).forEach(([abbr, name]) => {
             const option = document.createElement('option');
-            option.value = name; // Use full name as value
+            option.value = name; 
             option.textContent = name;
             departmentSelect.appendChild(option);
         });
@@ -2078,7 +2082,6 @@ function setupProfilePictureUpload() {
 
     let isEditMode = false;
 
-    // Edit button click handler
     editButton.addEventListener('click', () => {
         isEditMode = true;
         profilePicture.style.cursor = 'pointer';
@@ -2090,7 +2093,6 @@ function setupProfilePictureUpload() {
         cancelButton.style.display = 'block';
     });
 
-    // Cancel button click handler
     cancelButton.addEventListener('click', () => {
         isEditMode = false;
         profilePicture.style.cursor = 'default';
@@ -2111,10 +2113,8 @@ function setupProfilePictureUpload() {
         }
     });
 
-    // Department change handler
     departmentSelect.addEventListener('change', handleDepartmentChange);
 
-    // File selection handler
     fileInput.addEventListener('change', async (e) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
@@ -2124,20 +2124,17 @@ function setupProfilePictureUpload() {
                 return;
             }
 
-            const maxSize = 5 * 1024 * 1024; // 5MB
+            const maxSize = 5 * 1024 * 1024; 
             if (file.size > maxSize) {
                 alert('File size should be less than 5MB');
                 return;
             }
             
-            // Show preview
             const reader = new FileReader();
             reader.onload = function(e) {
                 profilePicture.src = e.target.result;
             };
             reader.readAsDataURL(file);
-
-            // Store for upload
             saveButton._fileToUpload = file;
         }
     });
@@ -2174,7 +2171,6 @@ function setupProfilePictureUpload() {
                 throw new Error('Failed to update profile');
             }
 
-            // Reset edit mode
             isEditMode = false;
             profilePicture.style.cursor = 'default';
             document.querySelectorAll('#profileForm input, #profileForm select').forEach(input => {
@@ -2185,7 +2181,6 @@ function setupProfilePictureUpload() {
             cancelButton.style.display = 'none';
             saveButton._fileToUpload = null;
 
-            // Refresh profile data
             await fetchAdminProfile();
         } catch (error) {
             console.error('Error updating profile:', error);
@@ -2216,7 +2211,6 @@ async function updateProfileUI() {
         const departmentOthersGroup = document.getElementById('departmentOthersGroup');
         const departmentOthers = document.getElementById('departmentOthers');
 
-        // Convert department abbreviation to full name for display
         const departmentFullName = departmentMapping[adminProfile.department] || 'Others';
         departmentSelect.value = departmentFullName;
 
@@ -2225,28 +2219,24 @@ async function updateProfileUI() {
             departmentOthers.value = adminProfile.department_others || '';
         }
 
-        // Update profile pictures
         const profilePictureUrl = getProfilePictureUrl(adminProfile.profile_picture_url);
         document.getElementById('adminProfilePicture').src = profilePictureUrl;
         document.getElementById('headerProfilePic').src = profilePictureUrl;
 
-        // Update header profile name
         document.getElementById('profileName').textContent = adminProfile.name || 'Admin';
     }
 }
 
-let loadingSpinnerTimeout; // Variable to hold the timeout reference
+let loadingSpinnerTimeout;
 
-function showLoadingSpinner(duration = 700) { // Default duration is 5000ms (5 seconds)
+function showLoadingSpinner(duration = 700) {
     const spinner = document.getElementById('loadingSpinner');
     if (spinner) {
-        spinner.style.display = 'flex'; // Show the spinner
+        spinner.style.display = 'flex'; 
     }
 
-    // Clear any existing timeout to prevent multiple timers
     clearTimeout(loadingSpinnerTimeout);
 
-    // Set a timeout to hide the spinner after the specified duration
     loadingSpinnerTimeout = setTimeout(() => {
         hideLoadingSpinner();
     }, duration);
@@ -2255,10 +2245,8 @@ function showLoadingSpinner(duration = 700) { // Default duration is 5000ms (5 s
 function hideLoadingSpinner() {
     const spinner = document.getElementById('loadingSpinner');
     if (spinner) {
-        spinner.style.display = 'none'; // Hide the spinner
+        spinner.style.display = 'none';
     }
-
-    // Clear the timeout when hiding the spinner
     clearTimeout(loadingSpinnerTimeout);
 }
 
@@ -2444,7 +2432,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('yearSelect').addEventListener('change', function() {
         const selectedYear = this.value;
-        fetchCardEvents(selectedYear); // Fetch events for the selected year
+        fetchCardEvents(selectedYear); 
     });
 
     const backButton = document.querySelector('.backToEventsBtn');
@@ -2617,7 +2605,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const toggleButton = document.getElementById('toggleMenuButton');
         const content = document.querySelector('.content');
     
-        // Check if the click was outside the sidebar and the toggle button
         if (!sidebar.contains(event.target) && !toggleButton.contains(event.target)) {
             closeSidebar();
         }
@@ -2640,13 +2627,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    window.addEventListener('click', function(event) {
-        const popup = document.getElementById('profilePopup');
-        if (event.target === popup) {
-          popup.style.display = "none";
-        }
-    });
-
     document.addEventListener('click', function(event) {
         const menuButton = event.target.closest('.menu-button'); // Check if the clicked element is a menu button
         const menuOptions = event.target.closest('.menu-options'); // Check if the clicked element is within menu options
@@ -2664,4 +2644,5 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchDepartments().then(populateDepartmentSelect);
     fetchAdminProfile();
     setupProfilePictureUpload();
+    showOnBoardingScreens();
 });

@@ -14,11 +14,12 @@ require_once '../models/Profile.php';
 
 
 class AdminController {
-
+    private $db;
     private $adminModel;
     private $profileModel;
 
     public function __construct($db) {
+        $this->db = $db;
         $this->adminModel = new Admin($db);
         $this->profileModel = new Profile($db);
     }
@@ -56,47 +57,16 @@ class AdminController {
 
         // Check if the email already exists
         if ($this->adminModel->emailExists($email)) {
+            http_response_code(409); 
             echo json_encode(["message" => "An account with this email already exists."]);
             return;
         }
 
-        try {
-            // Start transaction
-            $this->adminModel->getDb()->beginTransaction();
-
-            $token = bin2hex(random_bytes(32));
-            $adminId = $this->adminModel->register($name, $email, $password, $token);
-
-            if ($adminId) {
-                // Create profile data
-                $profileData = [
-                    'name' => $name,
-                    'email' => $email,
-                    'department' => null,
-                    'department_others' => null,
-                    'contact_number' => null,
-                    'profile_picture_url' => null,
-                    'position' => null
-                ];
-
-                if ($this->profileModel->createOrUpdateProfile($adminId, 'admin', $profileData)) {
-                    $this->adminModel->getDb()->commit();
-                    echo json_encode([
-                        "message" => "Admin registered successfully with profile.",
-                        "success" => true
-                    ]);
-                } else {
-                    throw new \Exception("Failed to create admin profile");
-                }
-            } else {
-                throw new \Exception("Admin registration failed");
-            }
-        } catch (\Exception $e) {
-            $this->adminModel->getDb()->rollBack();
-            echo json_encode([
-                "message" => "Registration failed: " . $e->getMessage(),
-                "success" => false
-            ]);
+        $token = bin2hex(random_bytes(32)); // Generate a token
+        if ($this->adminModel->register($name, $email, $password, $token)) { // Pass the token
+            echo json_encode(["message" => "Admin registered successfully."]);
+        } else {
+            echo json_encode(["message" => "Admin registration failed."]);
         }
     }
 
