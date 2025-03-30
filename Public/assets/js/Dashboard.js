@@ -1382,8 +1382,37 @@ async function showComments(requirementId) {
         const commentsList = document.getElementById('comments-list');
         commentsList.innerHTML = '';
 
+        // Always navigate to comments section, even if empty
+        document.getElementById('requirements-section').style.display = 'none';
+        document.getElementById('comment-section').style.display = 'grid';
+        document.getElementById('backtoRequirements').style.display = 'block';
+        document.getElementById('backToEventsButton').style.display = 'none';
+
         if (comments.length === 0) {
-            alert('No comments found for this requirement.'); 
+            // Display a message in the comments section instead of an alert
+            const emptyMessage = document.createElement('div');
+            emptyMessage.className = 'empty-comments-message';
+            emptyMessage.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-comments-alt" style="font-size: 48px; color: #ccc; margin-bottom: 15px;"></i>
+                    <h3>No comments yet</h3>
+                    <p>There are no comments for this requirement.</p>
+                    <button id="addFirstCommentBtn" class="primary-button">Add First Comment</button>
+                </div>
+            `;
+            commentsList.appendChild(emptyMessage);
+            
+            // Add event listener to the "Add First Comment" button
+            document.getElementById('addFirstCommentBtn').addEventListener('click', () => {
+                // You'll need to determine which student to associate this with
+                // For now, we'll use a prompt to get the student ID
+                const studentId = prompt("Enter student ID for this comment:");
+                if (studentId) {
+                    openCommentPopup(studentId, requirementId);
+                }
+            });
+            
+            hideLoadingSpinner();
             return;
         }
 
@@ -1471,26 +1500,12 @@ async function showComments(requirementId) {
             commentsList.appendChild(studentGroup);
         });
 
-        document.getElementById('requirements-section').style.display = 'none';
-        document.getElementById('comment-section').style.display = 'grid';
-        document.getElementById('backtoRequirements').style.display = 'block';
-        document.getElementById('backToEventsButton').style.display = 'none';
-
+        hideLoadingSpinner();
     } catch (error) {
+        hideLoadingSpinner();
         console.error('Error loading comments:', error);
         alert('Failed to load comments');
     }
-}
-
-function toggleCommentMenu(button) {
-    const menu = button.closest('.comment-actions').querySelector('.action-menu');
-    const allMenus = document.querySelectorAll('.action-menu');
-    
-    // Close all other menus
-    allMenus.forEach(m => m !== menu ? m.style.display = 'none' : null);
-    
-    // Toggle current menu
-    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
 }
 
 let currentEditCommentId = null;
