@@ -72,24 +72,19 @@ function toggleNotifPopup() {
     const popup = document.getElementById('notificationPopup');
     const isOpening = popup.style.display !== 'block';
     
-    // Toggle the display of the popup
     popup.style.display = isOpening ? 'block' : 'none';
     
     if (isOpening) {
-        // Clear old notifications and show loading state
         document.getElementById('notificationList').innerHTML = 
             '<div class="loading">Loading notifications...</div>';
         
-        // Fetch notifications
         fetchNotifications();
         
-        // Position the popup below the notification bell
         const bell = document.querySelector('.notification-bell');
         const rect = bell.getBoundingClientRect();
-        const int = 50; // Adjust this value as needed
+        const int = 50; 
 
-        // Set the calculated styles
-        popup.style.left = `${rect.right - popup.offsetWidth + int}px`; // Align right edge of popup with right edge of bell
+        popup.style.left = `${rect.right - popup.offsetWidth + int}px`; 
 
         popup.classList.add('visible');
     } else {
@@ -103,22 +98,18 @@ function positionNotificationPopup() {
     const rect = bell.getBoundingClientRect();
     const int = 50;
     
-    // Set the position of the popup
-    popup.style.left = `${rect.right - popup.offsetWidth + int}px`; // Align right edge of popup with right edge of bell
+    popup.style.left = `${rect.right - popup.offsetWidth + int}px`; 
 }
 
 function toggleProfileMenu() {
     const menu = document.getElementById('profileMenu');
     const isOpening = menu.style.display !== 'block';
 
-    // Toggle the display of the menu
     menu.style.display = isOpening ? 'block' : 'none';
 
     if (isOpening) {
-        // Add visible class for animation
         menu.classList.add('visible');
     } else {
-        // Remove visible class when closing
         menu.classList.remove('visible');
     }
 }
@@ -128,6 +119,52 @@ function closeEditPopup() {
     if (popup) {
         popup.style.display = 'none';
     }
+}
+
+function showOnBoardingScreens() {
+    const welcomeScreen = document.getElementById("welcome-screen");
+    const mainContent = document.getElementById("main-content");
+    const continueButton = document.getElementById("continue-button");
+    const nextButtons = document.querySelectorAll(".next-button");
+    const prevButtons = document.querySelectorAll(".prev-button");
+    const onboardingSteps = document.querySelectorAll(".onboarding-step");
+
+    if (localStorage.getItem("hasSeenWelcomeScreen")) {
+        welcomeScreen.style.display = "none";
+        mainContent.style.display = "block";
+    } else {
+        welcomeScreen.style.display = "flex";
+    }
+
+    function showStep(stepId) {
+        onboardingSteps.forEach(step => {
+            step.classList.remove('active');
+            step.style.display = 'none';
+        });
+        const activeStep = document.getElementById(stepId);
+        activeStep.classList.add('active');
+        activeStep.style.display = 'block';
+    }
+
+    nextButtons.forEach(button => {
+        button.addEventListener("click", function() {
+            const nextStepId = this.getAttribute("data-next");
+            showStep(nextStepId);
+        });
+    });
+
+    prevButtons.forEach(button => {
+        button.addEventListener("click", function() {
+            const prevStepId = this.getAttribute("data-prev");
+            showStep(prevStepId);
+        });
+    });
+
+    continueButton.addEventListener("click", function() {
+        localStorage.setItem("hasSeenWelcomeScreen", "true");
+        welcomeScreen.style.display = "none";
+        mainContent.style.display = "block";
+    });
 }
 
 // Tabs and sections
@@ -243,8 +280,8 @@ async function fetchStudent() {
     tableBody.innerHTML = '';
 
     studentMap = new Map(data.map(student => [
-        Number(student.student_id),  // key: student_id as number
-        student.name || `Student ${student.student_id}`  // value: student name
+        Number(student.student_id),  
+        student.name || `Student ${student.student_id}`  
     ]));
     
     data.forEach(student => {
@@ -288,7 +325,6 @@ function showProfileDetails(type, profile) {
                 <p><strong>Scholarship Type:</strong> ${profile.scholarship_type || '-'}</p>
     `;
 
-    // Add department_others if exists
     if (profile.department_others) {
         content += `
                 <p><strong>Other Department:</strong> ${profile.department_others}</p>
@@ -303,7 +339,6 @@ function showProfileDetails(type, profile) {
     popupContent.innerHTML = content;
     popup.style.display = "block";
 
-    // Close popup handlers
     closeBtn.onclick = () => popup.style.display = "none";
     
     window.onclick = (event) => {
@@ -319,7 +354,7 @@ async function fetchSubmissions() {
         headers: getAuthHeaders()
       });
       const data = await response.json();
-      allSubmissions = data; // Store fetched data <-- ADD THIS LINE
+      allSubmissions = data;
       renderTable(data);
     } catch (error) {
       console.error('Fetch error:', error);
@@ -345,7 +380,6 @@ function viewDocuments(submissionIds) {
         <div class="doc-content"></div>
     `;
 
-    // Fetch documents
     Promise.all(submissionIds.map(fetchDocument))
         .then(docs => {
             docItems = docs.filter(doc => doc);
@@ -363,32 +397,27 @@ function renderDocuments() {
     const tabsContainer = document.querySelector('.doc-tabs');
     const contentContainer = document.querySelector('.doc-content');
     
-    // Clear existing elements
     tabsContainer.innerHTML = '';
     contentContainer.innerHTML = '';
 
-    // Create tabs and content
     docItems.forEach((doc, index) => {
         let fileName = '';
         let title = '';
 
-        // Determine the type of document and set the title accordingly
         if (doc.document_type === 'link') {
-            // If it's a link, use the full URL as the title
             title = doc.link_url;
-            fileName = title; // You can also use a custom name if needed
+            fileName = title;
         } else {
-            // For documents and images, extract the filename
             const url = new URL(doc.link_url || `http://localhost:8000/${doc.file_path}`);
-            fileName = url.pathname.split('/').pop(); // Get the last part of the URL path
-            title = fileName; // Use the filename as the title
+            fileName = url.pathname.split('/').pop(); 
+            title = fileName; 
         }
 
         // Tab
         const tab = document.createElement('button');
         tab.className = `doc-tab ${index === currentDocIndex ? 'active' : ''}`;
-        tab.textContent = fileName; // Use the filename
-        tab.title = title; // Set title for full name on hover
+        tab.textContent = fileName; 
+        tab.title = title;
         tab.onclick = () => switchDocument(index);
         tabsContainer.appendChild(tab);
 
@@ -769,14 +798,12 @@ async function fetchStaffProfile() {
 
         if (response.ok) {
             const userProfile = await response.json();
-            // Staff fields
             document.getElementById('staffName').value = userProfile.name || '';
             document.getElementById('staffDepartment').value = userProfile.department || '';
             document.getElementById('staffPosition').value = userProfile.position || '';
             document.getElementById('staffContact').value = userProfile.contact_number || '';
             document.getElementById('staffProfilePicture').src = userProfile.profile_picture_url || '';
                 
-            // Student-specific fields
             document.getElementById('studentNumber').value = userProfile.student_number || '';
             document.getElementById('collegeProgram').value = userProfile.college_program || '';
             document.getElementById('yearLevel').value = userProfile.year_level || '';
@@ -864,7 +891,6 @@ function disableProfileEditing() {
     document.getElementById('cancelEditButton').style.display = 'none';
     document.getElementById('changeProfilePictureButton').style.display = 'none';
     
-    // Reset file input
     const fileInput = document.querySelector('input[type="file"]');
     if (fileInput) fileInput.value = '';
 }
@@ -915,8 +941,7 @@ async function fetchDepartments() {
         const data = await response.json();
         departments = data.departments;
 
-        // Create mappings
-        departmentMapping = departments; // abbreviation -> full name
+        departmentMapping = departments;
         reverseDepartmentMapping = Object.entries(departments).reduce((acc, [abbr, name]) => {
             acc[name] = abbr;
             return acc;
@@ -996,10 +1021,8 @@ function setupProfilePictureUpload() {
         }
     });
 
-    // Department change handler
     departmentSelect.addEventListener('change', handleDepartmentChange);
 
-    // File selection handler
     fileInput.addEventListener('change', async (e) => {
         if (e.target.files && e.target.files?.[0]) {
             const file = e.target.files[0];
@@ -1015,19 +1038,16 @@ function setupProfilePictureUpload() {
                 return;
             }
             
-            // Show preview
             const reader = new FileReader();
             reader.onload = function(e) {
                 profilePicture.src = e.target.result;
             };
             reader.readAsDataURL(file);
 
-            // Store for upload
             saveButton._fileToUpload = file;
         }
     });
 
-    // Save button click handler
     saveButton.addEventListener('click', async () => {
         try {
             const formData = new FormData();
@@ -1062,7 +1082,6 @@ function setupProfilePictureUpload() {
                 throw new Error('Failed to update profile');
             }
 
-            // Reset edit mode
             isEditMode = false;
             profilePicture.style.cursor = 'default';
             document.querySelectorAll('#profileForm input, #profileForm select').forEach(input => {
@@ -1143,13 +1162,13 @@ async function fetchPrograms() {
 }
 
 function renderPrograms(programs) {
-    const programSelect = document.getElementById('collegeProgram'); // Assuming you have a select element for programs
-    programSelect.innerHTML = '<option value="">Select Program</option>'; // Clear existing options
+    const programSelect = document.getElementById('collegeProgram'); 
+    programSelect.innerHTML = '<option value="">Select Program</option>'; 
 
     programs.forEach(program => {
         const option = document.createElement('option');
-        option.value = program; // Assuming program is a string
-        option.textContent = program; // Display program name
+        option.value = program;
+        option.textContent = program;
         programSelect.appendChild(option);
     });
 }
@@ -1193,18 +1212,14 @@ async function fetchAllRequirements() {
 
 function filterComments(searchTerm) {
     return allComments.filter(comment => {
-        // Get student name
         const studentName = studentMap.get(comment.student_id)?.toLowerCase() || '';
         
-        // Get requirement details
         const requirement = requirementMap.get(comment.requirement_id) || {};
         const requirementName = requirement.name?.toLowerCase() || '';
         
-        // Get event name
         const eventId = requirement.event_id;
         const eventName = eventMap.get(eventId)?.toLowerCase() || '';
 
-        // Create search string
         const searchString = [
             eventName,
             requirementName,
@@ -1227,17 +1242,15 @@ async function renderCommentDashboard(comments = allComments) {
     
     for (const [reqId, groupData] of Object.entries(grouped)) {
         const { event_id, students } = groupData;
-        const numericReqId = Number(reqId); // Define numericReqId here
+        const numericReqId = Number(reqId); 
         const numericEventId = Number(event_id);
         
-        // Get requirement and event names
         const requirement = requirementMap.get(numericReqId);
         const eventName = eventMap.get(numericEventId);
         
-        // Check if requirement and event names are valid
         if (!requirement || !eventName) {
             console.warn(`Skipping requirement ID ${numericReqId} or event ID ${numericEventId} due to missing names.`);
-            continue; // Skip this iteration if names are not valid
+            continue;
         }
 
         const requirementGroup = document.createElement('div');
@@ -1266,7 +1279,6 @@ function renderStudentGroups(container, students, requirementId) {
             new Date(a.created_at) - new Date(b.created_at)
         );
 
-        // Get the oldest comment's user_name
         const oldestComment = sortedComments[0];
         const studentName = oldestComment?.user_name || `Student ${studentId}`;
 
@@ -1407,7 +1419,6 @@ function groupComments(comments) {
                 return acc;
             }
             
-            // Get event ID from requirement map
             const requirement = requirementMap.get(reqId);
             const eventId = requirement?.event_id || 0;
             
@@ -1515,11 +1526,9 @@ function openCommentDialog(studentId, requirementId) {
     const popup = document.getElementById('commentPopup');
     if (!popup) return;
 
-    // Clear previous input
     const commentInput = document.getElementById('commentInput');
     if (commentInput) commentInput.value = '';
 
-    // Set current IDs
     popup.dataset.studentId = studentId;
     popup.dataset.requirementId = requirementId;
     
@@ -1783,7 +1792,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const toggleButton = document.getElementById('toggleMenuButton');
         const content = document.querySelector('.content');
      
-         // Check if the click was outside the sidebar and the toggle button
         if (!sidebar.contains(event.target) && !toggleButton.contains(event.target)) {
             closeSidebar();
         }
@@ -1811,6 +1819,8 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchStaffProfile();
         setupProfilePictureUpload();
         fetchPrograms();
+
+        showOnBoardingScreens();
 
     } catch (error) {
         console.error('Error initializing dashboard:', error);

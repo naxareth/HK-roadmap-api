@@ -11,6 +11,7 @@
 <body>
     <div class="top-nav">
         <button id="toggleMenuButton">☰</button>
+        <img src="/assets/jpg/HKRLogo.jpg" class="logo-pic" alt="Logo">
         <h1><span class="green">H</span><span class="yellow">K</span> Roadmap</h1>
         <div class="nav-controls">
             <div class="notifications-container">
@@ -26,7 +27,6 @@
                     <div class="notification-list" id="notificationList"></div>
                 </div>
             </div>
-            <!-- Notifications container remains unchanged -->
             <div class="navprofile-container" onclick="toggleProfileMenu()">
                 <span class="profile-name" id="navProfileName"></span>
                 <div id="profileMenu" class="profile-menu">
@@ -38,11 +38,12 @@
     </div>
     <div class="container">
         <div class="sidebar">
+            <img src="/assets/jpg/HKRLogo.jpg" class="logo-pic" alt="Logo">
             <h1><span class="green">H<span class="yellow">K</span> Roadmap</span></h1>
             <ul>
-                <li><a href="#" onclick="showSection('home')">Home</a></li>
-                <li><a href="#" onclick="showSection('comments')">Comments</a></li>
-                <li><a href="#" onclick="showSection('profile')">Profile</a></li>
+                <li></i><a href="#" onclick="showSection('home')"><i class="fas fa-home"> </i>Home</a></li>
+                <li></i><a href="#" onclick="showSection('comments')"><i class="fas fa-comments"> </i>Comments</a></li>
+                <li></i><a href="#" onclick="showSection('profile')"><i class="fas fa-user-gear"> </i>Profile</a></li>
             </ul>
         </div>
         <main class="content">
@@ -177,6 +178,7 @@
 
                 </form>
             </section>
+            
             <section id="comments-section" class="comment-dashboard" style="display: none;">
                 <div class="section-header">
                     <h2>Comment Management</h2>
@@ -234,6 +236,50 @@
 
         <div id="loadingSpinner" class="loading-overlay" style="display: none;">
             <div class="spinner"></div>
+        </div>
+
+        <div id="welcome-screen" class="welcome-screen">
+            <div class="onboarding-content">
+                <div id="step-1" class="onboarding-step active">
+                    <h1>Welcome to HK Roadmap!</h1>
+                    <p class="description">Providing you with efficient, easy to understand functions to make student lives easier!</p>
+                    <div class="button-group">
+                        <button class="next-button primary" data-next="step-2">Next →</button>
+                    </div>
+                </div>
+                <div id="step-2" class="onboarding-step">
+                    <h1> Check submissions!</h1>
+                    <p class="description">Check out documents and see if they're accepted or rejected!</p>
+                    <div class="button-group">
+                        <button class="prev-button secondary" data-prev="step-1">← Back</button>
+                        <button class="next-button primary" data-next="step-3">Next →</button>
+                    </div>
+                </div>
+                <div id="step-3" class="onboarding-step">
+                    <h1>  Comments! </h1>
+                    <p class="description">Answer the questions of your scholars!</p>
+                    <div class="button-group">
+                        <button class="prev-button secondary" data-prev="step-2">← Back</button>
+                        <button class="next-button primary" data-next="step-4">Next →</button>
+                    </div>
+                </div>
+                <div id="step-4" class="onboarding-step">
+                    <h1>  Profile Details! </h1>
+                    <p class="description">Edit your profile picture, name and others academic or personal!</p>
+                    <div class="button-group">
+                        <button class="prev-button secondary" data-prev="step-3">← Back</button>
+                        <button class="next-button primary" data-next="step-5">Next →</button>
+                    </div>
+                </div>
+                <div id="step-5" class="onboarding-step">
+                    <h1>  You're now ready! </h1>
+                    <p class="description">Now, let's go on to make student lives better!!</p>
+                    <div class="button-group">
+                        <button class="prev-button secondary" data-prev="step-4">← Back</button>
+                        <button id="continue-button" class="primary">Start Website →</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
     </div>

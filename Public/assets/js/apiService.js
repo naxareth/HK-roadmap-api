@@ -92,13 +92,4 @@ export default class ApiService {
     async changeStaffPassword(passwordData) {
         return this.request('POST', '/hk-roadmap/staff/change-password', passwordData);
     }
-
-    // Common Methods
-    async addEvent(eventData) {
-        return this.request('POST', '/hk-roadmap/event/add', eventData);
-    }
-
-    async addRequirement(requirementData) {
-        return this.request('POST', '/hk-roadmap/requirement/add', requirementData);
-    }
 }

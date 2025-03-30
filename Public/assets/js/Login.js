@@ -37,10 +37,10 @@ function validateLogin(role, email, password) {
     return true;
 }
 
-
 document.addEventListener('DOMContentLoaded', function() {
 
     localStorage.removeItem('passwordResetData');
+    localStorage.removeItem("hasSeenWelcomeScreen");
 
     const authToken = localStorage.getItem('authToken');
     if (authToken) {

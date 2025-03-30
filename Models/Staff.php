@@ -150,7 +150,7 @@ class Staff {
     }
 
     public function emailExists($email) {
-        $query = "SELECT 1 FROM staff WHERE email = :email";
+        $query = "SELECT * FROM staff WHERE email = :email";
         $stmt = $this->conn->prepare($query);
         $stmt->execute([':email' => $email]);
         return $stmt->rowCount() > 0;

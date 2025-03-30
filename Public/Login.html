@@ -6,27 +6,17 @@
         <link rel="stylesheet" href="/assets/css/Login.css">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
         <title>Login Page</title>
-        <style>
-            .form-input {
-                position: relative;
-            }
-            .toggle-password {
-                position: absolute;
-                right: 10px;
-                top: 75%;
-                transform: translateY(-50%);
-                cursor: pointer;
-            }
-        </style>
     </head>
     <body>
         <div class="section">
             <div class="design">
                 <div class="school-desc">
-                    <div class="image">
-                        <img src="/assets/jpg/logo_phinma.png" alt="logo" class="logo" />
+                    <div class="image-container">
+                        <img src="/assets/jpg/logo_phinma.png" alt="logo" class="transition-logo active" />
+                        <img src="/assets/jpg/upang-backgroundOne.png" alt="logo" class="transition-logo" />
+                        <img src="/assets/jpg/upang-backgroundTwo.jpg" alt="logo" class="transition-logo" />
                     </div>
-                    <h1> University of Pangasinan </h1>
+                    <h1> HK ROADMAP </h1>
                     <p> 28WV+R2R, Arellano St, Downtown District, Dagupan, 2400 Pangasinan, Philippines </p>
                 </div>
             </div>
@@ -72,21 +62,44 @@
                 </div>
             </div>
         </div>
-        <!-- Success Popup -->
+
         <div id="successPopup" class="popup" style="display: none;">
             <div class="popup-content">
-                <span class="close-popup">&times;</span>
                 <p>Logging in successful! Redirecting...</p>
             </div>
         </div>
 
         <div id="errorMessage" class="popup" style="display: none;">
             <div class="popup-content">
-                <span class="close-popup">&times;</span>
                 <span id="errorText"></span>
             </div>
         </div>
 
         <script src="/assets/js/Login.js" type="module"></script>
+        <script>
+            (function() {
+                const images = [
+                    '/assets/jpg/logo_phinma.png',
+                    '/assets/jpg/upang-backgroundOne.png',
+                    '/assets/jpg/upang-backgroundTwo.jpg'
+                ];
+        
+                images.forEach(src => new Image().src = src);
+        
+                const logoElements = document.querySelectorAll('.transition-logo');
+                let currentIndex = 0;
+        
+                function cycleImages() {
+                    const nextIndex = (currentIndex + 1) % images.length;
+                    
+                    logoElements[currentIndex].classList.remove('active');
+                    logoElements[nextIndex].classList.add('active');
+                    
+                    currentIndex = nextIndex;
+                }
+        
+                setInterval(cycleImages, 7000);
+            })();
+        </script>
     </body>
 </html>
