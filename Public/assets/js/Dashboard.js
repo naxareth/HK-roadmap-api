@@ -531,30 +531,92 @@ function switchDocument(index) {
     renderDocuments();
 }
 
-async function approveAllDocuments() {
-    try {
-        for (const doc of docItems) {
-            await handleStatusUpdate(doc.submission_id, 'approved');
-        }
-        closeDocumentPopup();
-        fetchSubmissions();
-    } catch (error) {
-        console.error('Error approving all documents:', error);
+// Function to show loading spinner with forced reflow
+function showLoadingSpinnerForced() {
+    // Create the loading overlay if it doesn't exist
+    let overlay = document.getElementById('loadingSpinner');
+    
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'loadingSpinner';
+        overlay.className = 'loading-overlay';
+        
+        const spinner = document.createElement('div');
+        spinner.className = 'spinner';
+        
+        overlay.appendChild(spinner);
+        document.body.appendChild(overlay);
+    } else {
+        overlay.style.display = 'flex'; // Use flex to center the spinner
     }
+    
+    // Force a reflow to ensure the spinner appears immediately
+    void overlay.offsetWidth;
 }
 
-async function rejectAllDocuments() {
-    try {
-        for (const doc of docItems) {
-            await handleStatusUpdate(doc.submission_id, 'rejected');
-        }
-        closeDocumentPopup();
-        fetchSubmissions();
-    } catch (error) {
-        console.error('Error rejecting all documents:', error);
-    }
+// Function to close popup immediately
+function closeDocumentPopupImmediately() {
+    const popup = document.getElementById('documentPopup');
+    popup.style.display = 'none';
+    currentDocIndex = 0;
+    docItems = [];
 }
 
+// Improved approve all documents function
+function approveAllDocuments() {
+    // Store documents locally before closing popup
+    const documentsToProcess = [...docItems];
+    
+    // Show loading spinner immediately with forced reflow
+    showLoadingSpinnerForced();
+    
+    // Close popup immediately for better UX
+    closeDocumentPopupImmediately();
+    
+    // Process documents in background
+    (async () => {
+        try {
+            for (const doc of documentsToProcess) {
+                await handleStatusUpdate(doc.submission_id, 'approved');
+            }
+            // Fetch updated submissions after processing
+            fetchSubmissions();
+        } catch (error) {
+            console.error('Error approving documents:', error);
+            hideLoadingSpinner();
+            alert('Error approving documents. Please try again.');
+        }
+    })();
+}
+
+// Improved reject all documents function
+function rejectAllDocuments() {
+    // Store documents locally before closing popup
+    const documentsToProcess = [...docItems];
+    
+    // Show loading spinner immediately with forced reflow
+    showLoadingSpinnerForced();
+    
+    // Close popup immediately for better UX
+    closeDocumentPopupImmediately();
+    
+    // Process documents in background
+    (async () => {
+        try {
+            for (const doc of documentsToProcess) {
+                await handleStatusUpdate(doc.submission_id, 'rejected');
+            }
+            // Fetch updated submissions after processing
+            fetchSubmissions();
+        } catch (error) {
+            console.error('Error rejecting documents:', error);
+            hideLoadingSpinner();
+            alert('Error rejecting documents. Please try again.');
+        }
+    })();
+}
+
+// Keep the original handleStatusUpdate function
 async function handleStatusUpdate(submissionId, status) {
     try {
         const response = await fetch(`/hk-roadmap/submission/update`, {
@@ -580,6 +642,7 @@ async function handleStatusUpdate(submissionId, status) {
     }
 }
 
+// Original close function (kept for compatibility)
 function closeDocumentPopup() {
     const popup = document.getElementById('documentPopup');
     popup.style.display = 'none';
@@ -587,14 +650,19 @@ function closeDocumentPopup() {
     docItems = [];
 }
 
-let allSubmissions = [];
-
+// Improved fetchSubmissions function
 function fetchSubmissions() {
     fetch('/hk-roadmap/submission/update')
         .then(response => response.json())
         .then(data => {
             allSubmissions = data; 
             renderTable(data);
+            hideLoadingSpinner();
+        })
+        .catch(error => {
+            console.error('Error fetching submissions:', error);
+            hideLoadingSpinner();
+            alert('Failed to fetch submissions. Please try again.');
         });
 }
 
@@ -1452,6 +1520,9 @@ async function submitCommentEdit() {
     if (!currentEditCommentId) return;
 
     try {
+        // Show loading spinner
+        showLoadingSpinner();
+        
         const authToken = localStorage.getItem('authToken');
         const response = await fetch('/hk-roadmap/comments/update', {
             method: 'PUT',
@@ -1474,10 +1545,13 @@ async function submitCommentEdit() {
             }
             closeEditModal();
             await showComments(currentRequirementId);
+            // Note: No need to hide spinner here as showComments() already handles it
         } else {
+            hideLoadingSpinner(); // Hide spinner on error
             throw new Error('Failed to update comment');
         }
     } catch (error) {
+        hideLoadingSpinner(); // Hide spinner on error
         console.error('Error updating comment:', error);
         alert('Failed to update comment');
     }
@@ -1510,37 +1584,42 @@ function submitComment() {
     const commentText = document.getElementById('commentInput').value.trim();
 
     if (commentText) {
-        fetch('/hk-roadmap/comments/add', {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({
-                requirement_id: requirementId,
-                student_id: studentId,
-                body: commentText
+        // Close the popup immediately to improve perceived performance
+        closeCommentPopup();
+        
+        // Show loading spinner IMMEDIATELY before any async operations
+        showLoadingSpinner();
+        
+        // Use setTimeout with 0ms delay to ensure the spinner renders
+        // before the potentially heavy network operation begins
+        setTimeout(() => {
+            fetch('/hk-roadmap/comments/add', {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({
+                    requirement_id: requirementId,
+                    student_id: studentId,
+                    body: commentText
+                })
             })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                showComments(requirementId); 
-            } else {
-                alert('Failed to add comment: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Failed to add comment');
-        });
-    }
-
-    closeCommentPopup();
-}
-
-// Close modal when clicking outside
-window.onclick = function(event) {
-    const modal = document.getElementById('editCommentModal');
-    if (event.target === modal) {
-        closeEditModal();
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showComments(requirementId);
+                    // Note: showComments already handles the spinner
+                } else {
+                    hideLoadingSpinner();
+                    alert('Failed to add comment: ' + data.message);
+                }
+            })
+            .catch(error => {
+                hideLoadingSpinner();
+                console.error('Error:', error);
+                alert('Failed to add comment');
+            });
+        }, 0);
+    } else {
+        closeCommentPopup();
     }
 }
 
