@@ -1868,7 +1868,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
          
         document.addEventListener('click', function(event) {
-            if (!sidebar.contains(event.target) && !toggleMenuButton.contains(event.target)) {
+            if (!sidebar.contains(event.target) && !toggleButton.contains(event.target)) {
                 sidebar.classList.remove('visible');
             }
         });

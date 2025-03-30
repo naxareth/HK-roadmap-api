@@ -1510,6 +1510,18 @@ async function showComments(requirementId) {
 
 let currentEditCommentId = null;
 
+
+function toggleCommentMenu(button) {
+    const menu = button.closest('.comment-actions').querySelector('.action-menu');
+    const allMenus = document.querySelectorAll('.action-menu');
+    
+    // Close all other menus
+    allMenus.forEach(m => m !== menu ? m.style.display = 'none' : null);
+    
+    // Toggle current menu
+    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+}
+
 async function handleEditComment(commentId) {
     try {
         // Fetch existing comment content
