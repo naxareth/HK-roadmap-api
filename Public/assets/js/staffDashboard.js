@@ -469,30 +469,96 @@ function switchDocument(index) {
     renderDocuments();
 }
 
-async function approveAllDocuments() {
-    try {
-        for (const doc of docItems) {
-            await handleStatusUpdate(doc.submission_id, 'approved');
-        }
-        closeDocumentPopup();
-        fetchSubmissions();
-    } catch (error) {
-        console.error('Error approving all documents:', error);
+function showLoadingSpinnerForced() {
+    // Create the loading overlay if it doesn't exist
+    let overlay = document.getElementById('loadingSpinner');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'loadingSpinner';
+        overlay.className = 'loading-overlay';
+        const spinner = document.createElement('div');
+        spinner.className = 'spinner';
+        overlay.appendChild(spinner);
+        document.body.appendChild(overlay);
+    } else {
+        overlay.style.display = 'flex'; // Use flex to center the spinner
     }
+    
+    // Force a reflow to ensure the spinner appears immediately
+    void overlay.offsetWidth;
 }
 
-async function rejectAllDocuments() {
-    try {
-        for (const doc of docItems) {
-            await handleStatusUpdate(doc.submission_id, 'rejected');
-        }
-        closeDocumentPopup();
-        fetchSubmissions();
-    } catch (error) {
-        console.error('Error rejecting all documents:', error);
-    }
+// Function to close popup immediately
+function closeDocumentPopupImmediately() {
+    const popup = document.getElementById('documentPopup');
+    popup.style.display = 'none';
+    currentDocIndex = 0;
+    docItems = [];
 }
 
+// Improved approve all documents function
+function approveAllDocuments() {
+    // Store documents locally before closing popup
+    const documentsToProcess = [...docItems];
+    
+    // Show loading spinner immediately with forced reflow
+    showLoadingSpinnerForced();
+    
+    // Close popup immediately for better UX
+    closeDocumentPopupImmediately();
+    
+    // Process documents in background
+    (async () => {
+        try {
+            for (const doc of documentsToProcess) {
+                await handleStatusUpdate(doc.submission_id, 'approved');
+            }
+            
+            // Fetch updated submissions after processing
+            await fetchSubmissions();
+            
+            // Explicitly hide the loading spinner when done
+            hideLoadingSpinner();
+        } catch (error) {
+            console.error('Error approving documents:', error);
+            hideLoadingSpinner();
+            alert('Error approving documents. Please try again.');
+        }
+    })();
+}
+
+// Improved reject all documents function
+function rejectAllDocuments() {
+    // Store documents locally before closing popup
+    const documentsToProcess = [...docItems];
+    
+    // Show loading spinner immediately with forced reflow
+    showLoadingSpinnerForced();
+    
+    // Close popup immediately for better UX
+    closeDocumentPopupImmediately();
+    
+    // Process documents in background
+    (async () => {
+        try {
+            for (const doc of documentsToProcess) {
+                await handleStatusUpdate(doc.submission_id, 'rejected');
+            }
+            
+            // Fetch updated submissions after processing
+            await fetchSubmissions();
+            
+            // Explicitly hide the loading spinner when done
+            hideLoadingSpinner();
+        } catch (error) {
+            console.error('Error rejecting documents:', error);
+            hideLoadingSpinner();
+            alert('Error rejecting documents. Please try again.');
+        }
+    })();
+}
+
+// Keep the original handleStatusUpdate function
 async function handleStatusUpdate(submissionId, status) {
     try {
         const response = await fetch(`/hk-roadmap/submission/update`, {
@@ -518,6 +584,7 @@ async function handleStatusUpdate(submissionId, status) {
     }
 }
 
+// Original close function (kept for compatibility)
 function closeDocumentPopup() {
     const popup = document.getElementById('documentPopup');
     popup.style.display = 'none';
