@@ -1203,7 +1203,7 @@ input[type="date"] {
 
 /* Document Preview Container */
 #documentPopup {
-    z-index: 10000;
+    z-index: 100;
     max-width: 90vw;
     width: 800px;
     max-height: 90vh;

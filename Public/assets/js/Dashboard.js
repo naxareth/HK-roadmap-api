@@ -2,6 +2,7 @@
 let allAdmins = [];
 let allStudents = [];
 let allStaff = [];
+let studentMap = {};
 
 //Checking token
 function checkTokenAndRedirect() {
@@ -163,7 +164,6 @@ function showSection(section) {
 
 function showOnBoardingScreens() {
     const welcomeScreen = document.getElementById("welcome-screen");
-    const mainContent = document.getElementById("main-content");
     const continueButton = document.getElementById("continue-button");
     const nextButtons = document.querySelectorAll(".next-button");
     const prevButtons = document.querySelectorAll(".prev-button");
@@ -171,7 +171,6 @@ function showOnBoardingScreens() {
 
     if (localStorage.getItem("hasSeenWelcomeScreen")) {
         welcomeScreen.style.display = "none";
-        mainContent.style.display = "block";
     } else {
         welcomeScreen.style.display = "flex";
     }
@@ -259,6 +258,12 @@ async function fetchProfiles(type) {
 async function fetchStudents() {
     const data = await fetchProfiles('student');
     allStudents = data;
+
+    studentMap = {};
+    data.forEach(student => {
+        studentMap[student.user_id] = student.name; // Assuming student object has 'id' and 'name' properties
+    });
+
     renderStudents(data);
 }
 
@@ -452,10 +457,14 @@ let docItems = [];
 function viewDocuments(submissionIds) {
     const popup = document.getElementById('documentPopup');
     const content = document.getElementById('documentDetails');
-    
+
+    // Add button container to HTML structure
     content.innerHTML = `
         <div class="doc-tabs"></div>
         <div class="doc-content"></div>
+        <div class="doc-actions">
+            <button id="addCommentButton" class="doc-action-button">Add Comment</button>
+        </div>
     `;
 
     Promise.all(submissionIds.map(fetchDocument))
@@ -467,6 +476,25 @@ function viewDocuments(submissionIds) {
                 return;
             }
             renderDocuments();
+            
+            // Add comment button handler
+            const addCommentBtn = content.querySelector('#addCommentButton');
+            if (addCommentBtn) {
+                addCommentBtn.onclick = () => {
+                    const currentDoc = docItems[currentDocIndex];
+                    if (currentDoc) {
+                        const commentPopup = document.getElementById('commentPopup');
+                        // Set required IDs from document data
+                        commentPopup.dataset.studentId = currentDoc.student_id;
+                        commentPopup.dataset.requirementId = currentDoc.requirement_id;
+                        // Show comment popup
+                        commentPopup.style.display = 'block';
+                        // Clear previous input and focus
+                        document.getElementById('commentInput').value = '';
+                        document.getElementById('commentInput').focus();
+                    }
+                };
+            }
             popup.style.display = 'block';
         });
 }
@@ -768,7 +796,7 @@ async function fetchCardEvents(selectedFilter) {
                     <div class="card" data-event-id="${doc.event_id}" data-date="${doc.date}">
                         <div class="text-content">
                             <br>
-                            <h2> <i class="fas fa-image icon"></i> ${doc.event_name}</h2>
+                            <h2> <i class="fas fa-bullhorn"></i> ${doc.event_name}</h2>
                             <br>
                             <p style="color: black;" font-weight="700"> <i class="fas fa-calendar-alt icon"></i> ${formattedDate}</p>
                         </div>
@@ -830,14 +858,20 @@ async function showRequirements(eventId) {
 
 
             data.forEach(req => {    
+                const formattedDate = new Date(req.due_date).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
                 console.log('Identifications:', req.requirement_id, req.event_id); 
                 const requirement = `
                     <div class="card" data-requirement-id="${req.requirement_id}" data-event-id="${req.event_id}">
                         <div class="text-content">
-                            <h2> <i class="fas fa-flag icon"></i>Requirement: ${req.requirement_name}</h2>
+                            <h2> <i class="fas fa-flag icon"></i> ${req.requirement_name}</h2>
                             <p><strong>Description:</strong> ${req.requirement_desc}</p>
                             <br>
-                            <p><strong>Due:</strong> ${req.due_date}</p>
+                            <p><strong>Due:</strong> ${formattedDate}</p>
                         </div>
                         <div class="button-content">
                             <button class="edit-requirement shwn-btn" data-requirement-id="${req.requirement_id}">Edit</button>
@@ -1369,6 +1403,7 @@ const commentCollapseStates = new Map();
 
 async function showComments(requirementId) {
     showLoadingSpinner();
+    fetchStudents();
     try {
         currentRequirementId = requirementId;
         const authToken = localStorage.getItem('authToken');
@@ -1397,23 +1432,9 @@ async function showComments(requirementId) {
                     <i class="fas fa-comments-alt" style="font-size: 48px; color: #ccc; margin-bottom: 15px;"></i>
                     <h3>No comments yet</h3>
                     <p>There are no comments for this requirement.</p>
-                    <button id="addFirstCommentBtn" class="primary-button">Add First Comment</button>
                 </div>
             `;
             commentsList.appendChild(emptyMessage);
-            
-            // Add event listener to the "Add First Comment" button
-            document.getElementById('addFirstCommentBtn').addEventListener('click', () => {
-                // You'll need to determine which student to associate this with
-                // For now, we'll use a prompt to get the student ID
-                const studentId = prompt("Enter student ID for this comment:");
-                if (studentId) {
-                    openCommentPopup(studentId, requirementId);
-                }
-            });
-            
-            hideLoadingSpinner();
-            return;
         }
 
         const commentsByStudent = comments.reduce((groups, comment) => {
@@ -1430,26 +1451,30 @@ async function showComments(requirementId) {
             // Create collapsible header
             const header = document.createElement('div');
             header.className = 'student-header';
+            
+            // Get the student's name using the student ID from the mapping
+            const studentName = studentMap[studentId] || 'Unknown Student'; // Fallback if no name found
+        
             header.innerHTML = `
                 <div class="header-content">
                     <span class="toggle-icon">▶</span>
-                    <h4>${studentComments[0].user_name}</h4>
+                    <h4>${studentName}</h4> <!-- This line gets the student's name -->
                     <span class="comment-count">${studentComments.length} comments</span>
                 </div>
             `;
-
+        
             // Create comments container
             const commentsContainer = document.createElement('div');
             commentsContainer.className = 'comments-container';
             commentsContainer.style.display = 'none';
-
+        
+            // Add event listener for collapsing/expanding comments
             header.addEventListener('click', () => {
                 const isCollapsed = commentsContainer.style.display === 'none';
                 commentsContainer.style.display = isCollapsed ? 'block' : 'none';
                 header.querySelector('.toggle-icon').textContent = isCollapsed ? '▼' : '▶';
                 commentCollapseStates.set(studentId, !isCollapsed);
             });
-
             if (commentCollapseStates.has(studentId)) {
                 const isExpanded = commentCollapseStates.get(studentId);
                 commentsContainer.style.display = isExpanded ? 'block' : 'none';
@@ -1633,7 +1658,52 @@ function submitComment() {
             .then(data => {
                 if (data.status === 'success') {
                     showComments(requirementId);
-                    // Note: showComments already handles the spinner
+                } else {
+                    hideLoadingSpinner();
+                    alert('Failed to add comment: ' + data.message);
+                }
+            })
+            .catch(error => {
+                hideLoadingSpinner();
+                console.error('Error:', error);
+                alert('Failed to add comment');
+            });
+        }, 0);
+    } else {
+        closeCommentPopup();
+    }
+}
+
+
+function submitCommentAdmin() {
+    const popup = document.getElementById('commentPopupAdmin');
+    const studentId = popup.dataset.studentId;
+    const requirementId = popup.dataset.requirementId;
+    const commentText = document.getElementById('commentInput').value.trim();
+
+    if (commentText) {
+        // Close the popup immediately to improve perceived performance
+        closeCommentPopup();
+        
+        // Show loading spinner IMMEDIATELY before any async operations
+        showLoadingSpinner();
+        
+        // Use setTimeout with 0ms delay to ensure the spinner renders
+        // before the potentially heavy network operation begins
+        setTimeout(() => {
+            fetch('/hk-roadmap/comments/add', {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({
+                    requirement_id: requirementId,
+                    student_id: studentId,
+                    body: commentText
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Added comment');
                 } else {
                     hideLoadingSpinner();
                     alert('Failed to add comment: ' + data.message);
@@ -2730,6 +2800,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     document.getElementById('submitCommentButton').addEventListener('click', submitComment);
+
+    document.getElementById('submitCommentButtonAdmin').addEventListener('click', submitCommentAdmin);
 
     document.getElementById('closeCommentPopupButton').addEventListener('click', closeCommentPopup);
 
