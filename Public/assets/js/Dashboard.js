@@ -1741,7 +1741,6 @@ async function fetchNotifications() {
                     </button>
                 </div>
             `;
-            notificationItem.ondblclick = () => navigateToSubmission(notification.submission_id);
             notificationList.appendChild(notificationItem);
             if (!notification.read_notif) unreadCount++;
         });
@@ -1791,19 +1790,6 @@ async function toggleReadStatus(notificationId, button, status, requirementName)
         console.error('Toggle read error:', error);
         alert('Failed to update notification status');
     }
-}
-
-function navigateToSubmission(submissionId) {
-    showSection('admin');
-    showTab('submissions');
-    
-    setTimeout(() => {
-        const submissionRow = document.querySelector(`[data-submission-id="${submissionId}"]`);
-        if (submissionRow) {
-            submissionRow.scrollIntoView({ behavior: 'smooth' });
-            submissionRow.style.animation = 'highlight 1.5s';
-        }
-    }, 500);
 }
 
 async function markAsRead(notificationId) {

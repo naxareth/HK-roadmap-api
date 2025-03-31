@@ -672,7 +672,6 @@ async function fetchNotifications() {
                     </button>
                 </div>
             `;
-            notificationItem.ondblclick = () => navigateToSubmission(notification.submission_id);
             notificationList.appendChild(notificationItem);
             if (!notification.read_notif) unreadCount++;
         });
@@ -767,19 +766,6 @@ async function toggleReadStatus(notificationId, button) {
         console.error('Toggle read error:', error);
         alert('Failed to update notification status');
     }
-}
-
-function navigateToSubmission(submissionId) {
-    showSection('home');
-    showTab('submissions');
-    
-    setTimeout(() => {
-        const submissionRow = document.querySelector(`[data-submission-id="${submissionId}"]`);
-        if (submissionRow) {
-            submissionRow.scrollIntoView({ behavior: 'smooth' });
-            submissionRow.style.animation = 'highlight 1.5s';
-        }
-    }, 500);
 }
 
 async function markAsRead(notificationId) {
@@ -1538,6 +1524,7 @@ async function fetchAllComments() {
 }
 
 async function submitComment() {
+    showLoadingSpinner(5000);
     const popup = document.getElementById('commentPopup');
     const commentInput = document.getElementById('commentInput');
     const submitButton = document.getElementById('submitCommentButton');
@@ -1548,7 +1535,7 @@ async function submitComment() {
     }
 
     const originalText = submitButton.innerHTML;
-    submitButton.innerHTML = '<div class="spinner"></div> Submitting...';
+    submitButton.innerHTML = 'Submitting...';
     submitButton.disabled = true;
 
     try {
@@ -1586,6 +1573,7 @@ async function submitComment() {
     } finally {
         submitButton.disabled = false;
         submitButton.innerHTML = originalText;
+        hideLoadingSpinner();
     }
 }
 
@@ -1612,7 +1600,7 @@ function editComment(commentId, commentBody) {
         editPopup.className = 'popup';
         editPopup.innerHTML = `
             <div class="popup-content">
-                <span class="close">&times;</span>
+                <span class="close-popup" onclick="closeEditPopup()">&times;</span>
                 <h3>Edit Comment</h3>
                 <textarea id="editCommentText" 
                     placeholder="Enter your comment here..." 
@@ -1698,17 +1686,14 @@ async function deleteComment(commentId) {
 }
 
 //frontend system
-
-
 let loadingSpinnerTimeout; // Variable to hold the timeout reference
 
 function showLoadingSpinner(duration = 700) { // Default duration is 5000ms (5 seconds)
     const spinner = document.getElementById('loadingSpinner');
     if (spinner) {
-        spinner.style.display = 'flex'; // Show the spinner
+        spinner.style.display = 'flex'; 
     }
 
-    // Clear any existing timeout to prevent multiple timers
     clearTimeout(loadingSpinnerTimeout);
 
     // Set a timeout to hide the spinner after the specified duration
